@@ -215,7 +215,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9867794f86f5e9a48b40664c982923b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Shader: {fileID: 0}
+  Shader: {fileID: 7200000, guid: 10a795aa6404c144ebd39df7fc1822fe, type: 3}
   groundLevel: 0.375
   sigma: 0.125
   amplitude: 0.25
@@ -784,13 +784,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MeshGenerator: {fileID: 1725357000}
-  Generator: {fileID: 1614514780}
   Brush: {fileID: 179900482}
   PaintAction: {fileID: -1837522021016125894, guid: ba97f0744d61ec14ba420da679b6647c,
     type: 3}
   EraserAction: {fileID: -8979920020589327954, guid: ba97f0744d61ec14ba420da679b6647c,
     type: 3}
   PaintAnchor: {fileID: 381173226}
+  GeneratorIndex: 2
+  Generators:
+  - {fileID: 2791221358768407064}
+  - {fileID: 1614514780}
+  - {fileID: 421229481}
+  Regenerate: 0
 --- !u!1001 &1199820829776516354
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1105,6 +1110,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: de9f8f2731a994f4189b992e81354711, type: 3}
+--- !u!114 &2791221358768407064 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8383950156807089609, guid: de9f8f2731a994f4189b992e81354711,
+    type: 3}
+  m_PrefabInstance: {fileID: 2791221358768407063}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f6faf7dd672894a82e5e2c0be30c29, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
