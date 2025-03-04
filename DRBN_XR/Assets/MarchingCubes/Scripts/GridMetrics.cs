@@ -1,4 +1,5 @@
-﻿public static class GridMetrics {
+﻿public static class GridMetrics
+{
     public const int NumThreads = 8;
 
     public const int Scale = 32;
@@ -13,14 +14,15 @@
         40
     };
 
-
     public static int LastLod = LODs.Length - 1;
 
-    public static int PointsPerChunk(int lod) {
+    public static int PointsPerChunk(int lod)
+    {
         return LODs[lod];
     }
 
-    public static int ThreadGroups(int lod) {
+    public static int ThreadGroups(int lod)
+    {
         return LODs[lod] / NumThreads;
     }
 }

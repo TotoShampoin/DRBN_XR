@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class NoiseGenerator : MonoBehaviour
 {
@@ -13,12 +11,14 @@ public class NoiseGenerator : MonoBehaviour
     [SerializeField] int octaves = 6;
     [SerializeField, Range(0f, 1f)] float groundPercent = 0.2f;
 
-
-
-    public float[] GetNoise(int lod) {
+    public float[] GetNoise(int lod)
+    {
         CreateBuffers(lod);
         float[] noiseValues =
-           new float[GridMetrics.PointsPerChunk(lod) * GridMetrics.PointsPerChunk(lod) * GridMetrics.PointsPerChunk(lod)];
+            new float[
+                GridMetrics.PointsPerChunk(lod) *
+                GridMetrics.PointsPerChunk(lod) *
+                GridMetrics.PointsPerChunk(lod)];
 
         NoiseShader.SetBuffer(0, "_Weights", _weightsBuffer);
 
@@ -31,10 +31,14 @@ public class NoiseGenerator : MonoBehaviour
         NoiseShader.SetInt("_Scale", GridMetrics.Scale);
         NoiseShader.SetInt("_GroundLevel", GridMetrics.GroundLevel);
 
+        NoiseShader.SetFloat("_Min", -1.0f);
+        NoiseShader.SetFloat("_Max", 1.0f);
 
-        NoiseShader.Dispatch(
-                 0, GridMetrics.ThreadGroups(lod), GridMetrics.ThreadGroups(lod), GridMetrics.ThreadGroups(lod)
-             );
+        NoiseShader.Dispatch(0,
+                GridMetrics.ThreadGroups(lod),
+                GridMetrics.ThreadGroups(lod),
+                GridMetrics.ThreadGroups(lod)
+            );
 
         _weightsBuffer.GetData(noiseValues);
 
@@ -42,13 +46,18 @@ public class NoiseGenerator : MonoBehaviour
         return noiseValues;
     }
 
-    void CreateBuffers(int lod) {
+    void CreateBuffers(int lod)
+    {
         _weightsBuffer = new ComputeBuffer(
-            GridMetrics.PointsPerChunk(lod) * GridMetrics.PointsPerChunk(lod) * GridMetrics.PointsPerChunk(lod), sizeof(float)
+            GridMetrics.PointsPerChunk(lod) *
+            GridMetrics.PointsPerChunk(lod) *
+            GridMetrics.PointsPerChunk(lod),
+            sizeof(float)
         );
     }
 
-    void ReleaseBuffers() {
+    void ReleaseBuffers()
+    {
         _weightsBuffer.Release();
     }
 }

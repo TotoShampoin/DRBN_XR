@@ -11,13 +11,22 @@ public class MeshGenerator : MonoBehaviour
     }
 
     public ComputeShader MarchingShader;
-
     [Range(0, 4)] public int LOD;
+    public Vector3 LowerBound;
+    public Vector3 UpperBound;
 
     ComputeBuffer _trianglesBuffer;
     ComputeBuffer _trianglesCountBuffer;
     ComputeBuffer _weightsBuffer;
     float[] _weights;
+
+    public void OnDrawGizmos()
+    {
+        Gizmos.color = Color.white;
+        Gizmos.matrix = transform.localToWorldMatrix;
+        Gizmos.DrawWireCube(
+            (LowerBound + UpperBound) / 2, UpperBound - LowerBound);
+    }
 
     public void Recreate(float[] weights)
     {
@@ -36,6 +45,10 @@ public class MeshGenerator : MonoBehaviour
 
     public void EditWeights(Vector3 hitPosition, float brushSize, bool add)
     {
+        Vector3 relativeHitPosition = transform.InverseTransformPoint(hitPosition);
+
+        float strength = 0.25f;
+
         CreateBuffers();
         int kernel = MarchingShader.FindKernel("UpdateWeights");
 
@@ -44,10 +57,13 @@ public class MeshGenerator : MonoBehaviour
 
         MarchingShader.SetInt("_ChunkSize",
             GridMetrics.PointsPerChunk(GridMetrics.LastLod));
-        MarchingShader.SetVector("_HitPosition", hitPosition);
+        MarchingShader.SetVector("_HitPosition", relativeHitPosition);
         MarchingShader.SetFloat("_BrushSize", brushSize);
-        MarchingShader.SetFloat("_TerraformStrength", add ? 1f : -1f);
         MarchingShader.SetInt("_Scale", GridMetrics.Scale);
+
+        MarchingShader.SetFloat("_Min", -1.0f);
+        MarchingShader.SetFloat("_Max", 1.0f);
+        MarchingShader.SetFloat("_TerraformStrength", add ? strength : -strength);
 
         MarchingShader.Dispatch(kernel,
             GridMetrics.ThreadGroups(GridMetrics.LastLod),
@@ -75,8 +91,11 @@ public class MeshGenerator : MonoBehaviour
         MarchingShader.SetInt("_ChunkSize",
             GridMetrics.PointsPerChunk(GridMetrics.LastLod));
         MarchingShader.SetInt("_LODSize", GridMetrics.PointsPerChunk(LOD));
-        MarchingShader.SetFloat("_IsoLevel", .5f);
+        MarchingShader.SetFloat("_IsoLevel", .0f);
         MarchingShader.SetInt("_Scale", GridMetrics.Scale);
+
+        MarchingShader.SetFloats("_LowerBound", LowerBound.x, LowerBound.y, LowerBound.z);
+        MarchingShader.SetFloats("_UpperBound", UpperBound.x, UpperBound.y, UpperBound.z);
 
         _weightsBuffer.SetData(_weights);
         _trianglesBuffer.SetCounterValue(0);

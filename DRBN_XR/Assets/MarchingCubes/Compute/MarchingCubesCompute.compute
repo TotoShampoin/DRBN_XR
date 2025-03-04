@@ -2,21 +2,22 @@
 #pragma kernel UpdateWeights
 
 #include "Includes\MarchingTable.hlsl"
-
 #include "Includes\MetricsCompute.compute"
-
 
 RWStructuredBuffer<float> _Weights;
 
 float3 _HitPosition;
 float _BrushSize;
 float _TerraformStrength;
-
 float _IsoLevel;
-
 float _LodScaleFactor;
-
 int _LODSize;
+
+float3 _LowerBound;
+float3 _UpperBound;
+
+float _Min;
+float _Max;
 
 struct Triangle {
     float3 a, b, c;
@@ -24,9 +25,21 @@ struct Triangle {
 
 AppendStructuredBuffer<Triangle> _Triangles;
 
-float3 interp(float3 edgeVertex1, float valueAtVertex1, float3 edgeVertex2, float valueAtVertex2)
+float3 interp(
+    float3 edgeVertex1, float valueAtVertex1, 
+    float3 edgeVertex2, float valueAtVertex2)
 {
-    return (edgeVertex1 + (_IsoLevel - valueAtVertex1) * (edgeVertex2 - edgeVertex1) / (valueAtVertex2 - valueAtVertex1));
+    return (
+        edgeVertex1 + 
+        (_IsoLevel - valueAtVertex1) * (edgeVertex2 - edgeVertex1) 
+        / (valueAtVertex2 - valueAtVertex1));
+}
+
+float3 remap(
+    float3 value, float3 fromMin, float3 fromMax,
+    float3 toMin, float3 toMax)
+{
+    return (value - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin;
 }
 
 
@@ -43,12 +56,16 @@ void March(uint3 id : SV_DispatchThreadID)
 
     float cubeValues[8] = {
        _Weights[indexFromCoord(samplePos.x, samplePos.y, samplePos.z + unit)],
-       _Weights[indexFromCoord(samplePos.x + unit, samplePos.y, samplePos.z + unit)],
+       _Weights[indexFromCoord(
+            samplePos.x + unit, samplePos.y, samplePos.z + unit)],
        _Weights[indexFromCoord(samplePos.x + unit, samplePos.y, samplePos.z)],
        _Weights[indexFromCoord(samplePos.x, samplePos.y, samplePos.z)],
-       _Weights[indexFromCoord(samplePos.x, samplePos.y + unit, samplePos.z + unit)],
-       _Weights[indexFromCoord(samplePos.x + unit, samplePos.y + unit, samplePos.z + unit)],
-       _Weights[indexFromCoord(samplePos.x + unit, samplePos.y + unit, samplePos.z)],
+       _Weights[indexFromCoord(
+            samplePos.x, samplePos.y + unit, samplePos.z + unit)],
+       _Weights[indexFromCoord(
+            samplePos.x + unit, samplePos.y + unit, samplePos.z + unit)],
+       _Weights[indexFromCoord(
+            samplePos.x + unit, samplePos.y + unit, samplePos.z)],
        _Weights[indexFromCoord(samplePos.x, samplePos.y + unit, samplePos.z)]
     };
 
@@ -78,9 +95,29 @@ void March(uint3 id : SV_DispatchThreadID)
         int e20 = edgeConnections[edges[i + 2]][0];
         int e21 = edgeConnections[edges[i + 2]][1];
         Triangle tri;
-        tri.a = (interp(cornerOffsets[e00], cubeValues[e00], cornerOffsets[e01], cubeValues[e01]) + id) / (_LODSize - 1) * _Scale;
-        tri.b = (interp(cornerOffsets[e10], cubeValues[e10], cornerOffsets[e11], cubeValues[e11]) + id) / (_LODSize - 1) * _Scale;
-        tri.c = (interp(cornerOffsets[e20], cubeValues[e20], cornerOffsets[e21], cubeValues[e21]) + id) / (_LODSize - 1) * _Scale;
+        tri.a = (interp(
+            cornerOffsets[e00], cubeValues[e00], 
+            cornerOffsets[e01], cubeValues[e01]) + id) / 
+            (_LODSize - 1) * _Scale;
+        tri.b = (interp(
+            cornerOffsets[e10], cubeValues[e10], 
+            cornerOffsets[e11], cubeValues[e11]) + id) / 
+            (_LODSize - 1) * _Scale;
+        tri.c = (interp(
+            cornerOffsets[e20], cubeValues[e20], 
+            cornerOffsets[e21], cubeValues[e21]) + id) / 
+            (_LODSize - 1) * _Scale;
+        
+        tri.a = remap(tri.a,
+            float3(0,0,0), float3(_Scale,_Scale,_Scale),
+            _LowerBound, _UpperBound);
+        tri.b = remap(tri.b,
+            float3(0,0,0), float3(_Scale,_Scale,_Scale),
+            _LowerBound, _UpperBound);
+        tri.c = remap(tri.c,
+            float3(0,0,0), float3(_Scale,_Scale,_Scale),
+            _LowerBound, _UpperBound);
+
         _Triangles.Append(tri);
     }
 
@@ -90,13 +127,24 @@ void March(uint3 id : SV_DispatchThreadID)
 [numthreads(numThreads, numThreads, numThreads)]
 void UpdateWeights(uint3 id : SV_DispatchThreadID)
 {
-    if (id.x >= _ChunkSize - 1 || id.y >= _ChunkSize - 1 || id.z >= _ChunkSize - 1)
+    if (
+        id.x >= _ChunkSize || 
+        id.y >= _ChunkSize || 
+        id.z >= _ChunkSize)
     {
         return;
     }
 
-    if (distance((float3(id) / (_ChunkSize - 1) * _Scale), _HitPosition) <= _BrushSize)
+    float3 hitPos = remap(_HitPosition, 
+        _LowerBound, _UpperBound, 
+        float3(0,0,0), float3(_Scale,_Scale,_Scale));
+
+    if (distance(
+            (float3(id) / (_ChunkSize - 1) * _Scale), hitPos
+        ) <= _BrushSize)
     {
         _Weights[indexFromCoord(id.x, id.y, id.z)] += _TerraformStrength;
     }
+    _Weights[indexFromCoord(id.x, id.y, id.z)] = clamp(
+        _Weights[indexFromCoord(id.x, id.y, id.z)], _Min, _Max);
 }
