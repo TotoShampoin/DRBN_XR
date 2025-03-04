@@ -1,0 +1,26 @@
+#pragma kernel Generate
+
+#include "../Includes/MetricsCompute.compute"
+
+RWStructuredBuffer<float> _Weights;
+
+float _Sigma;
+float _Amplitude;
+
+float _Min;
+float _Max;
+float _GroundLevel;
+
+[numthreads(numThreads, numThreads, numThreads)]
+void Generate(uint3 id : SV_DispatchThreadID)
+{
+    float3 pos = float3(id) / (_ChunkSize - 1);
+    pos.xz = (pos.xz - 0.5) * 0.5;
+
+    float zero = pos.y - _GroundLevel;
+
+    float val = exp((-pos.x * pos.x - pos.z * pos.z) / (2 * _Sigma * _Sigma))
+        * _Amplitude;
+    
+    _Weights[indexFromCoord(id.x, id.y, id.z)] = clamp(-zero + val, _Min, _Max);
+}

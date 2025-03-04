@@ -14,6 +14,7 @@ public class MeshGenerator : MonoBehaviour
     [Range(0, 4)] public int LOD;
     public Vector3 LowerBound;
     public Vector3 UpperBound;
+    [Range(0, 1)] public float Strength = 0.25f;
 
     ComputeBuffer _trianglesBuffer;
     ComputeBuffer _trianglesCountBuffer;
@@ -47,8 +48,6 @@ public class MeshGenerator : MonoBehaviour
     {
         Vector3 relativeHitPosition = transform.InverseTransformPoint(hitPosition);
 
-        float strength = 0.25f;
-
         CreateBuffers();
         int kernel = MarchingShader.FindKernel("UpdateWeights");
 
@@ -63,7 +62,7 @@ public class MeshGenerator : MonoBehaviour
 
         MarchingShader.SetFloat("_Min", -1.0f);
         MarchingShader.SetFloat("_Max", 1.0f);
-        MarchingShader.SetFloat("_TerraformStrength", add ? strength : -strength);
+        MarchingShader.SetFloat("_TerraformStrength", add ? Strength : -Strength);
 
         MarchingShader.Dispatch(kernel,
             GridMetrics.ThreadGroups(GridMetrics.LastLod),

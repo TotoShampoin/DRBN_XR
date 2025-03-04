@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class NoiseGenerator : MonoBehaviour
+public class NoiseGenerator : Generator
 {
     ComputeBuffer _weightsBuffer;
     public ComputeShader NoiseShader;
@@ -10,6 +10,11 @@ public class NoiseGenerator : MonoBehaviour
     [SerializeField] float frequency = 0.004f;
     [SerializeField] int octaves = 6;
     [SerializeField, Range(0f, 1f)] float groundPercent = 0.2f;
+
+    public override float[] Generate()
+    {
+        return GetNoise(GridMetrics.LastLod);
+    }
 
     public float[] GetNoise(int lod)
     {

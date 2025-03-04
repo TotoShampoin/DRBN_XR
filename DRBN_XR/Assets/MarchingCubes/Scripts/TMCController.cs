@@ -1,10 +1,10 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class TMCController : MonoBehaviour
 {
     public MeshGenerator MeshGenerator;
-    public NoiseGenerator NoiseGenerator;
     public MeshBrush3D Brush;
 
     public InputActionReference PaintAction;
@@ -12,9 +12,14 @@ public class TMCController : MonoBehaviour
 
     public Transform PaintAnchor;
 
+    public int GeneratorIndex = 0;
+    public List<Generator> Generators;
+
+    public bool Regenerate = false;
+
     void Start()
     {
-        MeshGenerator.Recreate(NoiseGenerator.GetNoise(GridMetrics.LastLod));
+        MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
 
         PaintAction.action.performed += _ => Brush.IsPainting = true;
         PaintAction.action.canceled += _ => Brush.IsPainting = false;
@@ -25,6 +30,12 @@ public class TMCController : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (Regenerate)
+        {
+            MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
+            Regenerate = false;
+        }
+
         Brush.transform.position = PaintAnchor.position;
         if (Brush.IsPainting)
         {

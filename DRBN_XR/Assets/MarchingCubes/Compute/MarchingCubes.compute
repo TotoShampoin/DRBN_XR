@@ -1,8 +1,8 @@
 ﻿#pragma kernel March
 #pragma kernel UpdateWeights
 
-#include "Includes\MarchingTable.hlsl"
-#include "Includes\MetricsCompute.compute"
+#include "Includes/MarchingTable.hlsl"
+#include "Includes/MetricsCompute.compute"
 
 RWStructuredBuffer<float> _Weights;
 
@@ -139,12 +139,21 @@ void UpdateWeights(uint3 id : SV_DispatchThreadID)
         _LowerBound, _UpperBound, 
         float3(0,0,0), float3(_Scale,_Scale,_Scale));
 
-    if (distance(
-            (float3(id) / (_ChunkSize - 1) * _Scale), hitPos
-        ) <= _BrushSize)
-    {
-        _Weights[indexFromCoord(id.x, id.y, id.z)] += _TerraformStrength;
-    }
+    // if (distance(
+    //         (float3(id) / (_ChunkSize - 1) * _Scale), hitPos
+    //     ) <= _BrushSize)
+    // {
+    //     _Weights[indexFromCoord(id.x, id.y, id.z)] += _TerraformStrength;
+    // }
+
+    float d = distance(
+        (float3(id) / (_ChunkSize - 1) * _Scale), hitPos
+    );
+    // float strength = _TerraformStrength * max(0, 1 - d / _BrushSize);
+    float strength = _TerraformStrength * 
+        exp(-d * d / (_BrushSize * _BrushSize) * 3.1415926535);
+    _Weights[indexFromCoord(id.x, id.y, id.z)] += strength;
+
     _Weights[indexFromCoord(id.x, id.y, id.z)] = clamp(
         _Weights[indexFromCoord(id.x, id.y, id.z)], _Min, _Max);
 }

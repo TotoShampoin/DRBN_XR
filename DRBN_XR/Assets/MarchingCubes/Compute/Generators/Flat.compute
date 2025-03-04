@@ -1,0 +1,24 @@
+#pragma kernel GenerateFlat
+
+#include "../Includes/MetricsCompute.compute"
+
+RWStructuredBuffer<float> _Weights;
+
+float _Min;
+float _Max;
+float _GroundLevel;
+
+[numthreads(numThreads, numThreads, numThreads)]
+void GenerateFlat(uint3 id : SV_DispatchThreadID)
+{
+    float3 pos = float3(id) / (_ChunkSize - 1);
+    
+    if(pos.y < _GroundLevel)
+    {
+        _Weights[indexFromCoord(id.x, id.y, id.z)] = _Max;
+    }
+    else
+    {
+        _Weights[indexFromCoord(id.x, id.y, id.z)] = _Min;
+    }
+}
