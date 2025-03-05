@@ -46,6 +46,7 @@ public class SphereColliderPopulateV2 : MonoBehaviour
     {
         Mesh PopulateMesh = Populate.mesh;
         Debug.Log(PopulateMesh);
+        VertList = PopulateMesh.vertices;
 
         Vector3[] vworld = new Vector3[VertList.Length];
         for (int i = 0; i < VertList.Length; i++)
