@@ -6,6 +6,7 @@ public class TMCController : MonoBehaviour
 {
     public MeshGenerator MeshGenerator;
     public MeshBrush3D Brush;
+    public SphereColliderPopulateV2 SphereColliderPopulateV2;
 
     public InputActionReference PaintAction;
     public InputActionReference EraserAction;
@@ -15,11 +16,12 @@ public class TMCController : MonoBehaviour
     public int GeneratorIndex = 0;
     public List<Generator> Generators;
 
-    public bool Regenerate = false;
+    public bool RegenerateNextFrame = false;
 
     void Start()
     {
         MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
+        SphereColliderPopulateV2.ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
 
         PaintAction.action.performed += _ => Brush.IsPainting = true;
         PaintAction.action.canceled += _ => Brush.IsPainting = false;
@@ -30,10 +32,12 @@ public class TMCController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (Regenerate)
+        bool isUpdated = false;
+        if (RegenerateNextFrame)
         {
             MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
-            Regenerate = false;
+            RegenerateNextFrame = false;
+            isUpdated = true;
         }
 
         Brush.transform.position = PaintAnchor.position;
@@ -41,6 +45,18 @@ public class TMCController : MonoBehaviour
         {
             MeshGenerator.EditWeights(Brush.transform.position,
                 Brush.BrushSize, Brush.PaintOrErase);
+            isUpdated = true;
+        }
+
+        if (isUpdated)
+        {
+            SphereColliderPopulateV2.ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
         }
     }
+
+    public void Regenerate()
+    {
+        RegenerateNextFrame = true;
+    }
+
 }
