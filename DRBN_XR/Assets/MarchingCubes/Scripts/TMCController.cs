@@ -13,6 +13,8 @@ public class TMCController : MonoBehaviour
 
     public Transform PaintAnchor;
 
+    public bool useBlur = true;
+
     public int GeneratorIndex = 0;
     public List<Generator> Generators;
 
@@ -24,7 +26,7 @@ public class TMCController : MonoBehaviour
     void Start()
     {
         MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
-        SphereColliderPopulateV2.ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
+        // SphereColliderPopulateV2.ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
 
         PaintAction.action.performed += _ => Brush.IsPainting = true;
         PaintAction.action.canceled += _ => Brush.IsPainting = false;
@@ -35,16 +37,12 @@ public class TMCController : MonoBehaviour
 
     void FixedUpdate()
     {
-        // UpdateEditOnly();
-        UpdateWithBlur();
-    }
-
-    void UpdateEditOnly()
-    {
         bool isUpdated = false;
         if (RegenerateNextFrame)
         {
-            MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
+            MeshGenerator.Recreate(
+                Generators[GeneratorIndex]
+                    .Generate());
             RegenerateNextFrame = false;
             isUpdated = true;
         }
@@ -52,35 +50,25 @@ public class TMCController : MonoBehaviour
         Brush.transform.position = PaintAnchor.position;
         if (Brush.IsPainting)
         {
-            MeshGenerator.EditWeights(Brush.transform.position,
+            MeshGenerator.EditWeights(
+                Brush.transform.position,
                 Brush.BrushSize, Brush.PaintOrErase);
             isUpdated = true;
         }
 
-        if (isUpdated)
+        if (useBlur)
         {
-            SphereColliderPopulateV2.ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
+            MeshGenerator.Recreate(
+                Smoothens[SmoothenIndex]
+                    .Smooth(MeshGenerator.Weights));
+            isUpdated = true;
         }
-    }
 
-    void UpdateWithBlur()
-    {
-        if (RegenerateNextFrame)
-        {
-            MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
-            RegenerateNextFrame = false;
-        }
-        else
-        {
-            Brush.transform.position = PaintAnchor.position;
-            if (Brush.IsPainting)
-            {
-                MeshGenerator.EditWeights(Brush.transform.position,
-                    Brush.BrushSize, Brush.PaintOrErase);
-            }
-            MeshGenerator.Recreate(Smoothens[SmoothenIndex].Smooth(MeshGenerator.Weights));
-            SphereColliderPopulateV2.ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
-        }
+        // if (isUpdated)
+        // {
+        //     SphereColliderPopulateV2.ExtractAll(
+        //         MeshGenerator.GetComponent<MeshFilter>());
+        // }
     }
 
     public void Regenerate()

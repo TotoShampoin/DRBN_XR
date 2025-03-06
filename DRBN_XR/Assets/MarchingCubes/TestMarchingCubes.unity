@@ -1478,7 +1478,8 @@ MonoBehaviour:
   EraserAction: {fileID: -8979920020589327954, guid: ba97f0744d61ec14ba420da679b6647c,
     type: 3}
   PaintAnchor: {fileID: 381173226}
-  GeneratorIndex: 2
+  useBlur: 0
+  GeneratorIndex: 1
   Generators:
   - {fileID: 5973373130827034590}
   - {fileID: 1614514780}
@@ -1866,7 +1867,7 @@ PrefabInstance:
     - target: {fileID: 3965824673708600363, guid: f21c256ea1ab70b458d643ca922f9978,
         type: 3}
       propertyPath: BrushSize
-      value: 2.5
+      value: 3.86
       objectReference: {fileID: 0}
     - target: {fileID: 3965824673708600363, guid: f21c256ea1ab70b458d643ca922f9978,
         type: 3}
