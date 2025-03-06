@@ -21,6 +21,8 @@ public class MeshGenerator : MonoBehaviour
     ComputeBuffer _weightsBuffer;
     float[] _weights;
 
+    public float[] Weights { get => _weights; set => _weights = value; }
+
     public void OnDrawGizmos()
     {
         Gizmos.color = Color.white;

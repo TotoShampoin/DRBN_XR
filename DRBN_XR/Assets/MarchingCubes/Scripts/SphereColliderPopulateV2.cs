@@ -47,7 +47,7 @@ public class SphereColliderPopulateV2 : MonoBehaviour
     Vector3[] ExtractVert(MeshFilter Populate)
     {
         Mesh PopulateMesh = Populate.mesh;
-        Debug.Log(PopulateMesh);
+        // Debug.Log(PopulateMesh);
         VertList = PopulateMesh.vertices;
 
         Vector3[] vworld = new Vector3[VertList.Length];
@@ -82,7 +82,7 @@ public class SphereColliderPopulateV2 : MonoBehaviour
 
     void EnsurePoolSize(int requiredSize)
     {
-        Debug.Log($"EnsurePoolSize: {requiredSize}");
+        // Debug.Log($"EnsurePoolSize: {requiredSize}");
         // Add objects if pool is too small
         while (objectPool.Count < requiredSize)
         {

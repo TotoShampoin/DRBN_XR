@@ -1,0 +1,59 @@
+#pragma kernel GaussX
+#pragma kernel GaussY
+#pragma kernel GaussZ
+
+#include "../Includes/MetricsCompute.compute"
+
+RWStructuredBuffer<float> _Input;
+RWStructuredBuffer<float> _Output;
+
+float _Min;
+float _Max;
+
+float _Sigma;
+uint _KernelSize;
+
+float Get(int3 id)
+{
+    return _Input[indexFromCoord(id.x, id.y, id.z)];
+}
+void Set(uint3 id, float val)
+{
+    _Output[indexFromCoord(id.x, id.y, id.z)] = clamp(val, _Min, _Max);
+}
+
+void Gauss(uint3 id, float3 delta)
+{
+    float val = 0.0;
+    float weight = 0.0;
+    for(int x = -2; x <= 2; x++)
+    {
+        int x0 = x;
+        float g = exp(-(x0 * x0) / (2.0 * _Sigma * _Sigma));
+        int idd = dot(id + delta * x0, delta);
+        if(idd < 0 || idd >= _ChunkSize)
+            val += g * Get(id);
+        else
+            val += g * Get(id + delta * x0);
+        weight += g;
+    }
+    Set(id, val / weight);
+}
+
+[numthreads(numThreads, numThreads, numThreads)]
+void GaussX(uint3 id : SV_DispatchThreadID)
+{
+    Gauss(id, float3(1, 0, 0));
+}
+
+[numthreads(numThreads, numThreads, numThreads)]
+void GaussY(uint3 id : SV_DispatchThreadID)
+{
+    Gauss(id, float3(0, 1, 0));
+}
+
+[numthreads(numThreads, numThreads, numThreads)]
+void GaussZ(uint3 id : SV_DispatchThreadID)
+{
+    Gauss(id, float3(0, 0, 1));
+}

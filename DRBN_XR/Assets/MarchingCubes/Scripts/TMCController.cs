@@ -16,6 +16,9 @@ public class TMCController : MonoBehaviour
     public int GeneratorIndex = 0;
     public List<Generator> Generators;
 
+    public int SmoothenIndex = 0;
+    public List<Smoothen> Smoothens;
+
     public bool RegenerateNextFrame = false;
 
     void Start()
@@ -31,6 +34,12 @@ public class TMCController : MonoBehaviour
     }
 
     void FixedUpdate()
+    {
+        // UpdateEditOnly();
+        UpdateWithBlur();
+    }
+
+    void UpdateEditOnly()
     {
         bool isUpdated = false;
         if (RegenerateNextFrame)
@@ -50,6 +59,26 @@ public class TMCController : MonoBehaviour
 
         if (isUpdated)
         {
+            SphereColliderPopulateV2.ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
+        }
+    }
+
+    void UpdateWithBlur()
+    {
+        if (RegenerateNextFrame)
+        {
+            MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
+            RegenerateNextFrame = false;
+        }
+        else
+        {
+            Brush.transform.position = PaintAnchor.position;
+            if (Brush.IsPainting)
+            {
+                MeshGenerator.EditWeights(Brush.transform.position,
+                    Brush.BrushSize, Brush.PaintOrErase);
+            }
+            MeshGenerator.Recreate(Smoothens[SmoothenIndex].Smooth(MeshGenerator.Weights));
             SphereColliderPopulateV2.ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
         }
     }

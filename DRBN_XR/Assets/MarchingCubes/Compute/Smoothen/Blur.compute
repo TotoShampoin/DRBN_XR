@@ -1,0 +1,63 @@
+#pragma kernel Generate
+
+#include "../Includes/MetricsCompute.compute"
+
+RWStructuredBuffer<float> _Input;
+RWStructuredBuffer<float> _Output;
+
+float _Min;
+float _Max;
+
+float Get(uint3 id);
+void Set(uint3 id, float val);
+float FlatBlur(uint3 id, int3 offset);
+float GaussianBlur(uint3 id, int3 offset);
+
+[numthreads(numThreads, numThreads, numThreads)]
+void Generate(uint3 id : SV_DispatchThreadID)
+{
+    float val = 0.0;
+    for(int x = -1; x <= 1; x++)
+    for(int y = -1; y <= 1; y++)
+    for(int z = -1; z <= 1; z++)
+    {
+        int x0, y0, z0;
+        if(id.x + x < 0 || id.x + x >= _ChunkSize) x0 = 0;
+        else x0 = x;
+        if(id.y + y < 0 || id.y + y >= _ChunkSize) y0 = 0;
+        else y0 = y;
+        if(id.z + z < 0 || id.z + z >= _ChunkSize) z0 = 0;
+        else z0 = z;
+        val += FlatBlur(id, int3(x0, y0, z0));
+    }
+    Set(id, val);
+}
+
+float Get(uint3 id)
+{
+    return _Input[indexFromCoord(id.x, id.y, id.z)];
+}
+void Set(uint3 id, float val)
+{
+    _Output[indexFromCoord(id.x, id.y, id.z)] = clamp(val, _Min, _Max);
+}
+
+float FlatBlur(uint3 id, int3 offset)
+{
+    return Get(id + offset) / 27.0;
+}
+
+static const float sigma = 1.0;
+
+static const float weights[] = {0.035512267940508845, 0.05854983152431917, 0.035512267940508845, 0.05854983152431917, 0.09653235263005391, 0.05854983152431917, 0.035512267940508845, 0.05854983152431917, 0.035512267940508845, 0.05854983152431917, 0.09653235263005391, 0.05854983152431917, 0.09653235263005391, 0.15915494309189535, 0.09653235263005391, 0.05854983152431917, 0.09653235263005391, 0.05854983152431917, 0.035512267940508845, 0.05854983152431917, 0.035512267940508845, 0.05854983152431917, 0.09653235263005391, 0.05854983152431917, 0.035512267940508845, 0.05854983152431917, 0.035512267940508845};
+
+float GaussianBlur(uint3 id, int3 offset)
+{
+    float val = Get(id + offset);
+    float weight = exp(-dot(offset, offset) / (2.0 * sigma * sigma));
+    float amp = 1.0 / (2.0 * 3.14159265359 * sigma * sigma);
+    
+    // int idx = offset.x + offset.y * 3 + offset.z * 9;
+    // float weight = weights[idx];
+    return val * weight;
+}
