@@ -26,8 +26,7 @@ public class TMCController : MonoBehaviour
     void Start()
     {
         MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
-        SphereColliderPopulateV2
-            .ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
+        RefreshSpheres();
 
         PaintAction.action.performed += _ => Brush.IsPainting = true;
         PaintAction.action.canceled += _ => Brush.IsPainting = false;
@@ -68,9 +67,15 @@ public class TMCController : MonoBehaviour
 
         if (isUpdated)
         {
-            SphereColliderPopulateV2.ExtractAll(
-                MeshGenerator.GetComponent<MeshFilter>());
+            RefreshSpheres();
         }
+    }
+
+    public void RefreshSpheres()
+    {
+        SphereColliderPopulateV2.ExtractAndPopulate(
+            MeshGenerator.GetComponent<MeshFilter>(),
+            MeshGenerator.transform);
     }
 
     public void Regenerate()
