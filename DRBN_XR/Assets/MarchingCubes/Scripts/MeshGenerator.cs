@@ -10,11 +10,11 @@ public class MeshGenerator : MonoBehaviour
         public static int SizeOf => sizeof(float) * 3 * 3;
     }
 
-    public ComputeShader MarchingShader;
-    [Range(0, 4)] public int LOD;
-    public Vector3 LowerBound;
-    public Vector3 UpperBound;
-    [Range(0, 1)] public float Strength = 0.25f;
+    [SerializeField] ComputeShader MarchingShader;
+    [SerializeField, Range(0, 4)] int LOD;
+    [SerializeField] Vector3 LowerBound;
+    [SerializeField] Vector3 UpperBound;
+    [SerializeField, Range(0, 1)] float Strength = 0.25f;
 
     ComputeBuffer _trianglesBuffer;
     ComputeBuffer _trianglesCountBuffer;
