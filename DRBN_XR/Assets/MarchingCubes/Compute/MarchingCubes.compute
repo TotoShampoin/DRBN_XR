@@ -150,8 +150,10 @@ void UpdateWeights(uint3 id : SV_DispatchThreadID)
         (float3(id) / (_ChunkSize - 1) * _Scale), hitPos
     );
     // float strength = _TerraformStrength * max(0, 1 - d / _BrushSize);
-    float strength = _TerraformStrength * 
-        exp(-d * d / (_BrushSize * _BrushSize) * 3.1415926535);
+    // float strength = _TerraformStrength * 
+    //     exp(-d * d / (_BrushSize * _BrushSize) * 3.1415926535);
+    float strength = _TerraformStrength * smoothstep(
+        0, _BrushSize, _BrushSize - d);
     _Weights[indexFromCoord(id.x, id.y, id.z)] += strength;
 
     _Weights[indexFromCoord(id.x, id.y, id.z)] = clamp(
