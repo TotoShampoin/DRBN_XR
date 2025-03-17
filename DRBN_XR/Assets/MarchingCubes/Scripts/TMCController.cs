@@ -26,7 +26,8 @@ public class TMCController : MonoBehaviour
     void Start()
     {
         MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
-        // SphereColliderPopulateV2.ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
+        SphereColliderPopulateV2
+            .ExtractAll(MeshGenerator.GetComponent<MeshFilter>());
 
         PaintAction.action.performed += _ => Brush.IsPainting = true;
         PaintAction.action.canceled += _ => Brush.IsPainting = false;
@@ -52,7 +53,8 @@ public class TMCController : MonoBehaviour
         {
             MeshGenerator.EditWeights(
                 Brush.transform.position,
-                Brush.BrushSize, Brush.PaintOrErase);
+                Brush.BrushSize, Brush.BrushStrength,
+                Brush.PaintOrErase);
             isUpdated = true;
         }
 
@@ -64,11 +66,11 @@ public class TMCController : MonoBehaviour
             isUpdated = true;
         }
 
-        // if (isUpdated)
-        // {
-        //     SphereColliderPopulateV2.ExtractAll(
-        //         MeshGenerator.GetComponent<MeshFilter>());
-        // }
+        if (isUpdated)
+        {
+            SphereColliderPopulateV2.ExtractAll(
+                MeshGenerator.GetComponent<MeshFilter>());
+        }
     }
 
     public void Regenerate()

@@ -14,7 +14,6 @@ public class MeshGenerator : MonoBehaviour
     [SerializeField, Range(0, 4)] int LOD;
     [SerializeField] Vector3 LowerBound;
     [SerializeField] Vector3 UpperBound;
-    [SerializeField, Range(0, 1)] float Strength = 0.25f;
 
     ComputeBuffer _trianglesBuffer;
     ComputeBuffer _trianglesCountBuffer;
@@ -46,7 +45,8 @@ public class MeshGenerator : MonoBehaviour
         GetComponent<MeshCollider>().sharedMesh = mesh;
     }
 
-    public void EditWeights(Vector3 hitPosition, float brushSize, bool add)
+    public void EditWeights(
+        Vector3 hitPosition, float brushSize, float brushStrength, bool add)
     {
         Vector3 relativeHitPosition = transform.InverseTransformPoint(hitPosition);
 
@@ -64,7 +64,8 @@ public class MeshGenerator : MonoBehaviour
 
         MarchingShader.SetFloat("_Min", -1.0f);
         MarchingShader.SetFloat("_Max", 1.0f);
-        MarchingShader.SetFloat("_TerraformStrength", add ? Strength : -Strength);
+        MarchingShader.SetFloat("_TerraformStrength",
+            add ? brushStrength : -brushStrength);
 
         MarchingShader.Dispatch(kernel,
             GridMetrics.ThreadGroups(GridMetrics.LastLod),
