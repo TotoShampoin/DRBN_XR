@@ -12,8 +12,8 @@ public class MeshGenerator : MonoBehaviour
 
     [SerializeField] ComputeShader MarchingShader;
     [SerializeField, Range(0, 4)] int LOD;
-    [SerializeField] Vector3 LowerBound;
-    [SerializeField] Vector3 UpperBound;
+    [SerializeField] public Vector3 LowerBound;
+    [SerializeField] public Vector3 UpperBound;
 
     ComputeBuffer _trianglesBuffer;
     ComputeBuffer _trianglesCountBuffer;
