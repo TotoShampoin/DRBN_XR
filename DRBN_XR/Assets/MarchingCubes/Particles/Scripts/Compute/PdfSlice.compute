@@ -1,0 +1,57 @@
+#pragma kernel CSMain
+
+RWTexture3D<float> PDF;
+
+RWStructuredBuffer<float3> Positions;
+uint ParticleCount;
+
+float3 MinBound;
+float3 MaxBound;
+
+float Radius = 3.0f;
+
+float3 posFromId(uint3 id) {
+    uint width, height, depth;
+    PDF.GetDimensions(width, height, depth);
+    float3 pos = lerp(
+        MinBound, MaxBound,
+        float3(
+            id.x / (float)width,
+            id.y / (float)height,
+            id.z / (float)depth));
+    return pos;
+}
+
+float SmoothingKernel(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 15 / (2 * PI * pow(radius, 5));
+    float v = radius - dist;
+    return v * v * scale;
+}
+
+float SmoothingKernelGradient(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 15 / (pow(radius, 5) * PI);
+    float v = radius - dist;
+    return -v * scale;
+}
+
+[numthreads(4,4,4)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float density = 0;
+    const float mass = 1;
+    for(uint i = 0; i < ParticleCount; i++) {
+        float dist = distance(Positions[i], posFromId(id));
+        float influence = SmoothingKernel(Radius, dist);
+        // float influence = SmoothingKernelGradient(Radius, dist);
+        density += influence * mass;
+    }
+    PDF[id] = density;
+}
