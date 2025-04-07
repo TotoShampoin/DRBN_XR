@@ -1,0 +1,222 @@
+#pragma kernel MoveParticles
+#pragma kernel CalculateDensities
+#pragma kernel CalculatePressures
+#pragma kernel PredictPositions
+
+RWStructuredBuffer<float3> Positions;
+RWStructuredBuffer<float3> Velocities;
+RWStructuredBuffer<float3> PredictedPositions;
+RWStructuredBuffer<float> Densities;
+RWStructuredBuffer<float> NearbyDensities;
+
+RWTexture3D<float> PDF;
+
+float DeltaTime = 0.0f;
+uint ParticleCount = 0;
+
+float TargetDensity = 1.0f;
+float PressureScale = 1.0f;
+float NearbyPressureScale = 1.0f;
+
+float DensityRadius = 3.0f;
+const float PI = 3.14159265358979323846f;
+
+float3 CenterBound;
+float3 SizeBound;
+
+float3 AttractionCenter = float3(0, 0, 0);
+float AttractionStrength = 10.0f;
+
+bool IsNaN(float x)
+{
+    return !(x < 0.f || x > 0.f || x == 0.f);
+}
+
+uint Hash(uint s)
+{
+    s ^= 2747636419u;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    return s;
+}
+
+float Random(uint seed)
+{
+    return float(Hash(seed)) / 4294967295.0; // 2^32-1
+}
+
+float DensityToPressure(float density) {
+    return (density - TargetDensity) * PressureScale;
+}
+float NearbyDensityToPressure(float nearbyDensity) {
+    return nearbyDensity * NearbyPressureScale;
+}
+
+float DensityKernel(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 15 / (2 * PI * pow(radius, 5));
+    float v = radius - dist;
+    return v * v * scale;
+}
+float DensityKernelGradient(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 15 / (pow(radius, 5) * PI);
+    float v = radius - dist;
+    return -v * scale;
+}
+
+float NearbyDensityKernel(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 45 / (pow(radius, 6) * PI);
+    float v = radius - dist;
+    return -v * v * scale;
+}
+float NearbyDensityKernelGradient(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 45 / (pow(radius, 6) * PI);
+    float v = radius - dist;
+    return -v * v * scale;
+}
+
+void Collisions(inout float3 p, inout float3 v)
+{
+    float3 minBound = CenterBound - SizeBound / 2;
+    float3 maxBound = CenterBound + SizeBound / 2;
+
+    if(p.x < minBound.x || p.x > maxBound.x) {
+        v.x = -v.x;
+        p.x = clamp(p.x, minBound.x, maxBound.x);
+    }
+    if(p.y < minBound.y || p.y > maxBound.y) {
+        v.y = -v.y;
+        p.y = clamp(p.y, minBound.y, maxBound.y);
+    }
+    if(p.z < minBound.z || p.z > maxBound.z) {
+        v.z = -v.z;
+        p.z = clamp(p.z, minBound.z, maxBound.z);
+    }
+}
+
+void AttractToCenter(inout float3 p, inout float3 v)
+{
+    float3 delta = AttractionCenter - p;
+    
+    float dist = length(delta);
+
+    float3 dir = dist == 0 ? float3(0, 0, 0) : delta / (dist);
+    float centreT = 1 - (dist / length(SizeBound));
+
+    v += dir * (AttractionStrength - v) * centreT * DeltaTime;
+}
+
+void AttractToBottom(inout float3 p, inout float3 v)
+{
+    v += float3(0, -AttractionStrength, 0) * DeltaTime;
+}
+
+[numthreads(64,1,1)]
+void PredictPositions (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= ParticleCount) return;
+    PredictedPositions[id.x] =
+        Positions[id.x] + Velocities[id.x] * (1 / 120.0f);
+}
+
+[numthreads(64,1,1)]
+void MoveParticles (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= ParticleCount) return;
+    float3 p = Positions[id.x];
+    float3 v = Velocities[id.x];
+
+    if(
+        IsNaN(p.x) || IsNaN(p.y) || IsNaN(p.z) ||
+        IsNaN(v.x) || IsNaN(v.y) || IsNaN(v.z)) {
+        p = float3(
+            Random(id.x + 1),
+            Random(id.x + 2),
+            Random(id.x + 3)) * 2 - 1;
+        p *= 10;
+        v = float3(0, 0, 0);
+    }
+
+    v *= 0.99f;
+
+    p += v * DeltaTime;
+
+    AttractToCenter(p, v);
+    // AttractToBottom(p, v);
+    Collisions(p, v);
+
+    Positions[id.x] = p;
+    Velocities[id.x] = v;
+}
+
+[numthreads(64,1,1)]
+void CalculateDensities (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= ParticleCount) return;
+    float density = 0;
+    float nearbyDensity = 0;
+    const float mass = 1;
+    for(uint i = 0; i < ParticleCount; i++) {
+        float dist = distance(PredictedPositions[i], PredictedPositions[id.x]);
+        float influence = DensityKernel(DensityRadius, dist);
+        float nearbyInfluence = NearbyDensityKernel(DensityRadius, dist);
+        density += influence * mass;
+        nearbyDensity += nearbyInfluence * mass;
+    }
+    Densities[id.x] = density;
+    NearbyDensities[id.x] = nearbyDensity;
+}
+
+[numthreads(64,1,1)]
+void CalculatePressures (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= ParticleCount) return;
+    float density = Densities[id.x];
+    
+    float pressure = DensityToPressure(Densities[id.x]);
+    float nearbyPressure = NearbyDensityToPressure(NearbyDensities[id.x]);
+
+    float3 force = float3(0, 0, 0);
+    for(uint i = 0; i < ParticleCount; i++) {
+        if(i == id.x) continue;
+        float3 delta = PredictedPositions[id.x] - PredictedPositions[i];
+        float dist = length(delta);
+        float3 dir = 
+            dist == 0 ?
+                float3(0, 1, 0) :
+                delta / dist;
+    
+        float influence = DensityKernelGradient(DensityRadius, dist);
+        float nearbyInfluence = NearbyDensityKernelGradient(DensityRadius, dist);
+
+        float otherPressure = DensityToPressure(Densities[i]);
+        float otherNearbyPressure = NearbyDensityToPressure(NearbyDensities[i]);
+
+        float sharedPressure = 0.5 * (pressure + otherPressure);
+        float sharedNearbyPressure = 0.5 * 
+            (nearbyPressure + otherNearbyPressure);
+
+        force += sharedPressure * dir * influence / Densities[i];
+        force += sharedNearbyPressure * dir * nearbyInfluence / Densities[i];
+    }
+
+    Velocities[id.x] += force / density * DeltaTime;
+}

@@ -1,0 +1,56 @@
+#pragma kernel ParticleDensity
+
+RWStructuredBuffer<float3> _Positions;
+RWTexture3D<float> _Output;
+
+float _DensityRadius;
+float3 _MinBounds;
+float3 _MaxBounds;
+
+float3 posFromId(uint3 id)  {
+    uint width, height, depth;
+    _Output.GetDimensions(width, height, depth);
+    float3 pos = lerp(
+        _MinBounds, _MaxBounds,
+        float3(
+            id.x / (float)width,
+            id.y / (float)height,
+            id.z / (float)depth));
+    return pos;
+}
+
+float SmoothingKernel(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 15 / (2 * PI * pow(radius, 5));
+    float v = radius - dist;
+    return v * v * scale;
+}
+
+float SmoothingKernelGradient(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 15 / (pow(radius, 5) * PI);
+    float v = radius - dist;
+    return -v * scale;
+}
+
+[numthreads(8,8,8)]
+void ParticleDensity (uint3 id : SV_DispatchThreadID)
+{
+    uint particleCount, particleStride;
+    _Positions.GetDimensions(particleCount, particleStride);
+
+    float density = 0;
+    const float mass = 1;
+    for(uint i = 0; i < particleCount; i++) {
+        float dist = distance(_Positions[i], posFromId(id));
+        float influence = SmoothingKernel(_DensityRadius, dist);
+        density += influence * mass;
+    }
+    _Output[id] = density;
+}

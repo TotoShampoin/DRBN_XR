@@ -1,0 +1,25 @@
+#pragma kernel QuadraticCurve3D
+
+RWTexture3D<float> _Output;
+
+float _A;
+float _B;
+float _C;
+
+float3 _MinBounds;
+float3 _MaxBounds;
+
+[numthreads(8,8,8)]
+void QuadraticCurve3D (uint3 id : SV_DispatchThreadID)
+{
+    uint width, height, depth;
+    _Output.GetDimensions(width, height, depth);
+    float3 uvw = 
+        (float3(id.x, id.y, id.z) + 0.5f) 
+        / float3(width, height, depth);
+    float3 pos = lerp(_MinBounds, _MaxBounds, uvw);
+    
+    float x = length(pos.xz);
+    
+    _Output[id] = _A * x * x + _B * x + _C - pos.y;
+}
