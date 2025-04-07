@@ -1,6 +1,7 @@
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Unity.Collections;
 using UnityEngine;
 
 public class MarchingCubes : MonoBehaviour
@@ -71,7 +72,8 @@ public class MarchingCubes : MonoBehaviour
         Triangle[] triangles = new Triangle[ReadTriangleCount()];
         triangleBuffer.GetData(triangles);
 
-        return MeshFromTriangles(triangles);
+        // return MeshFromTriangles(triangles);
+        return SmoothMeshFromTriangles(triangles);
     }
 
     Mesh MeshFromTriangles(Triangle[] triangles)
@@ -79,7 +81,6 @@ public class MarchingCubes : MonoBehaviour
         Vector3[] verts = new Vector3[triangles.Length * 3];
         int[] tris = new int[triangles.Length * 3];
 
-        // for (int i = 0; i < triangles.Length; i++)
         Parallel.For(0, triangles.Length, i =>
         {
             int startIndex = i * 3;
@@ -90,11 +91,71 @@ public class MarchingCubes : MonoBehaviour
             tris[startIndex + 1] = startIndex + 1;
             tris[startIndex + 2] = startIndex + 2;
         });
-        // }
 
         Mesh mesh = new() { vertices = verts, triangles = tris };
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
+        return mesh;
+    }
+    Vector3Int ToVector3Int(Vector3 v)
+    {
+        return new(
+            (int)(v.x * resolution),
+            (int)(v.y * resolution),
+            (int)(v.z * resolution));
+    }
+    Mesh SmoothMeshFromTriangles(Triangle[] triangles)
+    {
+        // The strategy: Remove all duplicate vertices, and have the triangles point to the unique vertices.
+        int[] tris = new int[triangles.Length * 3];
+        Vector3[] verts = new Vector3[triangles.Length * 3];
+        Dictionary<Vector3Int, int> vertDict = new(triangles.Length * 3);
+
+        int vertCount = 0;
+        for (int i = 0; i < triangles.Length; i++)
+        {
+            int startIndex = i * 3;
+            Vector3 a = triangles[i].a;
+            Vector3 b = triangles[i].b;
+            Vector3 c = triangles[i].c;
+            Vector3Int ai = ToVector3Int(a);
+            Vector3Int bi = ToVector3Int(b);
+            Vector3Int ci = ToVector3Int(c);
+
+            if (!vertDict.TryGetValue(ai, out int indexA))
+            {
+                indexA = vertCount;
+                verts[vertCount] = a;
+                vertDict[ai] = vertCount++;
+            }
+            if (!vertDict.TryGetValue(bi, out int indexB))
+            {
+                indexB = vertCount;
+                verts[vertCount] = b;
+                vertDict[bi] = vertCount++;
+            }
+            if (!vertDict.TryGetValue(ci, out int indexC))
+            {
+                indexC = vertCount;
+                verts[vertCount] = c;
+                vertDict[ci] = vertCount++;
+            }
+
+            tris[startIndex] = indexA;
+            tris[startIndex + 1] = indexB;
+            tris[startIndex + 2] = indexC;
+        }
+        // Resize the verts array to the number of unique vertices.
+        Vector3[] uniqueVerts = new Vector3[vertCount];
+        for (int i = 0; i < vertCount; i++)
+        {
+            uniqueVerts[i] = verts[i];
+        }
+        // Create the mesh with the unique vertices and triangles.
+        Mesh mesh = new() { vertices = uniqueVerts, triangles = tris };
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+
         return mesh;
     }
 
