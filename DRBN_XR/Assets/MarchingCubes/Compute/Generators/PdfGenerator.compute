@@ -1,0 +1,49 @@
+#pragma kernel CSMain
+
+#include "../Includes/MetricsCompute.compute"
+
+RWStructuredBuffer<float> _Weights;
+RWStructuredBuffer<float3> _Positions;
+
+float3 _MinBound;
+float3 _MaxBound;
+float _Radius;
+
+uint _ParticleCount;
+
+float SmoothingKernel(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 15 / (2 * PI * pow(radius, 5));
+    float v = radius - dist;
+    return v * v * scale;
+}
+
+float SmoothingKernelGradient(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius) return 0.0f;
+
+    float scale = 15 / (pow(radius, 5) * PI);
+    float v = radius - dist;
+    return -v * scale;
+}
+
+[numthreads(numThreads, numThreads, numThreads)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float3 uvPos = float3(id) / (_ChunkSize - 1);
+    float3 pos = lerp(_MinBound, _MaxBound, uvPos);
+
+    float density = 0;
+    const float mass = 1;
+    for(uint i = 0; i < _ParticleCount; i++) {
+        float dist = distance(_Positions[i], pos);
+        float influence = SmoothingKernel(_Radius, dist);
+        density += influence * mass;
+    }
+
+    _Weights[indexFromCoord(id.x, id.y, id.z)] = density;
+}
