@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
@@ -8,13 +9,14 @@ public class SphereColliderPopulateV2 : MonoBehaviour
 
     private readonly List<GameObject> objectPool = new();
 
-    // Start is called before the first frame update
-    // void Start()
-    // {
-    //     EnsurePoolSize(10000);
-    // }
-
     public void ExtractAndPopulate(
+        MeshFilter Populate, Transform withTransform = null)
+    {
+        // ExtractAndPopulatePerVertex(Populate, withTransform);
+        ExtractAndPopulatePerTriangle(Populate, withTransform);
+    }
+
+    public void ExtractAndPopulatePerVertex(
         MeshFilter Populate, Transform withTransform = null)
     {
         var vertices = Populate.mesh.vertices;
@@ -35,6 +37,39 @@ public class SphereColliderPopulateV2 : MonoBehaviour
         }
     }
 
+    public void ExtractAndPopulatePerTriangle(
+        MeshFilter Populate, Transform withTransform = null)
+    {
+        var meshVertices = Populate.mesh.vertices;
+        var meshNormals = Populate.mesh.normals;
+        var meshTriangles = Populate.mesh.triangles;
+        var triangleCount = meshTriangles.Length / 3;
+        Vector3[] positions = new Vector3[triangleCount];
+        Vector3[] normals = new Vector3[triangleCount];
+        EnsurePoolSize(triangleCount);
+        Parallel.For(0, triangleCount, i =>
+        {
+            int index = i * 3;
+            positions[i] = (meshVertices[meshTriangles[index]] +
+                           meshVertices[meshTriangles[index + 1]] +
+                           meshVertices[meshTriangles[index + 2]]) / 3f;
+            normals[i] = (meshNormals[meshTriangles[index]] +
+                          meshNormals[meshTriangles[index + 1]] +
+                          meshNormals[meshTriangles[index + 2]]) / 3f;
+        });
+        var t = withTransform ? withTransform : transform;
+        for (int i = 0; i < triangleCount; i++)
+        {
+            objectPool[i].SetActive(true);
+            objectPool[i].transform.SetPositionAndRotation(
+                t.TransformPoint(positions[i]),
+                Quaternion.LookRotation(t.TransformDirection(normals[i])));
+        }
+        for (int i = triangleCount; i < objectPool.Count; i++)
+        {
+            objectPool[i].SetActive(false);
+        }
+    }
 
     void EnsurePoolSize(int requiredSize)
     {

@@ -3754,6 +3754,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
+--- !u!4 &812374509 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5668689709192895336, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
+    type: 3}
+  m_PrefabInstance: {fileID: 808742786}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &870657211
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11317,12 +11323,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -1550514412580984892, guid: 158c590f2607ef342950dbfe8436029c, type: 3}
---- !u!4 &1995313070 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 5668689709192895336, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
-    type: 3}
-  m_PrefabInstance: {fileID: 1023456279}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2050031139 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100004, guid: 158c590f2607ef342950dbfe8436029c,
@@ -11738,7 +11738,7 @@ PrefabInstance:
         type: 3}
       propertyPath: paintAnchor
       value: 
-      objectReference: {fileID: 1995313070}
+      objectReference: {fileID: 812374509}
     - target: {fileID: 5949575063921775339, guid: d76759d7201ec054da451ebe9beb583c,
         type: 3}
       propertyPath: m_Camera

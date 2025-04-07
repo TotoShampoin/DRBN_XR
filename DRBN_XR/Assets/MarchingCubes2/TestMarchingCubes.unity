@@ -134,7 +134,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &58880178
 Transform:
   m_ObjectHideFlags: 0
@@ -547,6 +547,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: ParticleSimulator
       objectReference: {fileID: 0}
+    - target: {fileID: 4968504487694027585, guid: 61196b4fd4c992a498991c81e39e5389,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8807520379558830786, guid: 61196b4fd4c992a498991c81e39e5389,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -810,18 +815,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 560225595}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &560225597 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4707005942502367381, guid: 606473d55047226478d681223ccdf7d7,
-    type: 3}
-  m_PrefabInstance: {fileID: 560225595}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30aab31717ef83644931c01850bffd9c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &780505013 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3373212701852859468, guid: 61196b4fd4c992a498991c81e39e5389,
@@ -1308,7 +1301,6 @@ GameObject:
   - component: {fileID: 1492761353}
   - component: {fileID: 1492761352}
   - component: {fileID: 1492761351}
-  - component: {fileID: 1492761350}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -1316,27 +1308,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!65 &1492761350
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1492761349}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 0
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1492761351
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1680,7 +1651,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e6d7014e1df63c4ba47bfd09c663e29, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  weightGenerator: {fileID: 560225597}
+  weightGenerator: {fileID: 4346094725728792470}
 --- !u!1001 &4346094725728792469
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1764,17 +1735,29 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: aae94addadf73694bbcb95fb2f255f0e, type: 3}
+--- !u!114 &4346094725728792470 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 957340273645472436, guid: aae94addadf73694bbcb95fb2f255f0e,
+    type: 3}
+  m_PrefabInstance: {fileID: 4346094725728792469}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a14c8c3fb250e4741b8a7a4bcf3582fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1774810457}
-  - {fileID: 957531198}
-  - {fileID: 163996843}
+  - {fileID: 357492691}
+  - {fileID: 2330727316946930440}
+  - {fileID: 1492761353}
   - {fileID: 1368190148}
   - {fileID: 421006733}
-  - {fileID: 2330727316946930440}
+  - {fileID: 163996843}
   - {fileID: 58880178}
   - {fileID: 108100849}
-  - {fileID: 357492691}
-  - {fileID: 1492761353}
+  - {fileID: 957531198}
