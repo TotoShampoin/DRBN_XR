@@ -42,6 +42,10 @@ float SmoothingKernelGradient(float radius, float dist)
 [numthreads(8,8,8)]
 void ParticleDensity (uint3 id : SV_DispatchThreadID)
 {
+    uint width, height, depth;
+    _Output.GetDimensions(width, height, depth);
+    if(id.x >= width || id.y >= height || id.z >= depth) return;
+    
     uint particleCount, particleStride;
     _Positions.GetDimensions(particleCount, particleStride);
 

@@ -14,6 +14,7 @@ void QuadraticCurve3D (uint3 id : SV_DispatchThreadID)
 {
     uint width, height, depth;
     _Output.GetDimensions(width, height, depth);
+    if(id.x >= width || id.y >= height || id.z >= depth) return;
     float3 uvw = 
         (float3(id.x, id.y, id.z) + 0.5f) 
         / float3(width, height, depth);
