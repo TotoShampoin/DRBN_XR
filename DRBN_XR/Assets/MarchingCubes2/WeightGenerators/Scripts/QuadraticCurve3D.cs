@@ -2,6 +2,13 @@ using UnityEngine;
 
 class QuadraticCurve3D : WeightGenerator
 {
+    public override bool ConstantlyRegenerate => false;
+    public float threshold = 0.0f;
+    public override float Threshold
+    {
+        get => threshold;
+        set => threshold = value;
+    }
     [SerializeField] ComputeShader quadraticCurve3DShader;
     [SerializeField] float a = 1f;
     [SerializeField] float b = 0f;

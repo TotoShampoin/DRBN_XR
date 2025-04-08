@@ -21,7 +21,7 @@ public class MarchingCubes : MonoBehaviour
     MeshFilter meshFilter;
 
     public int resolution = 32;
-    public float threshold = 0.0f;
+    // public float threshold = 0.0f;
     public bool smooth = true;
 
     void OnEnable()
@@ -43,12 +43,12 @@ public class MarchingCubes : MonoBehaviour
         Gizmos.DrawWireCube(Vector3.zero, new Vector3(1, 1, 1));
     }
 
-    public void GenerateAndApplyMesh(RenderTexture renderTexture)
+    public void GenerateAndApplyMesh(RenderTexture renderTexture, float threshold)
     {
-        meshFilter.mesh = GenerateMesh(renderTexture);
+        meshFilter.mesh = GenerateMesh(renderTexture, threshold);
     }
 
-    public Mesh GenerateMesh(RenderTexture renderTexture)
+    public Mesh GenerateMesh(RenderTexture renderTexture, float threshold)
     {
         PrepareBuffer();
 

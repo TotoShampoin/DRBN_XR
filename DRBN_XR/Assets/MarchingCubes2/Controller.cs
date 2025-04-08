@@ -19,7 +19,8 @@ public class Controller : MonoBehaviour
     {
         if (weightPainter.needsRegenerate)
         {
-            marchingCubes.GenerateAndApplyMesh(renderTexture);
+            marchingCubes.GenerateAndApplyMesh(renderTexture,
+                weightGenerator.Threshold);
             weightPainter.needsRegenerate = false;
         }
         if (regenerate || constantlyRegenerate)
@@ -33,6 +34,7 @@ public class Controller : MonoBehaviour
     {
         if (!renderTexture) return;
         weightGenerator.Generate(renderTexture);
-        marchingCubes.GenerateAndApplyMesh(renderTexture);
+        marchingCubes.GenerateAndApplyMesh(renderTexture,
+                weightGenerator.Threshold);
     }
 }

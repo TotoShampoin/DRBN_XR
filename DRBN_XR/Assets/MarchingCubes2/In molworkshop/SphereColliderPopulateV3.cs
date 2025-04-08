@@ -1,0 +1,96 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using UnityEngine;
+
+public class SphereColliderPopulateV3 : MonoBehaviour
+{
+    public GameObject SpherePrefab;
+
+    private readonly List<GameObject> objectPool = new();
+    private float sphereSize = 0.1f;
+
+    public void ExtractAndPopulate(
+        MeshFilter Populate, Transform withTransform = null,
+        bool usePerVertex = true)
+    {
+        if (usePerVertex)
+            ExtractAndPopulatePerVertex(Populate, withTransform);
+        else
+            ExtractAndPopulatePerTriangle(Populate, withTransform);
+    }
+
+    public void ExtractAndPopulatePerVertex(
+        MeshFilter Populate, Transform withTransform = null)
+    {
+        var vertices = Populate.mesh.vertices;
+        var normals = Populate.mesh.normals;
+        var vertexCount = Populate.mesh.vertexCount;
+        var t = withTransform ? withTransform : transform;
+        EnsurePoolSize(vertexCount);
+        for (int i = 0; i < vertexCount; i++)
+        {
+            objectPool[i].SetActive(true);
+            objectPool[i].transform.SetPositionAndRotation(
+                t.TransformPoint(vertices[i]),
+                Quaternion.LookRotation(t.TransformDirection(normals[i])));
+        }
+        for (int i = vertexCount; i < objectPool.Count; i++)
+        {
+            objectPool[i].SetActive(false);
+        }
+    }
+
+    public void ExtractAndPopulatePerTriangle(
+        MeshFilter Populate, Transform withTransform = null)
+    {
+        var meshVertices = Populate.mesh.vertices;
+        var meshNormals = Populate.mesh.normals;
+        var meshTriangles = Populate.mesh.triangles;
+        var triangleCount = meshTriangles.Length / 3;
+        Vector3[] positions = new Vector3[triangleCount];
+        Vector3[] normals = new Vector3[triangleCount];
+        EnsurePoolSize(triangleCount);
+        Parallel.For(0, triangleCount, i =>
+        {
+            int index = i * 3;
+            positions[i] = (meshVertices[meshTriangles[index]] +
+                           meshVertices[meshTriangles[index + 1]] +
+                           meshVertices[meshTriangles[index + 2]]) / 3f;
+            normals[i] = (meshNormals[meshTriangles[index]] +
+                          meshNormals[meshTriangles[index + 1]] +
+                          meshNormals[meshTriangles[index + 2]]) / 3f;
+        });
+        var t = withTransform ? withTransform : transform;
+        for (int i = 0; i < triangleCount; i++)
+        {
+            objectPool[i].SetActive(true);
+            objectPool[i].transform.SetPositionAndRotation(
+                t.TransformPoint(positions[i]),
+                Quaternion.LookRotation(t.TransformDirection(normals[i])));
+        }
+        for (int i = triangleCount; i < objectPool.Count; i++)
+        {
+            objectPool[i].SetActive(false);
+        }
+    }
+
+    void EnsurePoolSize(int requiredSize)
+    {
+        while (objectPool.Count < requiredSize)
+        {
+            GameObject obj = Instantiate(SpherePrefab, transform);
+            obj.transform.localScale = new Vector3(sphereSize, sphereSize, sphereSize);
+            obj.SetActive(true);
+            objectPool.Add(obj);
+        }
+    }
+
+    public void SetImpalaSize(float size)
+    {
+        foreach (var obj in objectPool)
+        {
+            obj.transform.localScale = new Vector3(size, size, size);
+        }
+        sphereSize = size;
+    }
+}

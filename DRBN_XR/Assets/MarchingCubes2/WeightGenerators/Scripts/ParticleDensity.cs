@@ -2,6 +2,14 @@ using UnityEngine;
 
 class ParticleDensity : WeightGenerator
 {
+    public override bool ConstantlyRegenerate => true;
+    public float threshold = 3.0f;
+    public override float Threshold
+    {
+        get => threshold;
+        set => threshold = value;
+    }
+
     [SerializeField] ParticleSimulator particleSimulator;
     [SerializeField] ComputeShader particleDensityShader;
 

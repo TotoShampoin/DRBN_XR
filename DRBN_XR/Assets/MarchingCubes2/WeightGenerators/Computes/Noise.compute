@@ -1,0 +1,178 @@
+#pragma kernel Noise
+
+RWTexture3D<float> _Output;
+
+float3 _MinBounds;
+float3 _MaxBounds;
+
+// Fast Improved 3D Perlin Noise
+// https://www.shadertoy.com/view/slB3z3
+/// ============================================================================
+
+// implementation of MurmurHash (https://sites.google.com/site/murmurhash/) for a 
+// single unsigned integer.
+
+uint hash(uint x, uint seed) {
+    const uint m = 0x5bd1e995U;
+    uint hash = seed;
+    // process input
+    uint k = x;
+    k *= m;
+    k ^= k >> 24;
+    k *= m;
+    hash *= m;
+    hash ^= k;
+    // some final mixing
+    hash ^= hash >> 13;
+    hash *= m;
+    hash ^= hash >> 15;
+    return hash;
+}
+
+// implementation of MurmurHash (https://sites.google.com/site/murmurhash/) for a  
+// 3-dimensional unsigned integer input vector.
+
+uint hash(uint3 x, uint seed){
+    const uint m = 0x5bd1e995U;
+    uint hash = seed;
+    // process first vector element
+    uint k = x.x; 
+    k *= m;
+    k ^= k >> 24;
+    k *= m;
+    hash *= m;
+    hash ^= k;
+    // process second vector element
+    k = x.y; 
+    k *= m;
+    k ^= k >> 24;
+    k *= m;
+    hash *= m;
+    hash ^= k;
+    // process third vector element
+    k = x.z; 
+    k *= m;
+    k ^= k >> 24;
+    k *= m;
+    hash *= m;
+    hash ^= k;
+	// some final mixing
+    hash ^= hash >> 13;
+    hash *= m;
+    hash ^= hash >> 15;
+    return hash;
+}
+
+
+float3 gradientDirection(uint hash) {
+    switch (int(hash) & 15) { // look at the last four bits to pick a gradient direction
+    case 0:
+        return float3(1, 1, 0);
+    case 1:
+        return float3(-1, 1, 0);
+    case 2:
+        return float3(1, -1, 0);
+    case 3:
+        return float3(-1, -1, 0);
+    case 4:
+        return float3(1, 0, 1);
+    case 5:
+        return float3(-1, 0, 1);
+    case 6:
+        return float3(1, 0, -1);
+    case 7:
+        return float3(-1, 0, -1);
+    case 8:
+        return float3(0, 1, 1);
+    case 9:
+        return float3(0, -1, 1);
+    case 10:
+        return float3(0, 1, -1);
+    case 11:
+        return float3(0, -1, -1);
+    case 12:
+        return float3(1, 1, 0);
+    case 13:
+        return float3(-1, 1, 0);
+    case 14:
+        return float3(0, -1, 1);
+    case 15:
+        return float3(0, -1, -1);
+    }
+}
+
+float interpolate(float value1, float value2, float value3, float value4, float value5, float value6, float value7, float value8, float3 t) {
+    return lerp(
+        lerp(lerp(value1, value2, t.x), lerp(value3, value4, t.x), t.y),
+        lerp(lerp(value5, value6, t.x), lerp(value7, value8, t.x), t.y),
+        t.z
+    );
+}
+
+float3 fade(float3 t) {
+    // 6t^5 - 15t^4 + 10t^3
+	return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+float perlinNoise(float3 position, uint seed) {
+    float3 floorPosition = floor(position);
+    float3 fractPosition = position - floorPosition;
+    uint3 cellCoordinates = uint3(floorPosition);
+    float value1 = dot(gradientDirection(hash(cellCoordinates, seed)), fractPosition);
+    float value2 = dot(gradientDirection(hash((cellCoordinates + uint3(1, 0, 0)), seed)), fractPosition - float3(1, 0, 0));
+    float value3 = dot(gradientDirection(hash((cellCoordinates + uint3(0, 1, 0)), seed)), fractPosition - float3(0, 1, 0));
+    float value4 = dot(gradientDirection(hash((cellCoordinates + uint3(1, 1, 0)), seed)), fractPosition - float3(1, 1, 0));
+    float value5 = dot(gradientDirection(hash((cellCoordinates + uint3(0, 0, 1)), seed)), fractPosition - float3(0, 0, 1));
+    float value6 = dot(gradientDirection(hash((cellCoordinates + uint3(1, 0, 1)), seed)), fractPosition - float3(1, 0, 1));
+    float value7 = dot(gradientDirection(hash((cellCoordinates + uint3(0, 1, 1)), seed)), fractPosition - float3(0, 1, 1));
+    float value8 = dot(gradientDirection(hash((cellCoordinates + uint3(1, 1, 1)), seed)), fractPosition - float3(1, 1, 1));
+    return interpolate(value1, value2, value3, value4, value5, value6, value7, value8, fade(fractPosition));
+}
+
+float perlinNoise(float3 position, int frequency, int octaveCount, float persistence, float lacunarity, uint seed) {
+    float value = 0.0;
+    float amplitude = 1.0;
+    float currentFrequency = float(frequency);
+    uint currentSeed = seed;
+    for (int i = 0; i < octaveCount; i++) {
+        currentSeed = hash(currentSeed, 0x0U); // create a new seed for each octave
+        value += perlinNoise(position * currentFrequency, currentSeed) * amplitude;
+        amplitude *= persistence;
+        currentFrequency *= lacunarity;
+    }
+    return value;
+}
+
+// void mainImage(out float4 fragColor, in float2 fragCoord) {
+//     float2 position = fragCoord / iResolution.xy;
+//     position.x *= iResolution.x / iResolution.y;
+//     uint seed = 0x578437adU; // can be set to something else if you want a different set of random values
+//     // float frequency = 16.0;
+//     // float value = perlinNoise(float3(position, iTime * 0.25) * frequency, seed); // single octave perlin noise
+//     float value = perlinNoise(float3(position, iTime * 0.25), 1, 6, 0.5, 2.0, seed); // multiple octaves
+//     value = (value + 1.0) * 0.5; // convert from range [-1, 1] to range [0, 1]
+//     fragColor = float4(float3(value), 1.0);
+// }
+
+// =============================================================================
+
+[numthreads(8,8,8)]
+void Noise (uint3 id : SV_DispatchThreadID)
+{
+    uint width, height, depth;
+    _Output.GetDimensions(width, height, depth);
+    if(id.x >= width || id.y >= height || id.z >= depth) return;
+   
+    float3 uvw = (float3)id / float3(width, height, depth);
+    
+    // Calculate the 3D position in the texture
+    float3 position = lerp(_MinBounds, _MaxBounds, uvw);
+
+    // Generate the noise value
+    float noiseValue = perlinNoise(position, 1, 6, 0.5, 2.0, 0x578437adU); // multiple octaves
+    noiseValue = (noiseValue + 1.0) * 0.5; // convert from range [-1, 1] to range [0, 1]
+    noiseValue *= 1.0 - uvw.y; // apply a gradient based on the y coordinate
+
+    // Write the noise value to the output texture
+    _Output[id] = noiseValue;
+}

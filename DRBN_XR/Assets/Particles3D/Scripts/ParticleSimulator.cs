@@ -129,8 +129,9 @@ public class ParticleSimulator : MonoBehaviour
             .SetFloat("NearbyPressureScale", nearbyPressureScale);
         particleComputeShader
             .SetVector("AttractionCenter",
-                attractionCenter != null ?
-                    attractionCenter.position : Vector3.zero);
+                attractionCenter != null
+                    ? attractionCenter.position
+                    : Vector3.zero);
         particleComputeShader
             .SetFloat("AttractionStrength", attractionScale);
 
@@ -183,6 +184,7 @@ public class ParticleSimulator : MonoBehaviour
 
     void DrawParticles()
     {
+        if (particlePrefab == null) return;
         Vector3[] particles = new Vector3[currentParticleCount];
         positionsBuffer.GetData(particles);
         for (int p = 0; p < particles.Length; p += 1023)
