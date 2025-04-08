@@ -1398,12 +1398,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1492761349}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 2330727316946930451}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1772437181
 GameObject:
@@ -1689,16 +1689,20 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 2716253613243313776, guid: 687d26cb7ceeb754c857f5dd034d115f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1492761353}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 54131612912731129, guid: 687d26cb7ceeb754c857f5dd034d115f,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2330727316946930447}
+      addedObject: {fileID: 2330727316946930452}
     - targetCorrespondingSourceObject: {fileID: 54131612912731129, guid: 687d26cb7ceeb754c857f5dd034d115f,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2330727316946930452}
+      addedObject: {fileID: 2330727316946930447}
   m_SourcePrefab: {fileID: 100100000, guid: 687d26cb7ceeb754c857f5dd034d115f, type: 3}
 --- !u!1 &2330727316946930441 stripped
 GameObject:
@@ -1720,13 +1724,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   weightGenerator: {fileID: 1221426086}
   renderTexture: {fileID: 8400000, guid: 9f3eadfdcffd647438032d7c22d21f62, type: 2}
-  brushTransform: {fileID: 325141659}
-  paintTrigger: {fileID: -1837522021016125894, guid: ba97f0744d61ec14ba420da679b6647c,
-    type: 3}
-  eraseTrigger: {fileID: -8979920020589327954, guid: ba97f0744d61ec14ba420da679b6647c,
-    type: 3}
+  marchingCubes: {fileID: 2330727316946930448}
+  weightPainter: {fileID: 2330727316946930452}
   regenerate: 0
-  constantlyRegenerate: 1
+  constantlyRegenerate: 0
+--- !u!114 &2330727316946930448 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2016607944097866032, guid: 687d26cb7ceeb754c857f5dd034d115f,
+    type: 3}
+  m_PrefabInstance: {fileID: 2330727316946930440}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2330727316946930441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c74f279fdb97e6b49974c403558f0a46, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &2330727316946930451 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2716253613243313776, guid: 687d26cb7ceeb754c857f5dd034d115f,
+    type: 3}
+  m_PrefabInstance: {fileID: 2330727316946930440}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &2330727316946930452
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1740,11 +1759,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   weightPainterShader: {fileID: 7200000, guid: 0c4e4b1e7e029e44786c6b5f27be4708, type: 3}
-  paint:
-    position: {x: 0, y: 0, z: 0}
-    radius: 0.1
-    weight: 1
-    mode: 0
+  renderTexture: {fileID: 8400000, guid: 9f3eadfdcffd647438032d7c22d21f62, type: 2}
+  marchingCubes: {fileID: 2330727316946930451}
+  brushTransform: {fileID: 325141659}
+  paintTrigger: {fileID: -1837522021016125894, guid: ba97f0744d61ec14ba420da679b6647c,
+    type: 3}
+  eraseTrigger: {fileID: -8979920020589327954, guid: ba97f0744d61ec14ba420da679b6647c,
+    type: 3}
+  radius: 0.1
+  weight: 1
+  needsRegenerate: 0
 --- !u!1001 &4346094725728792469
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1835,7 +1859,6 @@ SceneRoots:
   - {fileID: 1774810457}
   - {fileID: 357492691}
   - {fileID: 2330727316946930440}
-  - {fileID: 1492761353}
   - {fileID: 1368190148}
   - {fileID: 1772437182}
   - {fileID: 108100849}
