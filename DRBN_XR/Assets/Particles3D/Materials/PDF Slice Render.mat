@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: PDF Slice Render
-  m_Shader: {fileID: 4800000, guid: 04d9cd96b997af946b517246aad399ca, type: 3}
+  m_Shader: {fileID: 4800000, guid: 79a4a10c4a470dc4096bebd2e125017b, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []

@@ -13,23 +13,26 @@ public struct Particle
 
 public class ParticleSimulator : MonoBehaviour
 {
-    [SerializeField] GameObject particlePrefab;
-    [SerializeField] int particleCount = 1000;
+    [Header("Shaders")]
     [SerializeField] ComputeShader particleComputeShader;
+    [SerializeField] ComputeShader partitioningComputeShader;
+    [SerializeField] int particleCount = 4096;
+    [SerializeField] int partitionResolution = 8;
 
-    [SerializeField] float densityRadius = 3f;
-    [SerializeField] float targetDensity = 1f;
-    [SerializeField] float pressureScale = 1f;
-    [SerializeField] float nearbyPressureScale = 1f;
-    [SerializeField] float attractionScale = 1f;
-    [SerializeField] Transform attractionCenter;
-
+    [Header("Parameters")]
     [SerializeField] Vector3 centerBounds = new(0, 0, 0);
     [SerializeField] Vector3 sizeBounds = new(10, 10, 10);
+    [SerializeField] Transform attractionCenter;
+    [SerializeField] float attractionScale = 1f;
+    [SerializeField] float densityRadius = 0.5f;
+    [SerializeField] float targetDensity = 6f;
+    [SerializeField] float pressureScale = 15f;
+    [SerializeField] float nearbyPressureScale = 2f;
 
-    [SerializeField] bool resetOnNextFrame = false;
-
+    [Header("Debug")]
+    [SerializeField] GameObject particlePrefab;
     [SerializeField] float particleSize = 0.1f;
+    [SerializeField] bool resetOnNextFrame = false;
     [SerializeField] bool drawParticles = true;
 
     int currentParticleCount = 0;
@@ -39,12 +42,21 @@ public class ParticleSimulator : MonoBehaviour
     public ComputeBuffer predictedPositionsBuffer;
     public ComputeBuffer densityBuffer;
     public ComputeBuffer nearbyDensityBuffer;
+    public ComputeBuffer particlesIndices;
+    public ComputeBuffer subgridIndices;
+    public ComputeBuffer subgridStarts;
+    public ComputeBuffer subgridCounts;
+
+    public ComputeBuffer testBuffer;
 
     public Vector3 CenterBounds => centerBounds;
     public Vector3 SizeBounds => sizeBounds;
     public Vector3 MinBounds => centerBounds - sizeBounds / 2;
     public Vector3 MaxBounds => centerBounds + sizeBounds / 2;
     public float DensityRadius => densityRadius;
+    public int ParticleCount => currentParticleCount;
+    public int PartitionCount =>
+        partitionResolution * partitionResolution * partitionResolution;
 
     void OnEnable()
     {
@@ -58,6 +70,13 @@ public class ParticleSimulator : MonoBehaviour
         predictedPositionsBuffer?.Release();
         densityBuffer?.Release();
         nearbyDensityBuffer?.Release();
+
+        particlesIndices?.Release();
+        subgridIndices?.Release();
+        subgridStarts?.Release();
+        subgridCounts?.Release();
+
+        testBuffer?.Release();
     }
 
     void Update()
@@ -68,6 +87,7 @@ public class ParticleSimulator : MonoBehaviour
             resetOnNextFrame = false;
         }
         UpdateParticles();
+        PartitionParticles();
         if (drawParticles)
             DrawParticles();
     }
@@ -104,6 +124,13 @@ public class ParticleSimulator : MonoBehaviour
         densityBuffer = new(particleCount, sizeof(float));
         nearbyDensityBuffer = new(particleCount, sizeof(float));
 
+        particlesIndices = new(particleCount, sizeof(uint));
+        subgridIndices = new(particleCount, sizeof(uint));
+        subgridStarts = new(PartitionCount, sizeof(uint));
+        subgridCounts = new(PartitionCount, sizeof(uint));
+
+        testBuffer = new(PartitionCount, sizeof(int) * 3 * 2);
+
         positionsBuffer.SetData(positions);
         velocitiesBuffer.SetData(velocities);
         predictedPositionsBuffer.SetData(positions);
@@ -115,11 +142,6 @@ public class ParticleSimulator : MonoBehaviour
 
     void UpdateParticles()
     {
-        var movement = particleComputeShader.FindKernel("MoveParticles");
-        var density = particleComputeShader.FindKernel("CalculateDensities");
-        var pressure = particleComputeShader.FindKernel("CalculatePressures");
-        var predict = particleComputeShader.FindKernel("PredictPositions");
-
         particleComputeShader.SetFloat("DeltaTime", Time.deltaTime);
         particleComputeShader.SetInt("ParticleCount", currentParticleCount);
         particleComputeShader.SetFloat("DensityRadius", densityRadius);
@@ -134,10 +156,13 @@ public class ParticleSimulator : MonoBehaviour
                     : Vector3.zero);
         particleComputeShader
             .SetFloat("AttractionStrength", attractionScale);
+        particleComputeShader
+            .SetFloat("PartitionResolution", partitionResolution);
 
         particleComputeShader.SetVector("CenterBound", centerBounds);
         particleComputeShader.SetVector("SizeBound", sizeBounds);
 
+        var predict = particleComputeShader.FindKernel("PredictPositions");
         particleComputeShader.SetBuffer(predict, "Positions", positionsBuffer);
         particleComputeShader
             .SetBuffer(predict, "Velocities", velocitiesBuffer);
@@ -147,6 +172,7 @@ public class ParticleSimulator : MonoBehaviour
             .Dispatch(predict,
                 Mathf.CeilToInt((float)currentParticleCount / 64), 1, 1);
 
+        var density = particleComputeShader.FindKernel("CalculateDensities");
         particleComputeShader.SetBuffer(density, "Positions", positionsBuffer);
         particleComputeShader
             .SetBuffer(density, "Velocities", velocitiesBuffer);
@@ -157,9 +183,18 @@ public class ParticleSimulator : MonoBehaviour
         particleComputeShader
             .SetBuffer(density, "NearbyDensities", nearbyDensityBuffer);
         particleComputeShader
+            .SetBuffer(density, "ParticlesIndices", particlesIndices);
+        particleComputeShader
+            .SetBuffer(density, "SubgridStarts", subgridStarts);
+
+        // particleComputeShader
+        //     .SetBuffer(density, "Test", testBuffer);
+
+        particleComputeShader
             .Dispatch(density,
                 Mathf.CeilToInt((float)currentParticleCount / 64), 1, 1);
 
+        var pressure = particleComputeShader.FindKernel("CalculatePressures");
         particleComputeShader.SetBuffer(pressure, "Positions", positionsBuffer);
         particleComputeShader
             .SetBuffer(pressure, "Velocities", velocitiesBuffer);
@@ -170,9 +205,14 @@ public class ParticleSimulator : MonoBehaviour
         particleComputeShader
             .SetBuffer(pressure, "NearbyDensities", nearbyDensityBuffer);
         particleComputeShader
+            .SetBuffer(pressure, "ParticlesIndices", particlesIndices);
+        particleComputeShader
+            .SetBuffer(pressure, "SubgridStarts", subgridStarts);
+        particleComputeShader
             .Dispatch(pressure,
                 Mathf.CeilToInt((float)currentParticleCount / 64), 1, 1);
 
+        var movement = particleComputeShader.FindKernel("MoveParticles");
         particleComputeShader
             .SetBuffer(movement, "Positions", positionsBuffer);
         particleComputeShader
@@ -180,6 +220,58 @@ public class ParticleSimulator : MonoBehaviour
         particleComputeShader
             .Dispatch(movement,
                 Mathf.CeilToInt((float)currentParticleCount / 64), 1, 1);
+    }
+
+    void PartitionParticles()
+    {
+        var clear = partitioningComputeShader
+            .FindKernel("Clear");
+        var fetchSubgrids = partitioningComputeShader
+            .FindKernel("FetchSubgrids");
+        var fetchStarts = partitioningComputeShader
+            .FindKernel("FetchStarts");
+        var sortSubgrids = partitioningComputeShader
+            .FindKernel("SortSubgrids");
+
+        int threadsCountSubgrid = Mathf.CeilToInt((float)PartitionCount / 256);
+        int threadsCountParticle = Mathf.CeilToInt((float)ParticleCount / 256);
+
+        partitioningComputeShader
+            .SetInt("PartitionResolution", partitionResolution);
+        partitioningComputeShader
+            .SetVector("CenterBound", centerBounds);
+        partitioningComputeShader
+            .SetVector("SizeBound", sizeBounds);
+
+        partitioningComputeShader
+            .SetBuffer(clear, "SubgridCounts", subgridCounts);
+        partitioningComputeShader
+            .Dispatch(clear, threadsCountSubgrid, 1, 1);
+
+        partitioningComputeShader
+            .SetBuffer(fetchSubgrids, "Positions", positionsBuffer);
+        partitioningComputeShader
+            .SetBuffer(fetchSubgrids, "ParticlesIndices", particlesIndices);
+        partitioningComputeShader
+            .SetBuffer(fetchSubgrids, "SubgridIndices", subgridIndices);
+        partitioningComputeShader
+            .SetBuffer(fetchSubgrids, "SubgridCounts", subgridCounts);
+        partitioningComputeShader
+            .Dispatch(fetchSubgrids, threadsCountParticle, 1, 1);
+
+        partitioningComputeShader
+            .SetBuffer(fetchStarts, "SubgridCounts", subgridCounts);
+        partitioningComputeShader
+            .SetBuffer(fetchStarts, "SubgridStarts", subgridStarts);
+        partitioningComputeShader
+            .Dispatch(fetchStarts, threadsCountSubgrid, 1, 1);
+
+        partitioningComputeShader
+            .SetBuffer(sortSubgrids, "ParticlesIndices", particlesIndices);
+        partitioningComputeShader
+            .SetBuffer(sortSubgrids, "SubgridIndices", subgridIndices);
+        partitioningComputeShader
+            .Dispatch(sortSubgrids, threadsCountParticle, 1, 1);
     }
 
     void DrawParticles()
