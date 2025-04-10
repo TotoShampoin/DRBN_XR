@@ -13,6 +13,7 @@ public class ImpalaMeshController2 : MonoBehaviour
     public bool usePerVertex = true;
 
     int currentGeneratorIndex = 0;
+    string meshName = "GeneratedMesh";
 
     void OnEnable()
     {
@@ -62,5 +63,14 @@ public class ImpalaMeshController2 : MonoBehaviour
         if (index < 0 || index >= 2) return;
         usePerVertex = index == 0;
         Regenerate();
+    }
+    public void SetMeshName(string name)
+    {
+        meshName = name;
+    }
+    public void SaveCube()
+    {
+        MeshLoader.SaveMesh(marchingCubes.GetComponent<MeshFilter>().mesh,
+            $"Assets/DRBN_STEAMVR/Resources/{meshName}.asset");
     }
 }
