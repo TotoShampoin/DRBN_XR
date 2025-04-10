@@ -1,2 +1,18 @@
 fileFormatVersion: 2
 guid: 044fe6aa06dde154bb47c34c7cd12644
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - weightPainterShader: {fileID: 7200000, guid: 0c4e4b1e7e029e44786c6b5f27be4708,
+      type: 3}
+  - renderTexture: {instanceID: 0}
+  - marchingCubes: {instanceID: 0}
+  - brushTransform: {instanceID: 0}
+  - paintTrigger: {instanceID: 0}
+  - eraseTrigger: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
