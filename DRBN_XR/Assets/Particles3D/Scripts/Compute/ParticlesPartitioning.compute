@@ -75,16 +75,28 @@ void FetchStarts(uint3 id : SV_DispatchThreadID) {
     SubgridStarts[id.x] = count;
 }
 
+void Swap(uint a, uint b) {
+    if (a == b) return;
+    uint tempIndex = ParticlesIndices[a];
+    ParticlesIndices[a] = ParticlesIndices[b];
+    ParticlesIndices[b] = tempIndex;
+
+    uint tempSubgrid = SubgridIndices[a];
+    SubgridIndices[a] = SubgridIndices[b];
+    SubgridIndices[b] = tempSubgrid;
+}
+
 void CompareAndSwapPerSubgrid(uint a, uint b) {
     if (a == b) return;
-    if (SubgridIndices[a] > SubgridIndices[b]) {
-        uint tempIndex = ParticlesIndices[a];
-        ParticlesIndices[a] = ParticlesIndices[b];
-        ParticlesIndices[b] = tempIndex;
-
-        uint tempSubgrid = SubgridIndices[a];
-        SubgridIndices[a] = SubgridIndices[b];
-        SubgridIndices[b] = tempSubgrid;
+    if (SubgridIndices[a] < SubgridIndices[b]) {
+        Swap(a, b);
+    } else if (SubgridIndices[a] > SubgridIndices[b]) {
+        return;
+    } else  // SubgridIndices[a] == SubgridIndices[b]
+    {
+        if (ParticlesIndices[a] > ParticlesIndices[b]) {
+            Swap(a, b);
+        }
     }
 }
 

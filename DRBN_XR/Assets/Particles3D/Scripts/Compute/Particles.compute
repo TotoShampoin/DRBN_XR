@@ -120,17 +120,29 @@ void Collisions(inout float3 p, inout float3 v)
     float3 minBound = CenterBound - SizeBound / 2;
     float3 maxBound = CenterBound + SizeBound / 2;
 
-    if(p.x < minBound.x || p.x > maxBound.x) {
-        v.x = -v.x;
-        p.x = clamp(p.x, minBound.x, maxBound.x);
+    if(p.x < minBound.x) {
+        v.x += (minBound.x - p.x);
+        p.x = minBound.x;
     }
-    if(p.y < minBound.y || p.y > maxBound.y) {
-        v.y = -v.y;
-        p.y = clamp(p.y, minBound.y, maxBound.y);
+    if(p.x > maxBound.x) {
+        v.x += (maxBound.x - p.x);
+        p.x = maxBound.x;
     }
-    if(p.z < minBound.z || p.z > maxBound.z) {
-        v.z = -v.z;
-        p.z = clamp(p.z, minBound.z, maxBound.z);
+    if(p.y < minBound.y) {
+        v.y += (minBound.y - p.y);
+        p.y = minBound.y;
+    }
+    if(p.y > maxBound.y) {
+        v.y += (maxBound.y - p.y);
+        p.y = maxBound.y;
+    }
+    if(p.z < minBound.z) {
+        v.z += (minBound.z - p.z);
+        p.z = minBound.z;
+    }
+    if(p.z > maxBound.z) {
+        v.z += (maxBound.z - p.z);
+        p.z = maxBound.z;
     }
 }
 
@@ -177,12 +189,12 @@ void MoveParticles (uint3 id : SV_DispatchThreadID)
         v = float3(0, 0, 0);
     }
 
-    v *= 0.99f;
+    // v *= 0.99f;
 
     p += v * DeltaTime;
 
-    // AttractToCenter(p, v);
-    AttractToBottom(p, v);
+    AttractToCenter(p, v);
+    // AttractToBottom(p, v);
     Collisions(p, v);
 
     Positions[id.x] = p;
