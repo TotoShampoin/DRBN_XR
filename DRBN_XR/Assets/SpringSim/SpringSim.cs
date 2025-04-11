@@ -20,6 +20,8 @@ public class SpringSim : MonoBehaviour
     [SerializeField] float linkStiffness = 1000f;
     [SerializeField] float particleMass = 0.5f;
     [SerializeField] float viscosity = 2f;
+    [SerializeField] float avoidRadius = 0.5f;
+    [SerializeField] float avoidForce = 1.0f;
 
     [Header("Simulation")]
     [SerializeField] float rate = 50f;
@@ -43,15 +45,19 @@ public class SpringSim : MonoBehaviour
     private List<Vector3> velocities;
     private List<SpringLink> links;
 
-    readonly private List<GameObject> debugBodies = new();
+    private readonly List<GameObject> debugBodies = new();
     bool isFirstFrame = true;
+
+    public Mesh EntryPoint
+    {
+        get => entryPoint;
+        set => entryPoint = value;
+    }
 
     void Start()
     {
+        Time.fixedDeltaTime = 1.0f / rate;
         if (entryPoint) ExtractMesh(entryPoint);
-        if (useDebugBodies)
-            Time.fixedDeltaTime = 1.0f / rate;
-        FillRigidBodies();
     }
 
     void Update()
@@ -84,26 +90,55 @@ public class SpringSim : MonoBehaviour
             }
 
         var delta = Time.deltaTime;
-        var oldVelocities = velocities.ToArray();
+        var newVelocities = velocities.ToArray();
+        var hasnan = false;
         Parallel.ForEach(links, (link) =>
         {
             var p1 = positions[link.a];
             var p2 = positions[link.b];
-            var v1 = oldVelocities[link.a];
-            var v2 = oldVelocities[link.b];
+            var v1 = velocities[link.a];
+            var v2 = velocities[link.b];
 
             var l0 = link.length;
             var k = linkStiffness;
             var d = Vector3.Distance(p1, p2);
 
+            if (d == 0) return;
+
             var F = Vector3.zero;
             F += k * (1 - l0 / d) * (p2 - p1);
             F += viscosity * (v2 - v1);
 
-            velocities[link.a] += F / particleMass * delta;
-            velocities[link.b] -= F / particleMass * delta;
+            if (float.IsNaN(F.x) || float.IsNaN(F.y) || float.IsNaN(F.z))
+                hasnan = true;
+
+            newVelocities[link.a] += F / particleMass * delta;
+            newVelocities[link.b] -= F / particleMass * delta;
         });
-        Parallel.For(0, positions.Count, (i) => positions[i] += velocities[i] * delta);
+        Parallel.For(0, positions.Count, i =>
+        {
+            var p = positions[i];
+            Vector3 influence = Vector3.zero;
+            foreach (var _p in positions)
+            {
+                float factor = Mathf.SmoothStep(1, 0, Mathf.InverseLerp(0f, avoidRadius, Vector3.Distance(p, _p)));
+                var direction = _p == p ? Vector3.zero : Vector3.Normalize(_p - p);
+                influence -= avoidForce * factor * direction;
+            }
+            newVelocities[i] += influence / particleMass * delta;
+        });
+        if (!hasnan)
+        {
+            Parallel.For(0, positions.Count, (i) =>
+            {
+                velocities[i] = newVelocities[i];
+                positions[i] += velocities[i] * delta;
+            });
+        }
+        else
+        {
+            Debug.LogError("NaN force detected! Not applied");
+        }
 
         if (useDebugBodies)
         {
@@ -184,7 +219,6 @@ public class SpringSim : MonoBehaviour
             var i0 = dmesh.triangles[i + 0];
             var i1 = dmesh.triangles[i + 1];
             var i2 = dmesh.triangles[i + 2];
-            Debug.Log($"{i0}, {i1}, {i2}");
             links.TryAdd(HashKey(i0, i1), new()
             {
                 a = i0,
