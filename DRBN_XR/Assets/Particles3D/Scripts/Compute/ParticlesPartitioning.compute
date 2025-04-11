@@ -1,7 +1,7 @@
 #pragma kernel Clear
 #pragma kernel FetchSubgrids
 #pragma kernel FetchStarts
-#pragma kernel SortSubgrids
+#pragma kernel SortSubgridsGlobal
 
 const float PI = 3.14159265358979323846f;
 
@@ -27,7 +27,15 @@ float3 SizeBound;
 uint GetSubgridIndex(float3 position) {
     float3 subgridSize = SizeBound / (PartitionResolution - 1);
     float3 positionInBound = position - CenterBound + SizeBound / 2.0f;
-    uint3 subgridIndex = (uint3)(positionInBound / subgridSize);
+    int3 subgridIndexInt = (int3)(positionInBound / subgridSize);
+    
+    // Clamp to valid range before converting to uint
+    uint3 subgridIndex = uint3(
+        clamp(subgridIndexInt.x, 0, PartitionResolution-1),
+        clamp(subgridIndexInt.y, 0, PartitionResolution-1),
+        clamp(subgridIndexInt.z, 0, PartitionResolution-1)
+    );
+    
     return 
           subgridIndex.x 
         + subgridIndex.y * PartitionResolution 
@@ -88,44 +96,32 @@ void Swap(uint a, uint b) {
 
 void CompareAndSwapPerSubgrid(uint a, uint b) {
     if (a == b) return;
-    if (SubgridIndices[a] < SubgridIndices[b]) {
+    // Sort by subgrid index (ascending)
+    if (SubgridIndices[a] > SubgridIndices[b]) {
         Swap(a, b);
-    } else if (SubgridIndices[a] > SubgridIndices[b]) {
+    } else if (SubgridIndices[a] < SubgridIndices[b]) {
         return;
-    } else  // SubgridIndices[a] == SubgridIndices[b]
-    {
+    } else {
+        // Within same subgrid, sort by particle index (ascending)
         if (ParticlesIndices[a] > ParticlesIndices[b]) {
             Swap(a, b);
         }
     }
 }
 
+uint _k;
+uint _j;
 [numthreads(256, 1, 1)]
-void SortSubgrids(uint3 id : SV_DispatchThreadID) {
+void SortSubgridsGlobal(uint3 id : SV_DispatchThreadID) {
     // Bitonic parallel sort on ParticlesIndices and SubgridIndices together
+    // But multiple dispatches instead of group sync
     uint ParticleCount, ParticleStride;
     ParticlesIndices.GetDimensions(ParticleCount, ParticleStride);
     if (id.x >= ParticleCount) 
         return;
 
-    float powerf = log2((float)ParticleCount);
-    uint power = (uint)ceil(powerf);
-    // Power of 2 ceiling for the particle count
-    uint powerOf2Size = 1u << power;
-
-    // Loop through each stage of the bitonic sort
-    for (uint k = 2; k <= powerOf2Size; k <<= 1) {
-        GroupMemoryBarrierWithGroupSync();
-        
-        for (uint j = k/2; j > 0; j >>= 1) {
-            GroupMemoryBarrierWithGroupSync();
-            uint ij = id.x ^ j;
-            
-            if (ij > id.x && ij < ParticleCount) {
-                CompareAndSwapPerSubgrid(id.x, ij);
-            }
-            
-            GroupMemoryBarrierWithGroupSync();
-        }
+    uint ij = id.x ^ _j;
+    if (ij > id.x && ij < ParticleCount) {
+        CompareAndSwapPerSubgrid(id.x, ij);
     }
 }

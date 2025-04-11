@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -119,9 +120,9 @@ public class ParticleSimulator : MonoBehaviour
         for (int i = 0; i < particleCount; i++)
         {
             positions.Add(new(
-                Random.Range(MinBounds.x, MaxBounds.x),
-                Random.Range(MinBounds.y, MaxBounds.y),
-                Random.Range(MinBounds.z, MaxBounds.z)
+                UnityEngine.Random.Range(MinBounds.x, MaxBounds.x),
+                UnityEngine.Random.Range(MinBounds.y, MaxBounds.y),
+                UnityEngine.Random.Range(MinBounds.z, MaxBounds.z)
             ));
             velocities.Add(new(0, 0, 0));
             densities.Add(0f);
@@ -150,7 +151,7 @@ public class ParticleSimulator : MonoBehaviour
 
     void UpdateParticles()
     {
-        int threadsCount = Mathf.CeilToInt((float)currentParticleCount / 64);
+        int threadsCount = Mathf.CeilToInt((float)currentParticleCount / 256);
 
         particleComputeShader.SetFloat("DeltaTime", Time.deltaTime);
         particleComputeShader.SetInt("ParticleCount", currentParticleCount);
@@ -202,10 +203,13 @@ public class ParticleSimulator : MonoBehaviour
         var clear = partitioningComputeShader.FindKernel("Clear");
         var fetchSubgrids = partitioningComputeShader.FindKernel("FetchSubgrids");
         var fetchStarts = partitioningComputeShader.FindKernel("FetchStarts");
-        var sortSubgrids = partitioningComputeShader.FindKernel("SortSubgrids");
+        var sortSubgridsGlobal = partitioningComputeShader.FindKernel("SortSubgridsGlobal");
 
         int threadsCountSubgrid = Mathf.CeilToInt((float)PartitionCount / 256);
         int threadsCountParticle = Mathf.CeilToInt((float)ParticleCount / 256);
+
+        var power = Mathf.CeilToInt(Mathf.Log(PartitionCount, 2));
+        var powerOf2Size = (uint)1 << power;
 
         partitioningComputeShader.SetInt("PartitionResolution", partitionResolution);
         partitioningComputeShader.SetVector("CenterBound", centerBounds);
@@ -224,9 +228,17 @@ public class ParticleSimulator : MonoBehaviour
         partitioningComputeShader.SetBuffer(fetchStarts, "SubgridStarts", subgridStarts);
         partitioningComputeShader.Dispatch(fetchStarts, threadsCountSubgrid, 1, 1);
 
-        partitioningComputeShader.SetBuffer(sortSubgrids, "ParticlesIndices", particlesIndices);
-        partitioningComputeShader.SetBuffer(sortSubgrids, "SubgridIndices", subgridIndices);
-        partitioningComputeShader.Dispatch(sortSubgrids, threadsCountParticle, 1, 1);
+        partitioningComputeShader.SetBuffer(sortSubgridsGlobal, "ParticlesIndices", particlesIndices);
+        partitioningComputeShader.SetBuffer(sortSubgridsGlobal, "SubgridIndices", subgridIndices);
+        for (uint k = 2; k <= powerOf2Size; k <<= 1)
+        {
+            partitioningComputeShader.SetInt("_k", (int)k);
+            for (uint j = k >> 1; j > 0; j >>= 1)
+            {
+                partitioningComputeShader.SetInt("_j", (int)j);
+                partitioningComputeShader.Dispatch(sortSubgridsGlobal, threadsCountParticle, 1, 1);
+            }
+        }
     }
 
     void DrawParticles()
