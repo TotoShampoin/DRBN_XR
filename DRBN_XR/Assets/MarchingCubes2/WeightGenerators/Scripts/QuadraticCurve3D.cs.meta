@@ -1,2 +1,13 @@
 fileFormatVersion: 2
 guid: a14c8c3fb250e4741b8a7a4bcf3582fb
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - quadraticCurve3DShader: {fileID: 7200000, guid: 3b2b90295cff98443b58c2af232a5581,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

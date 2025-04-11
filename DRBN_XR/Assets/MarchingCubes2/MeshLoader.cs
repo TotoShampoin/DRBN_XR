@@ -1,8 +1,8 @@
 using UnityEngine;
 
-// copilot generated code
 public class MeshLoader
 {
+    // copilot generated code
     public static void SaveMesh(Mesh mesh, string path)
     {
         if (mesh == null)
@@ -28,6 +28,7 @@ public class MeshLoader
         Debug.Log($"Mesh saved to {assetPath}");
     }
 
+    // copilot generated code
     public static Mesh LoadMesh(string path)
     {
         if (string.IsNullOrEmpty(path))
