@@ -23,8 +23,8 @@ namespace Assets.SpringSim
                 return;
             }
             line.SetPositions(new[]{
-                a.massPosition,
-                b.massPosition,
+                a.position,
+                b.position,
             });
         }
     }

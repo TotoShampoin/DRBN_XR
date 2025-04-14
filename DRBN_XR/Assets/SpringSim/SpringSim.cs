@@ -88,11 +88,11 @@ namespace Assets.SpringSim
                 isFirstFrame = true;
                 reset = false;
             }
-            if (useDebugBodies && !isFirstFrame)
-                for (int i = 0; i < positions.Count && i < massBodies.Count; i++)
+            if (!isFirstFrame)
+                Parallel.For(0, positions.Count, (i) =>
                 {
-                    positions[i] = massBodies[i].massPosition;
-                }
+                    positions[i] = massBodies[i].position;
+                });
 
             var delta = Time.deltaTime;
             Parallel.For(0, Mathf.Max(links.Count, positions.Count), (i) =>
@@ -118,37 +118,31 @@ namespace Assets.SpringSim
                     tmpVelocities[link.a] += F / particleMass * delta;
                     tmpVelocities[link.b] -= F / particleMass * delta;
                 }
-                if (i < positions.Count)
-                {
-                    var p = positions[i];
-                    Vector3 influence = Vector3.zero;
-                    foreach (var _p in positions)
-                    // foreach (var _pi in MassesNearby(p, avoidRadius))
-                    {
-                        // var _p = positions[_pi];
-                        float factor = Mathf.SmoothStep(1, 0, Mathf.InverseLerp(0f, avoidRadius, Vector3.Distance(p, _p)));
-                        var direction = _p == p ? Vector3.zero : Vector3.Normalize(_p - p);
-                        influence -= avoidForce * factor * direction;
-                    }
-                    tmpVelocities[i] += influence / particleMass * delta;
-                }
+                // if (i < positions.Count)
+                // {
+                //     var p = positions[i];
+                //     Vector3 influence = Vector3.zero;
+                //     foreach (var _p in positions)
+                //     {
+                //         float factor = Mathf.SmoothStep(1, 0, Mathf.InverseLerp(0f, avoidRadius, Vector3.Distance(p, _p)));
+                //         var direction = _p == p ? Vector3.zero : Vector3.Normalize(_p - p);
+                //         influence -= avoidForce * factor * direction;
+                //     }
+                //     tmpVelocities[i] += influence / particleMass * delta;
+                // }
             });
             Parallel.For(0, Mathf.Max(positions.Count, links.Count), (i) =>
             {
                 if (i < positions.Count)
                 {
-                    // var oldPosition = positions[i];
-
-                    if (massBodies[i].IsSelected)
+                    if (massBodies[i].isSelected)
                         tmpVelocities[i] = new(0, 0, 0);
                     velocities[i] = tmpVelocities[i];
                     positions[i] += velocities[i] * delta;
 
-                    // var newPosition = positions[i];
-                    // MoveMassInMap(i, newPosition, oldPosition);
-
-                    massBodies[i].massPosition = positions[i];
+                    massBodies[i].position = massBodies[i].position;
                     massBodies[i].size = displaySize;
+                    massBodies[i].mass = particleMass;
                 }
                 if (i < links.Count)
                 {
