@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Assets.SpringSim.v1
+namespace Assets.SpringSim
 {
 
     public class SpringSimControl : MonoBehaviour

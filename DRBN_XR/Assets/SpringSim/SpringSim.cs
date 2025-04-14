@@ -3,11 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace Assets.SpringSim.v1
+namespace Assets.SpringSim
 {
 
     public struct SpringLink
@@ -28,6 +29,7 @@ namespace Assets.SpringSim.v1
 
         [Header("Simulation")]
         [SerializeField] float rate = 50f;
+        [SerializeField] float hashCellSize = 0.1f;
 
         [Header("Rendering")]
         [SerializeField] Mesh displayMesh;
@@ -40,15 +42,18 @@ namespace Assets.SpringSim.v1
         [SerializeField] Vector3 boundSize = new(1, 1, 1);
 
         [Header("Debug")]
+        [SerializeField] Mass massPrefab;
+        [SerializeField] Link linkPrefab;
         [SerializeField] bool useDebugBodies = false;
-        [SerializeField] GameObject debugBodyPrefab;
         [SerializeField] bool reset = false;
 
         private List<Vector3> positions;
         private List<Vector3> velocities;
+        private List<Vector3> tmpVelocities;
         private List<SpringLink> links;
 
-        private readonly List<GameObject> debugBodies = new();
+        private readonly List<Mass> massBodies = new();
+        private readonly List<Link> linkObjects = new();
         bool isFirstFrame = true;
 
         public Mesh EntryPoint
@@ -69,13 +74,10 @@ namespace Assets.SpringSim.v1
                 displayMesh, 0,
                 displayMaterial,
                 positions
-                    .Select(pos => Matrix4x4.TRS(pos, Quaternion.identity, displaySize * Vector3.one))
+                    .Select(pos => transform.localToWorldMatrix
+                        * Matrix4x4.TRS(pos, Quaternion.identity, displaySize * Vector3.one))
                     .ToArray()
             );
-            foreach (var link in links)
-            {
-                Debug.DrawLine(positions[link.a], positions[link.b]);
-            }
         }
 
         void FixedUpdate()
@@ -87,85 +89,87 @@ namespace Assets.SpringSim.v1
                 reset = false;
             }
             if (useDebugBodies && !isFirstFrame)
-                for (int i = 0; i < positions.Count && i < debugBodies.Count; i++)
+                for (int i = 0; i < positions.Count && i < massBodies.Count; i++)
                 {
-                    positions[i] = debugBodies[i].transform.position;
+                    positions[i] = massBodies[i].massPosition;
                 }
 
             var delta = Time.deltaTime;
-            var newVelocities = velocities.ToArray();
-            var hasnan = false;
-            Parallel.ForEach(links, (link) =>
+            Parallel.For(0, Mathf.Max(links.Count, positions.Count), (i) =>
             {
-                var p1 = positions[link.a];
-                var p2 = positions[link.b];
-                var v1 = velocities[link.a];
-                var v2 = velocities[link.b];
-
-                var l0 = link.length;
-                var k = linkStiffness;
-                var d = Vector3.Distance(p1, p2);
-
-                if (d == 0) return;
-
-                var F = Vector3.zero;
-                F += k * (1 - l0 / d) * (p2 - p1);
-                F += viscosity * (v2 - v1);
-
-                if (float.IsNaN(F.x) || float.IsNaN(F.y) || float.IsNaN(F.z))
-                    hasnan = true;
-
-                newVelocities[link.a] += F / particleMass * delta;
-                newVelocities[link.b] -= F / particleMass * delta;
-            });
-            Parallel.For(0, positions.Count, i =>
-            {
-                var p = positions[i];
-                Vector3 influence = Vector3.zero;
-                foreach (var _p in positions)
+                if (i < links.Count)
                 {
-                    float factor = Mathf.SmoothStep(1, 0, Mathf.InverseLerp(0f, avoidRadius, Vector3.Distance(p, _p)));
-                    var direction = _p == p ? Vector3.zero : Vector3.Normalize(_p - p);
-                    influence -= avoidForce * factor * direction;
+                    var link = links[i];
+                    var p1 = positions[link.a];
+                    var p2 = positions[link.b];
+                    var v1 = velocities[link.a];
+                    var v2 = velocities[link.b];
+
+                    var l0 = link.length;
+                    var k = linkStiffness;
+                    var d = Vector3.Distance(p1, p2);
+
+                    if (d == 0) return;
+
+                    var F = Vector3.zero;
+                    F += k * (1 - l0 / d) * (p2 - p1);
+                    F += viscosity * (v2 - v1);
+
+                    tmpVelocities[link.a] += F / particleMass * delta;
+                    tmpVelocities[link.b] -= F / particleMass * delta;
                 }
-                newVelocities[i] += influence / particleMass * delta;
-            });
-            if (!hasnan)
-            {
-                Parallel.For(0, positions.Count, (i) =>
+                if (i < positions.Count)
                 {
-                    velocities[i] = newVelocities[i];
-                    positions[i] += velocities[i] * delta;
-                });
-            }
-            else
-            {
-                Debug.LogError("NaN force detected! Not applied");
-            }
-
-            if (useDebugBodies)
-            {
-                FillRigidBodies();
-                for (int i = 0; i < positions.Count; i++)
-                {
-                    if (Selection.activeGameObject == debugBodies[i])
+                    var p = positions[i];
+                    Vector3 influence = Vector3.zero;
+                    foreach (var _p in positions)
+                    // foreach (var _pi in MassesNearby(p, avoidRadius))
                     {
-                        velocities[i] = Vector3.zero;
-                        continue;
+                        // var _p = positions[_pi];
+                        float factor = Mathf.SmoothStep(1, 0, Mathf.InverseLerp(0f, avoidRadius, Vector3.Distance(p, _p)));
+                        var direction = _p == p ? Vector3.zero : Vector3.Normalize(_p - p);
+                        influence -= avoidForce * factor * direction;
                     }
-                    debugBodies[i].transform.position = positions[i];
-                    debugBodies[i].transform.localScale = displaySize * Vector3.one;
+                    tmpVelocities[i] += influence / particleMass * delta;
                 }
-            }
+            });
+            Parallel.For(0, Mathf.Max(positions.Count, links.Count), (i) =>
+            {
+                if (i < positions.Count)
+                {
+                    // var oldPosition = positions[i];
+
+                    if (massBodies[i].IsSelected)
+                        tmpVelocities[i] = new(0, 0, 0);
+                    velocities[i] = tmpVelocities[i];
+                    positions[i] += velocities[i] * delta;
+
+                    // var newPosition = positions[i];
+                    // MoveMassInMap(i, newPosition, oldPosition);
+
+                    massBodies[i].massPosition = positions[i];
+                    massBodies[i].size = displaySize;
+                }
+                if (i < links.Count)
+                {
+                    linkObjects[i].a = massBodies[links[i].a];
+                    linkObjects[i].b = massBodies[links[i].b];
+                }
+            });
             isFirstFrame = false;
         }
 
         void FillRigidBodies()
         {
-            for (int i = debugBodies.Count; i < positions.Count; i++)
+            for (int i = massBodies.Count; i < positions.Count; i++)
             {
-                debugBodies.Add(Instantiate(debugBodyPrefab, transform));
-                debugBodies[i].SetActive(true);
+                massBodies.Add(Instantiate(massPrefab, transform));
+                massBodies[i].gameObject.SetActive(true);
+            }
+            for (int i = linkObjects.Count; i < links.Count; i++)
+            {
+                linkObjects.Add(Instantiate(linkPrefab, transform));
+                linkObjects[i].gameObject.SetActive(true);
             }
         }
 
@@ -175,6 +179,7 @@ namespace Assets.SpringSim.v1
 
             positions = dmesh.vertices.ToList();
             velocities = dmesh.vertices.Select(_ => Vector3.zero).ToList();
+            tmpVelocities = dmesh.vertices.Select(_ => Vector3.zero).ToList();
             ConcurrentDictionary<uint, SpringLink> links = new();
 
             // Unordered cantor pairing function
@@ -216,6 +221,7 @@ namespace Assets.SpringSim.v1
                     Mathf.Lerp(scaledMinBound.y, scaledMaxBound.y, normalizedPos.y),
                     Mathf.Lerp(scaledMinBound.z, scaledMaxBound.z, normalizedPos.z)
                 );
+                // MoveMassInMap(i, positions[i]);
             }
             for (int i = 0; i < dmesh.triangles.Length; i += 3)
             {
@@ -242,6 +248,7 @@ namespace Assets.SpringSim.v1
                 });
             }
             this.links = links.Select(kvp => kvp.Value).ToList();
+            FillRigidBodies();
         }
 
         public Mesh DeduplicateVertices(Mesh mesh)
@@ -259,10 +266,25 @@ namespace Assets.SpringSim.v1
                 Vector3 v2 = vertices[triangles[i + 1]];
                 Vector3 v3 = vertices[triangles[i + 2]];
 
-                // Check if vertices already exist in our new list
-                int index1 = FindOrAddVertex(newVertices, v1);
-                int index2 = FindOrAddVertex(newVertices, v2);
-                int index3 = FindOrAddVertex(newVertices, v3);
+                // Define an epsilon constant for vertex comparison
+                const float epsilon = 0.005f;
+
+                // Helper function to find or add a vertex
+                static int FindVertexIndex(List<Vector3> verts, Vector3 v)
+                {
+                    for (int i = 0; i < verts.Count; i++)
+                    {
+                        if (Vector3.SqrMagnitude(verts[i] - v) < epsilon)
+                            return i;
+                    }
+                    verts.Add(v);
+                    return verts.Count - 1;
+                }
+
+                // Find or add vertices to our deduplicated list
+                int index1 = FindVertexIndex(newVertices, v1);
+                int index2 = FindVertexIndex(newVertices, v2);
+                int index3 = FindVertexIndex(newVertices, v3);
 
                 // Add triangle indices
                 newTriangles.Add(index1);
