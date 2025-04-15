@@ -47,13 +47,19 @@ MonoBehaviour:
   linkStiffness: 2000
   particleMass: 2
   viscosity: 10
+  avoidRadius: 0.5
+  avoidForce: 1
+  comebackForce: 100
+  damping: 0.01
   rate: 240
   displayMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   displayMaterial: {fileID: 2100000, guid: ff823230321c3464d9ad1d02227284a6, type: 2}
   displaySize: 0.1
+  massPrefab: {fileID: 3078557159410641033, guid: 16c954fd2c60816488d363ea24c4c420,
+    type: 3}
+  linkPrefab: {fileID: 2836236410219260101, guid: 50b3b679d252cac42a626ffd3295e315,
+    type: 3}
+  reset: 0
   entryPoint: {fileID: 0}
   rescaleToBounds: 1
   boundSize: {x: 10, y: 10, z: 10}
-  useDebugBodies: 1
-  debugBodyPrefab: {fileID: 0}
-  reset: 0

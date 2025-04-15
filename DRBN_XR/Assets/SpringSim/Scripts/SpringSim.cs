@@ -26,6 +26,8 @@ namespace Assets.SpringSim
         [SerializeField] float viscosity = 2f;
         [SerializeField] float avoidRadius = 0.5f;
         [SerializeField] float avoidForce = 1.0f;
+        [SerializeField] float comebackForce = 100f;
+        [SerializeField, Range(0, 1)] float damping = 0.01f;
 
         [Header("Simulation")]
         [SerializeField] float rate = 50f;
@@ -45,6 +47,7 @@ namespace Assets.SpringSim
         [SerializeField] bool rescaleToBounds = true;
         [SerializeField] Vector3 boundSize = new(1, 1, 1);
 
+        private List<Vector3> initials;
         private List<Vector3> positions;
         private List<Vector3> velocities;
         private List<Vector3> tmpVelocities;
@@ -57,6 +60,18 @@ namespace Assets.SpringSim
         {
             get => entryPoint;
             set => entryPoint = value;
+        }
+
+        public void Reset() => reset = true;
+        public void SetStiffness(float stiffness) => linkStiffness = stiffness;
+        public void SetComeback(float comeback) => comebackForce = comeback;
+        public void SetDamping(float damping) => this.damping = damping;
+        public void Clear()
+        {
+            massBodies.ForEach(mb => Destroy(mb.gameObject));
+            massBodies.Clear();
+            linkObjects.ForEach(lb => Destroy(lb.gameObject));
+            linkObjects.Clear();
         }
 
         void Start()
@@ -113,6 +128,14 @@ namespace Assets.SpringSim
                 //     }
                 //     tmpVelocities[i] += influence / particleMass * delta;
                 // }
+
+                if (i < positions.Count)
+                {
+                    var diff = positions[i] - initials[i];
+                    tmpVelocities[i] -= diff * comebackForce / particleMass * delta;
+
+                    tmpVelocities[i] *= 1f - damping;
+                }
             });
             Parallel.For(0, positions.Count, (i) =>
             {
@@ -232,6 +255,7 @@ namespace Assets.SpringSim
                 });
             }
             this.links = links.Select(kvp => kvp.Value).ToList();
+            initials = new(positions);
             FillRigidBodies();
             SendPositions();
         }
