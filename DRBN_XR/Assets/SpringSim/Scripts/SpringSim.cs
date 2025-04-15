@@ -29,23 +29,21 @@ namespace Assets.SpringSim
 
         [Header("Simulation")]
         [SerializeField] float rate = 50f;
-        [SerializeField] float hashCellSize = 0.1f;
 
         [Header("Rendering")]
         [SerializeField] Mesh displayMesh;
         [SerializeField] Material displayMaterial;
         [SerializeField] float displaySize = 0.1f;
 
+        [Header("Interaction")]
+        [SerializeField] Mass massPrefab;
+        [SerializeField] Link linkPrefab;
+        [SerializeField] bool reset = false;
+
         [Header("Init")]
         [SerializeField] Mesh entryPoint;
         [SerializeField] bool rescaleToBounds = true;
         [SerializeField] Vector3 boundSize = new(1, 1, 1);
-
-        [Header("Debug")]
-        [SerializeField] Mass massPrefab;
-        [SerializeField] Link linkPrefab;
-        [SerializeField] bool useDebugBodies = false;
-        [SerializeField] bool reset = false;
 
         private List<Vector3> positions;
         private List<Vector3> velocities;
@@ -54,7 +52,6 @@ namespace Assets.SpringSim
 
         private readonly List<Mass> massBodies = new();
         private readonly List<Link> linkObjects = new();
-        bool isFirstFrame = true;
 
         public Mesh EntryPoint
         {
@@ -68,31 +65,17 @@ namespace Assets.SpringSim
             if (entryPoint) ExtractMesh(entryPoint);
         }
 
-        void Update()
-        {
-            Graphics.DrawMeshInstanced(
-                displayMesh, 0,
-                displayMaterial,
-                positions
-                    .Select(pos => transform.localToWorldMatrix
-                        * Matrix4x4.TRS(pos, Quaternion.identity, displaySize * Vector3.one))
-                    .ToArray()
-            );
-        }
-
         void FixedUpdate()
         {
             if (reset)
             {
                 ExtractMesh(entryPoint);
-                isFirstFrame = true;
                 reset = false;
             }
-            if (!isFirstFrame)
-                Parallel.For(0, positions.Count, (i) =>
-                {
-                    positions[i] = massBodies[i].position;
-                });
+            Parallel.For(0, positions.Count, (i) =>
+            {
+                positions[i] = massBodies[i].position;
+            });
 
             var delta = Time.deltaTime;
             Parallel.For(0, Mathf.Max(links.Count, positions.Count), (i) =>
@@ -131,26 +114,19 @@ namespace Assets.SpringSim
                 //     tmpVelocities[i] += influence / particleMass * delta;
                 // }
             });
-            Parallel.For(0, Mathf.Max(positions.Count, links.Count), (i) =>
+            Parallel.For(0, positions.Count, (i) =>
             {
-                if (i < positions.Count)
-                {
-                    if (massBodies[i].isSelected)
-                        tmpVelocities[i] = new(0, 0, 0);
-                    velocities[i] = tmpVelocities[i];
-                    positions[i] += velocities[i] * delta;
+                if (massBodies[i].isSelected)
+                    tmpVelocities[i] = new(0, 0, 0);
+                velocities[i] = tmpVelocities[i];
 
-                    massBodies[i].position = massBodies[i].position;
-                    massBodies[i].size = displaySize;
-                    massBodies[i].mass = particleMass;
-                }
-                if (i < links.Count)
-                {
-                    linkObjects[i].a = massBodies[links[i].a];
-                    linkObjects[i].b = massBodies[links[i].b];
-                }
+                positions[i] += velocities[i] * delta;
+
+                if (!massBodies[i].isSelected)
+                    massBodies[i].position = positions[i];
+                massBodies[i].size = displaySize;
+                massBodies[i].mass = particleMass;
             });
-            isFirstFrame = false;
         }
 
         void FillRigidBodies()
@@ -165,6 +141,21 @@ namespace Assets.SpringSim
                 linkObjects.Add(Instantiate(linkPrefab, transform));
                 linkObjects[i].gameObject.SetActive(true);
             }
+        }
+        void SendPositions()
+        {
+            Parallel.For(0, Mathf.Max(massBodies.Count, linkObjects.Count), i =>
+            {
+                if (i < massBodies.Count)
+                {
+                    massBodies[i].position = positions[i];
+                }
+                if (i < linkObjects.Count)
+                {
+                    linkObjects[i].a = massBodies[links[i].a];
+                    linkObjects[i].b = massBodies[links[i].b];
+                }
+            });
         }
 
         public void ExtractMesh(Mesh mesh)
@@ -215,7 +206,6 @@ namespace Assets.SpringSim
                     Mathf.Lerp(scaledMinBound.y, scaledMaxBound.y, normalizedPos.y),
                     Mathf.Lerp(scaledMinBound.z, scaledMaxBound.z, normalizedPos.z)
                 );
-                // MoveMassInMap(i, positions[i]);
             }
             for (int i = 0; i < dmesh.triangles.Length; i += 3)
             {
@@ -243,9 +233,10 @@ namespace Assets.SpringSim
             }
             this.links = links.Select(kvp => kvp.Value).ToList();
             FillRigidBodies();
+            SendPositions();
         }
 
-        public Mesh DeduplicateVertices(Mesh mesh)
+        public Mesh DeduplicateVertices(Mesh mesh, float epsilon = 0.005f)
         {
             Vector3[] vertices = mesh.vertices;
             int[] triangles = mesh.triangles;
@@ -260,25 +251,10 @@ namespace Assets.SpringSim
                 Vector3 v2 = vertices[triangles[i + 1]];
                 Vector3 v3 = vertices[triangles[i + 2]];
 
-                // Define an epsilon constant for vertex comparison
-                const float epsilon = 0.005f;
-
-                // Helper function to find or add a vertex
-                static int FindVertexIndex(List<Vector3> verts, Vector3 v)
-                {
-                    for (int i = 0; i < verts.Count; i++)
-                    {
-                        if (Vector3.SqrMagnitude(verts[i] - v) < epsilon)
-                            return i;
-                    }
-                    verts.Add(v);
-                    return verts.Count - 1;
-                }
-
                 // Find or add vertices to our deduplicated list
-                int index1 = FindVertexIndex(newVertices, v1);
-                int index2 = FindVertexIndex(newVertices, v2);
-                int index3 = FindVertexIndex(newVertices, v3);
+                int index1 = FindOrAddVertex(newVertices, v1, epsilon);
+                int index2 = FindOrAddVertex(newVertices, v2, epsilon);
+                int index3 = FindOrAddVertex(newVertices, v3, epsilon);
 
                 // Add triangle indices
                 newTriangles.Add(index1);
@@ -298,11 +274,8 @@ namespace Assets.SpringSim
             return result;
         }
 
-        private int FindOrAddVertex(List<Vector3> vertices, Vector3 vertex)
+        private int FindOrAddVertex(List<Vector3> vertices, Vector3 vertex, float epsilon = 0.0001f)
         {
-            // Use a small epsilon for floating-point comparison
-            const float epsilon = 0.0001f;
-
             for (int i = 0; i < vertices.Count; i++)
             {
                 if (Vector3.SqrMagnitude(vertices[i] - vertex) < epsilon)

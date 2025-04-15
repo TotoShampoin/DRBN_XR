@@ -11,50 +11,53 @@ namespace Assets.SpringSim
         [NonSerialized] public Vector3 position;
         [NonSerialized] public float size;
         [NonSerialized] public float mass;
-        [NonSerialized] public bool isSelected;
+        [NonSerialized] public bool isSelected = false;
         Rigidbody rb;
-        XRGrabInteractable grab;
+        Material material;
+        Transform originalParent; // Necessary because XRGrab actually changes the object's parent, which disrupts the simulation
 
         void OnEnable()
         {
             rb = GetComponent<Rigidbody>();
-            grab = GetComponent<XRGrabInteractable>();
+            material = GetComponent<MeshRenderer>().material;
+            originalParent = transform.parent;
+
+            material.color = Color.white;
         }
 
         void Update()
         {
-            // isSelected = Selection.activeGameObject == gameObject;
-            if (rb)
-            {
-                rb.linearVelocity = new();
-                rb.angularVelocity = new();
-            }
             if (isSelected)
             {
-                position = transform.localPosition;
+                position = originalParent.InverseTransformPoint(transform.position);
             }
             else
             {
-                transform.localPosition = position;
-                if (rb) rb.mass = mass;
+                transform.position = originalParent.TransformPoint(position);
             }
 
+            rb.mass = mass;
             transform.localScale = size * Vector3.one;
-        }
-
-        void OnDrawGizmos()
-        {
-            Gizmos.matrix = transform.localToWorldMatrix;
-            Gizmos.DrawWireSphere(Vector3.zero, 0.5f);
         }
 
         public void Select()
         {
             isSelected = true;
+            material.color = Color.red;
         }
         public void Deselect()
         {
             isSelected = false;
+            material.color = Color.white;
+        }
+        public void Hover()
+        {
+            material.color = Color.yellow;
+        }
+        public void DeHover()
+        {
+            if (!isSelected)
+                material.color = Color.white;
         }
     }
 }
