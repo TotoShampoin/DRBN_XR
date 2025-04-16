@@ -187,6 +187,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "Stick",
+                    "type": "Value",
+                    "id": "e009589b-9517-48ce-b2ac-b6dc29e6a2ef",
+                    "expectedControlType": "Stick",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
@@ -387,6 +396,17 @@
                     "action": "Trigger",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a99bf13d-57d8-447c-b46e-76a790502f42",
+                    "path": "<XRController>{LeftHand}/joystick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Stick",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -525,6 +545,15 @@
                     "type": "Value",
                     "id": "8132bb96-34ed-497f-8961-34dd80d1cc4f",
                     "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Stick",
+                    "type": "Value",
+                    "id": "9f9c2371-5d20-44da-8475-b5526b32ffe0",
+                    "expectedControlType": "Stick",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -715,6 +744,17 @@
                     "processors": "",
                     "groups": ";Generic XR Controller",
                     "action": "Trigger",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5ca21332-93cd-414d-8566-3024cf49bcc5",
+                    "path": "<XRController>{RightHand}/joystick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Stick",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
