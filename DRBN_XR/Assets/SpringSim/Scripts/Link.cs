@@ -8,6 +8,7 @@ namespace Assets.SpringSim
     public class Link : MonoBehaviour
     {
         public Mass a, b;
+        [NonSerialized] public float length;
         LineRenderer line;
 
         void Awake()

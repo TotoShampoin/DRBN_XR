@@ -9,6 +9,9 @@ namespace Assets.SpringSim
     public class Mass : MonoBehaviour
     {
         [NonSerialized] public Vector3 position;
+        [NonSerialized] public Vector3 initial;
+        [NonSerialized] public Vector3 velocity = Vector3.zero;
+        [NonSerialized] public Vector3 tmpVelocity = Vector3.zero;
         [NonSerialized] public float size;
         [NonSerialized] public float mass;
         [NonSerialized] public bool isSelected = false;
