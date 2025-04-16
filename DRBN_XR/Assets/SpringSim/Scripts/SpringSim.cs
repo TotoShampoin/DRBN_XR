@@ -35,7 +35,7 @@ namespace Assets.SpringSim
         [SerializeField] float avoidRadius = 0.5f;
         [SerializeField] float avoidForce = 1.0f;
         [SerializeField] float comebackForce = 100f;
-        [SerializeField, Range(0, 1)] float damping = 0.01f;
+        [SerializeField] float dragForce = 5f;
 
         [Header("Simulation")]
         [SerializeField] float rate = 50f;
@@ -67,7 +67,7 @@ namespace Assets.SpringSim
         public void Reset() => reset = true;
         public void SetStiffness(float stiffness) => linkStiffness = stiffness;
         public void SetComeback(float comeback) => comebackForce = comeback;
-        public void SetDamping(float damping) => this.damping = damping;
+        public void SetDamping(float damping) => this.dragForce = damping;
         public void Clear()
         {
             massBodies.ForEach(mb => Destroy(mb.gameObject));
@@ -96,44 +96,15 @@ namespace Assets.SpringSim
                 if (i < linkObjects.Count)
                 {
                     var link = linkObjects[i];
-                    var p1 = link.a.position;
-                    var p2 = link.b.position;
-                    var v1 = link.a.velocity;
-                    var v2 = link.b.velocity;
-
-                    var l0 = link.length;
-                    var k = linkStiffness;
-                    var d = Vector3.Distance(p1, p2);
-
-                    if (d == 0) return;
-
-                    var F = Vector3.zero;
-                    F += k * (1 - l0 / d) * (p2 - p1);
-                    F += viscosity * (v2 - v1);
-
+                    var F = link.GetForce();
                     link.a.tmpVelocity += F / particleMass * delta;
                     link.b.tmpVelocity -= F / particleMass * delta;
                 }
-                // if (i < massBodies.Count)
-                // {
-                //     var p = massBodies[i].position;
-                //     Vector3 influence = Vector3.zero;
-                //     foreach (var _m in massBodies)
-                //     {
-                //         var _p = _m.position;
-                //         float factor = Mathf.SmoothStep(1, 0, Mathf.InverseLerp(0f, avoidRadius, Vector3.Distance(p, _p)));
-                //         var direction = _p == p ? Vector3.zero : Vector3.Normalize(_p - p);
-                //         influence -= avoidForce * factor * direction;
-                //     }
-                //     massBodies[i].tmpVelocity += influence / particleMass * delta;
-                // }
-
                 if (i < massBodies.Count)
                 {
-                    var diff = massBodies[i].position - massBodies[i].initial;
-                    massBodies[i].tmpVelocity -= diff * comebackForce / particleMass * delta;
-
-                    massBodies[i].tmpVelocity *= 1f - damping;
+                    // massBodies[i].tmpVelocity += massBodies[i].AvoidForce(massBodies) / particleMass * delta;
+                    massBodies[i].tmpVelocity += massBodies[i].ComebackForce() / particleMass * delta;
+                    massBodies[i].tmpVelocity += massBodies[i].DragForce() / particleMass * delta;
                 }
             });
             Parallel.For(0, massBodies.Count, (i) =>
@@ -144,9 +115,14 @@ namespace Assets.SpringSim
 
                 massBodies[i].position += massBodies[i].velocity * delta;
 
-                massBodies[i].size = displaySize;
-                massBodies[i].mass = particleMass;
             });
+            Mass.size = displaySize;
+            Mass.mass = particleMass;
+            Mass.comebackForce = comebackForce;
+            Mass.dragForce = dragForce;
+            Mass.avoidForce = avoidForce;
+            Mass.avoidRadius = avoidRadius;
+            Link.stiffness = linkStiffness;
         }
 
         void PreparePool(int massCount, int linkCount)
@@ -165,16 +141,13 @@ namespace Assets.SpringSim
 
         void ToMass(Vector3 p, Mass mass)
         {
-            mass.gameObject.SetActive(true);
             mass.position = p;
             mass.initial = p;
-            mass.mass = particleMass;
-            mass.size = displaySize;
+            mass.velocity = Vector3.zero;
+            mass.tmpVelocity = Vector3.zero;
         }
         void ToLink(SpringLink springLink, Link link)
         {
-            link = link != null ? link : Instantiate(linkPrefab, transform);
-            link.gameObject.SetActive(true);
             link.a = massBodies[springLink.a];
             link.b = massBodies[springLink.b];
             link.length = springLink.length;
@@ -183,21 +156,26 @@ namespace Assets.SpringSim
         void Fill(Vector3[] positions, SpringLink[] links)
         {
             PreparePool(positions.Length, links.Length);
-            for (int i = 0; i < positions.Length; i++)
+            for (int i = 0; i < Mathf.Max(massBodies.Count, linkObjects.Count); i++)
             {
-                ToMass(positions[i], massBodies[i]);
-            }
-            for (int i = positions.Length; i < massBodies.Count; i++)
-            {
-                massBodies[i].gameObject.SetActive(false);
-            }
-            for (int i = 0; i < links.Length; i++)
-            {
-                ToLink(links[i], linkObjects[i]);
-            }
-            for (int i = links.Length; i < linkObjects.Count; i++)
-            {
-                linkObjects[i].gameObject.SetActive(false);
+                if (i < positions.Length)
+                {
+                    massBodies[i].gameObject.SetActive(true);
+                    ToMass(positions[i], massBodies[i]);
+                }
+                else if (i < massBodies.Count)
+                {
+                    massBodies[i].gameObject.SetActive(false);
+                }
+                if (i < links.Length)
+                {
+                    linkObjects[i].gameObject.SetActive(true);
+                    ToLink(links[i], linkObjects[i]);
+                }
+                else if (i < linkObjects.Count)
+                {
+                    linkObjects[i].gameObject.SetActive(false);
+                }
             }
         }
 
