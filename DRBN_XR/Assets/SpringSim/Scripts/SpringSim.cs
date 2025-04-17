@@ -35,10 +35,10 @@ namespace Assets.SpringSim
         [SerializeField] float avoidRadius = 0.5f;
         [SerializeField] float avoidForce = 1.0f;
         [SerializeField] float comebackForce = 100f;
-        [SerializeField, Range(0, 1)] float dragForce = 0.05f;
+        [SerializeField] float dragForce = 5f;
 
         [Header("Simulation")]
-        [SerializeField] float rate = 50f;
+        [SerializeField] float rate = 480f;
         [SerializeField] bool divideWhenTooLong = true;
 
         [Header("Rendering")]
@@ -100,17 +100,18 @@ namespace Assets.SpringSim
                 if (i < linkObjects.Count)
                 {
                     var link = linkObjects[i];
-                    var F = link.GetForce();
-                    link.a.tmpVelocity += F / particleMass * delta;
-                    link.b.tmpVelocity -= F / particleMass * delta;
+                    var F = link.GetForce() / particleMass * delta;
+                    link.a.tmpVelocity += F;
+                    link.b.tmpVelocity -= F;
                 }
                 if (i < massBodies.Count)
                 {
                     massBodies[i].tmpVelocity += (
                         // massBodies[i].AvoidForce(massBodies) +
-                        massBodies[i].ComebackForce()
+                        massBodies[i].ComebackForce() +
+                        massBodies[i].DragForce()
                     ) / particleMass * delta;
-                    massBodies[i].tmpVelocity += massBodies[i].DragForce();
+                    // massBodies[i].tmpVelocity += massBodies[i].DragForce();
                 }
             });
             Parallel.For(0, massBodies.Count, (i) =>

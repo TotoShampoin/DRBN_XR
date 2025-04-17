@@ -62,7 +62,7 @@ namespace Assets.SpringSim
         }
         public Vector3 DragForce()
         {
-            return -dragForce * tmpVelocity;
+            return -dragForce * mass * tmpVelocity;
         }
 
         public Vector3 AvoidForce(List<Mass> masses)
