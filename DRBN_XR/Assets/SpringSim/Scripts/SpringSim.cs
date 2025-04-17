@@ -35,10 +35,11 @@ namespace Assets.SpringSim
         [SerializeField] float avoidRadius = 0.5f;
         [SerializeField] float avoidForce = 1.0f;
         [SerializeField] float comebackForce = 100f;
-        [SerializeField] float dragForce = 5f;
+        [SerializeField, Range(0, 1)] float dragForce = 0.05f;
 
         [Header("Simulation")]
         [SerializeField] float rate = 50f;
+        [SerializeField] bool divideWhenTooLong = true;
 
         [Header("Rendering")]
         [SerializeField] Mesh displayMesh;
@@ -57,6 +58,8 @@ namespace Assets.SpringSim
 
         private readonly List<Mass> massBodies = new();
         private readonly List<Link> linkObjects = new();
+        private int massCount = 0;
+        private int linkCount = 0;
 
         public Mesh EntryPoint
         {
@@ -68,6 +71,7 @@ namespace Assets.SpringSim
         public void SetStiffness(float stiffness) => linkStiffness = stiffness;
         public void SetComeback(float comeback) => comebackForce = comeback;
         public void SetDamping(float damping) => this.dragForce = damping;
+        public void SetDivide(bool divide) => divideWhenTooLong = divide;
         public void Clear()
         {
             massBodies.ForEach(mb => Destroy(mb.gameObject));
@@ -104,9 +108,9 @@ namespace Assets.SpringSim
                 {
                     massBodies[i].tmpVelocity += (
                         // massBodies[i].AvoidForce(massBodies) +
-                        massBodies[i].ComebackForce() +
-                        massBodies[i].DragForce()
+                        massBodies[i].ComebackForce()
                     ) / particleMass * delta;
+                    massBodies[i].tmpVelocity += massBodies[i].DragForce();
                 }
             });
             Parallel.For(0, massBodies.Count, (i) =>
@@ -125,6 +129,19 @@ namespace Assets.SpringSim
             Mass.avoidForce = avoidForce;
             Mass.avoidRadius = avoidRadius;
             Link.stiffness = linkStiffness;
+
+            if (divideWhenTooLong)
+            {
+                var lc = linkCount;
+                for (int i = 0; i < lc; i++)
+                {
+                    var link = linkObjects[i];
+                    if (link.DistanceBetweenMasses() > link.length * 2f)
+                    {
+                        SplitLink(link);
+                    }
+                }
+            }
         }
 
         void PreparePool(int massCount, int linkCount)
@@ -133,52 +150,107 @@ namespace Assets.SpringSim
             {
                 massBodies.Add(Instantiate(massPrefab, transform));
                 massBodies[i].gameObject.SetActive(true);
+                this.massCount = massCount;
             }
             for (int i = linkObjects.Count; i < linkCount; i++)
             {
                 linkObjects.Add(Instantiate(linkPrefab, transform));
                 linkObjects[i].gameObject.SetActive(true);
+                this.linkCount = linkCount;
             }
         }
 
-        void ToMass(Vector3 p, Mass mass)
+        void ToMass(Mass mass, Vector3 p, bool useInitial = true)
         {
             mass.position = p;
             mass.initial = p;
             mass.velocity = Vector3.zero;
             mass.tmpVelocity = Vector3.zero;
+            mass.useInitial = useInitial;
         }
-        void ToLink(SpringLink springLink, Link link)
+        void ToLink(Link link, Mass a, Mass b, float length)
         {
-            link.a = massBodies[springLink.a];
-            link.b = massBodies[springLink.b];
-            link.length = springLink.length;
+            link.a = a;
+            link.b = b;
+            link.length = length;
         }
+        void ToLink(Link link, SpringLink springLink) =>
+            ToLink(
+                link,
+                massBodies[springLink.a],
+                massBodies[springLink.b],
+                springLink.length);
 
         void Fill(Vector3[] positions, SpringLink[] links)
         {
             PreparePool(positions.Length, links.Length);
-            for (int i = 0; i < Mathf.Max(massBodies.Count, linkObjects.Count); i++)
+            for (int i = 0; i < massBodies.Count; i++)
             {
                 if (i < positions.Length)
                 {
                     massBodies[i].gameObject.SetActive(true);
-                    ToMass(positions[i], massBodies[i]);
+                    ToMass(massBodies[i], positions[i]);
                 }
-                else if (i < massBodies.Count)
+                else
                 {
                     massBodies[i].gameObject.SetActive(false);
                 }
+            }
+            for (int i = 0; i < linkObjects.Count; i++)
+            {
                 if (i < links.Length)
                 {
                     linkObjects[i].gameObject.SetActive(true);
-                    ToLink(links[i], linkObjects[i]);
+                    ToLink(linkObjects[i], links[i]);
                 }
-                else if (i < linkObjects.Count)
+                else
                 {
                     linkObjects[i].gameObject.SetActive(false);
                 }
             }
+        }
+        public Mass AddMass(Vector3 p, bool useInital = true)
+        {
+            var mass = massBodies[massCount - 1];
+            if (mass.gameObject.activeInHierarchy)
+            {
+                mass = Instantiate(massPrefab, transform);
+                massBodies.Add(mass);
+            }
+            mass.gameObject.SetActive(true);
+            ToMass(mass, p, useInital);
+            return mass;
+        }
+        public Link AddLink(Mass a, Mass b, float length)
+        {
+            var link = linkObjects[linkCount - 1];
+            if (link.gameObject.activeInHierarchy)
+            {
+                link = Instantiate(linkPrefab, transform);
+                linkObjects.Add(link);
+            }
+            link.gameObject.SetActive(true);
+            ToLink(link, a, b, length);
+            return link;
+        }
+        public Link AddLink(SpringLink l) =>
+            AddLink(massBodies[l.a], massBodies[l.b], l.length);
+
+        public void SplitLink(Link linkA)
+        {
+            var a = linkA.a;
+            var b = linkA.b;
+
+            var m = AddMass((a.position + b.position) / 2f, false);
+            var linkB = AddLink(m, b, 0);
+            linkB.length = linkB.DistanceBetweenMasses();
+
+            linkA.a = a;
+            linkA.b = m;
+            linkA.length = linkA.DistanceBetweenMasses();
+
+            a.useInitial = false;
+            b.useInitial = false;
         }
 
         public void ExtractMesh(Mesh mesh)

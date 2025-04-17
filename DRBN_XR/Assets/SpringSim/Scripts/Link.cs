@@ -52,5 +52,10 @@ namespace Assets.SpringSim
 
             return F;
         }
+
+        public float DistanceBetweenMasses()
+        {
+            return Vector3.Distance(a.position, b.position);
+        }
     }
 }

@@ -17,6 +17,7 @@ namespace Assets.SpringSim
         [NonSerialized] public Vector3 velocity = Vector3.zero;
         [NonSerialized] public Vector3 tmpVelocity = Vector3.zero;
         [NonSerialized] public bool isSelected = false;
+        [NonSerialized] public bool useInitial = true;
         Rigidbody rb;
         Material material;
         Transform originalParent; // Necessary because XRGrab actually changes the object's parent, which disrupts the simulation
@@ -56,11 +57,12 @@ namespace Assets.SpringSim
 
         public Vector3 ComebackForce()
         {
+            if (!useInitial) return Vector3.zero;
             return (position - initial) * -comebackForce;
         }
         public Vector3 DragForce()
         {
-            return -dragForce * mass * tmpVelocity;
+            return -dragForce * tmpVelocity;
         }
 
         public Vector3 AvoidForce(List<Mass> masses)
