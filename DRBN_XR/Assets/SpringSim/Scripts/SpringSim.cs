@@ -102,9 +102,11 @@ namespace Assets.SpringSim
                 }
                 if (i < massBodies.Count)
                 {
-                    // massBodies[i].tmpVelocity += massBodies[i].AvoidForce(massBodies) / particleMass * delta;
-                    massBodies[i].tmpVelocity += massBodies[i].ComebackForce() / particleMass * delta;
-                    massBodies[i].tmpVelocity += massBodies[i].DragForce() / particleMass * delta;
+                    massBodies[i].tmpVelocity += (
+                        // massBodies[i].AvoidForce(massBodies) +
+                        massBodies[i].ComebackForce() +
+                        massBodies[i].DragForce()
+                    ) / particleMass * delta;
                 }
             });
             Parallel.For(0, massBodies.Count, (i) =>
