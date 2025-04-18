@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,13 @@ namespace Assets.SpringSim
         public int b;
         public float length;
     };
+    public class SpringMass
+    {
+        public Vector3 position;
+        public Vector3 initial;
+        public Vector3 velocity = Vector3.zero;
+        public Vector3 tmpVelocity = Vector3.zero;
+    }
 
     public class SpringSim : MonoBehaviour
     {
@@ -27,10 +35,11 @@ namespace Assets.SpringSim
         [SerializeField] float avoidRadius = 0.5f;
         [SerializeField] float avoidForce = 1.0f;
         [SerializeField] float comebackForce = 100f;
-        [SerializeField, Range(0, 1)] float damping = 0.01f;
+        [SerializeField] float dragForce = 5f;
 
         [Header("Simulation")]
-        [SerializeField] float rate = 50f;
+        [SerializeField] float rate = 480f;
+        [SerializeField] bool divideWhenTooLong = true;
 
         [Header("Rendering")]
         [SerializeField] Mesh displayMesh;
@@ -47,14 +56,11 @@ namespace Assets.SpringSim
         [SerializeField] bool rescaleToBounds = true;
         [SerializeField] Vector3 boundSize = new(1, 1, 1);
 
-        private List<Vector3> initials;
-        private List<Vector3> positions;
-        private List<Vector3> velocities;
-        private List<Vector3> tmpVelocities;
-        private List<SpringLink> links;
-
         private readonly List<Mass> massBodies = new();
         private readonly List<Link> linkObjects = new();
+        private SpatialHash<Mass> massHash;
+        private int massCount = 0;
+        private int linkCount = 0;
 
         public Mesh EntryPoint
         {
@@ -65,19 +71,23 @@ namespace Assets.SpringSim
         public void Reset() => reset = true;
         public void SetStiffness(float stiffness) => linkStiffness = stiffness;
         public void SetComeback(float comeback) => comebackForce = comeback;
-        public void SetDamping(float damping) => this.damping = damping;
+        public void SetDamping(float damping) => this.dragForce = damping;
+        public void SetDivide(bool divide) => divideWhenTooLong = divide;
+        public void SetAvoidForce(float force) => avoidForce = force;
         public void Clear()
         {
             massBodies.ForEach(mb => Destroy(mb.gameObject));
             massBodies.Clear();
             linkObjects.ForEach(lb => Destroy(lb.gameObject));
             linkObjects.Clear();
+            massHash.Clear();
         }
 
         void Start()
         {
             Time.fixedDeltaTime = 1.0f / rate;
             if (entryPoint) ExtractMesh(entryPoint);
+            massHash = new(avoidRadius / 2f);
         }
 
         void FixedUpdate()
@@ -87,107 +97,175 @@ namespace Assets.SpringSim
                 ExtractMesh(entryPoint);
                 reset = false;
             }
-            Parallel.For(0, positions.Count, (i) =>
-            {
-                positions[i] = massBodies[i].position;
-            });
 
             var delta = Time.deltaTime;
-            Parallel.For(0, Mathf.Max(links.Count, positions.Count), (i) =>
+            Parallel.ForEach(linkObjects, (link) =>
             {
-                if (i < links.Count)
-                {
-                    var link = links[i];
-                    var p1 = positions[link.a];
-                    var p2 = positions[link.b];
-                    var v1 = velocities[link.a];
-                    var v2 = velocities[link.b];
+                var F = link.GetForce() / particleMass * delta;
+                link.a.tmpVelocity += F;
+                link.b.tmpVelocity -= F;
 
-                    var l0 = link.length;
-                    var k = linkStiffness;
-                    var d = Vector3.Distance(p1, p2);
-
-                    if (d == 0) return;
-
-                    var F = Vector3.zero;
-                    F += k * (1 - l0 / d) * (p2 - p1);
-                    F += viscosity * (v2 - v1);
-
-                    tmpVelocities[link.a] += F / particleMass * delta;
-                    tmpVelocities[link.b] -= F / particleMass * delta;
-                }
-                // if (i < positions.Count)
-                // {
-                //     var p = positions[i];
-                //     Vector3 influence = Vector3.zero;
-                //     foreach (var _p in positions)
-                //     {
-                //         float factor = Mathf.SmoothStep(1, 0, Mathf.InverseLerp(0f, avoidRadius, Vector3.Distance(p, _p)));
-                //         var direction = _p == p ? Vector3.zero : Vector3.Normalize(_p - p);
-                //         influence -= avoidForce * factor * direction;
-                //     }
-                //     tmpVelocities[i] += influence / particleMass * delta;
-                // }
-
-                if (i < positions.Count)
-                {
-                    var diff = positions[i] - initials[i];
-                    tmpVelocities[i] -= diff * comebackForce / particleMass * delta;
-
-                    tmpVelocities[i] *= 1f - damping;
-                }
+                link.a.mark = false;
             });
-            Parallel.For(0, positions.Count, (i) =>
+            Parallel.ForEach(massBodies, (mass) =>
             {
-                if (massBodies[i].isSelected)
-                    tmpVelocities[i] = new(0, 0, 0);
-                velocities[i] = tmpVelocities[i];
+                mass.tmpVelocity += (
+                    // mass.AvoidForce(massHash) +
+                    mass.ComebackForce() +
+                    mass.DragForce()
+                ) / particleMass * delta;
 
-                positions[i] += velocities[i] * delta;
+                if (mass.isSelected)
+                {
+                    mass.tmpVelocity = new(0, 0, 0);
+                    massHash
+                        .GetSurrounding(mass.position, avoidRadius)
+                        .ForEach(m => m.mark = true);
+                }
+                mass.velocity = mass.tmpVelocity;
 
-                if (!massBodies[i].isSelected)
-                    massBodies[i].position = positions[i];
-                massBodies[i].size = displaySize;
-                massBodies[i].mass = particleMass;
+                var oldPosition = mass.position;
+                mass.position += mass.velocity * delta;
+                massHash.Move(oldPosition, mass.position, mass);
             });
+            Mass.size = displaySize;
+            Mass.mass = particleMass;
+            Mass.comebackForce = comebackForce;
+            Mass.dragForce = dragForce;
+            Mass.avoidForce = avoidForce;
+            Mass.avoidRadius = avoidRadius;
+            Link.stiffness = linkStiffness;
+
+            if (divideWhenTooLong)
+            {
+                var lc = linkCount;
+                for (int i = 0; i < lc; i++)
+                {
+                    var link = linkObjects[i];
+                    if (link.DistanceBetweenMasses() > link.length * 2f)
+                    {
+                        SplitLink(link);
+                    }
+                }
+            }
         }
 
-        void FillRigidBodies()
+        void PreparePool(int massCount, int linkCount)
         {
-            for (int i = massBodies.Count; i < positions.Count; i++)
+            for (int i = massBodies.Count; i < massCount; i++)
             {
                 massBodies.Add(Instantiate(massPrefab, transform));
                 massBodies[i].gameObject.SetActive(true);
+                this.massCount = massCount;
             }
-            for (int i = linkObjects.Count; i < links.Count; i++)
+            for (int i = linkObjects.Count; i < linkCount; i++)
             {
                 linkObjects.Add(Instantiate(linkPrefab, transform));
                 linkObjects[i].gameObject.SetActive(true);
+                this.linkCount = linkCount;
             }
         }
-        void SendPositions()
+
+        void ToMass(Mass mass, Vector3 p, bool useInitial = true)
         {
-            Parallel.For(0, Mathf.Max(massBodies.Count, linkObjects.Count), i =>
+            mass.position = p;
+            mass.initial = p;
+            mass.velocity = Vector3.zero;
+            mass.tmpVelocity = Vector3.zero;
+            mass.useInitial = useInitial;
+        }
+        void ToLink(Link link, Mass a, Mass b, float length)
+        {
+            link.a = a;
+            link.b = b;
+            link.length = length;
+        }
+        void ToLink(Link link, SpringLink springLink) =>
+            ToLink(
+                link,
+                massBodies[springLink.a],
+                massBodies[springLink.b],
+                springLink.length);
+
+        void Fill(Vector3[] positions, SpringLink[] links)
+        {
+            PreparePool(positions.Length, links.Length);
+            for (int i = 0; i < massBodies.Count; i++)
             {
-                if (i < massBodies.Count)
+                if (i < positions.Length)
                 {
-                    massBodies[i].position = positions[i];
+                    massBodies[i].gameObject.SetActive(true);
+                    ToMass(massBodies[i], positions[i]);
+                    massHash.AddAt(positions[i], massBodies[i]);
                 }
-                if (i < linkObjects.Count)
+                else
                 {
-                    linkObjects[i].a = massBodies[links[i].a];
-                    linkObjects[i].b = massBodies[links[i].b];
+                    massBodies[i].gameObject.SetActive(false);
                 }
-            });
+            }
+            for (int i = 0; i < linkObjects.Count; i++)
+            {
+                if (i < links.Length)
+                {
+                    linkObjects[i].gameObject.SetActive(true);
+                    ToLink(linkObjects[i], links[i]);
+                }
+                else
+                {
+                    linkObjects[i].gameObject.SetActive(false);
+                }
+            }
+        }
+        public Mass AddMass(Vector3 p, bool useInital = true)
+        {
+            var mass = massBodies[massCount - 1];
+            if (mass.gameObject.activeInHierarchy)
+            {
+                mass = Instantiate(massPrefab, transform);
+                massBodies.Add(mass);
+            }
+            mass.gameObject.SetActive(true);
+            ToMass(mass, p, useInital);
+            massHash.AddAt(p, mass);
+            return mass;
+        }
+        public Link AddLink(Mass a, Mass b, float length)
+        {
+            var link = linkObjects[linkCount - 1];
+            if (link.gameObject.activeInHierarchy)
+            {
+                link = Instantiate(linkPrefab, transform);
+                linkObjects.Add(link);
+            }
+            link.gameObject.SetActive(true);
+            ToLink(link, a, b, length);
+            return link;
+        }
+        public Link AddLink(SpringLink l) =>
+            AddLink(massBodies[l.a], massBodies[l.b], l.length);
+
+        public void SplitLink(Link linkA)
+        {
+            var a = linkA.a;
+            var b = linkA.b;
+
+            var m = AddMass((a.position + b.position) / 2f, false);
+            var linkB = AddLink(m, b, 0);
+            linkB.length = linkB.DistanceBetweenMasses();
+
+            linkA.a = a;
+            linkA.b = m;
+            linkA.length = linkA.DistanceBetweenMasses();
+
+            a.useInitial = false;
+            b.useInitial = false;
         }
 
         public void ExtractMesh(Mesh mesh)
         {
             Mesh dmesh = DeduplicateVertices(mesh);
 
-            positions = dmesh.vertices.ToList();
-            velocities = dmesh.vertices.Select(_ => Vector3.zero).ToList();
-            tmpVelocities = dmesh.vertices.Select(_ => Vector3.zero).ToList();
+            var positions = dmesh.vertices.Clone() as Vector3[];
             ConcurrentDictionary<uint, SpringLink> links = new();
 
             // Unordered cantor pairing function
@@ -214,7 +292,7 @@ namespace Assets.SpringSim
             Vector3 outputCenter = (minBoundOutput + maxBoundOutput) * 0.5f;
             Vector3 scaledMinBound = outputCenter - scaledSize * 0.5f;
             Vector3 scaledMaxBound = outputCenter + scaledSize * 0.5f;
-            for (int i = 0; i < positions.Count; i++)
+            for (int i = 0; i < positions.Length; i++)
             {
                 if (!rescaleToBounds) return;
                 // Remap each position from input bounds to output bounds
@@ -254,10 +332,7 @@ namespace Assets.SpringSim
                     length = Vector3.Distance(positions[i2], positions[i0])
                 });
             }
-            this.links = links.Select(kvp => kvp.Value).ToList();
-            initials = new(positions);
-            FillRigidBodies();
-            SendPositions();
+            Fill(positions, links.Select(kvp => kvp.Value).ToArray());
         }
 
         public Mesh DeduplicateVertices(Mesh mesh, float epsilon = 0.005f)
