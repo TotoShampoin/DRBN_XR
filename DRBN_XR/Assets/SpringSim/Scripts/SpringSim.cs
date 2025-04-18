@@ -55,6 +55,7 @@ namespace Assets.SpringSim
         [SerializeField] Mesh entryPoint;
         [SerializeField] bool rescaleToBounds = true;
         [SerializeField] Vector3 boundSize = new(1, 1, 1);
+        [SerializeField] float extractionEpsilon = 0.005f;
 
         private readonly List<Mass> massBodies = new();
         private readonly List<Link> linkObjects = new();
@@ -150,23 +151,7 @@ namespace Assets.SpringSim
             }
         }
 
-        void PreparePool(int massCount, int linkCount)
-        {
-            for (int i = massBodies.Count; i < massCount; i++)
-            {
-                massBodies.Add(Instantiate(massPrefab, transform));
-                massBodies[i].gameObject.SetActive(true);
-                this.massCount = massCount;
-            }
-            for (int i = linkObjects.Count; i < linkCount; i++)
-            {
-                linkObjects.Add(Instantiate(linkPrefab, transform));
-                linkObjects[i].gameObject.SetActive(true);
-                this.linkCount = linkCount;
-            }
-        }
-
-        void ToMass(Mass mass, Vector3 p, bool useInitial = true)
+        public void ToMass(Mass mass, Vector3 p, bool useInitial = true)
         {
             mass.position = p;
             mass.initial = p;
@@ -174,48 +159,18 @@ namespace Assets.SpringSim
             mass.tmpVelocity = Vector3.zero;
             mass.useInitial = useInitial;
         }
-        void ToLink(Link link, Mass a, Mass b, float length)
+        public void ToLink(Link link, Mass a, Mass b, float length)
         {
             link.a = a;
             link.b = b;
             link.length = length;
         }
-        void ToLink(Link link, SpringLink springLink) =>
+        public void ToLink(Link link, SpringLink springLink) =>
             ToLink(
                 link,
                 massBodies[springLink.a],
                 massBodies[springLink.b],
                 springLink.length);
-
-        void Fill(Vector3[] positions, SpringLink[] links)
-        {
-            PreparePool(positions.Length, links.Length);
-            for (int i = 0; i < massBodies.Count; i++)
-            {
-                if (i < positions.Length)
-                {
-                    massBodies[i].gameObject.SetActive(true);
-                    ToMass(massBodies[i], positions[i]);
-                    massHash.AddAt(positions[i], massBodies[i]);
-                }
-                else
-                {
-                    massBodies[i].gameObject.SetActive(false);
-                }
-            }
-            for (int i = 0; i < linkObjects.Count; i++)
-            {
-                if (i < links.Length)
-                {
-                    linkObjects[i].gameObject.SetActive(true);
-                    ToLink(linkObjects[i], links[i]);
-                }
-                else
-                {
-                    linkObjects[i].gameObject.SetActive(false);
-                }
-            }
-        }
         public Mass AddMass(Vector3 p, bool useInital = true)
         {
             var mass = massBodies[massCount - 1];
@@ -243,7 +198,6 @@ namespace Assets.SpringSim
         }
         public Link AddLink(SpringLink l) =>
             AddLink(massBodies[l.a], massBodies[l.b], l.length);
-
         public void SplitLink(Link linkA)
         {
             var a = linkA.a;
@@ -261,53 +215,68 @@ namespace Assets.SpringSim
             b.useInitial = false;
         }
 
+        void PreparePool(int massCount, int linkCount)
+        {
+            for (int i = massBodies.Count; i < massCount; i++)
+            {
+                massBodies.Add(Instantiate(massPrefab, transform));
+                massBodies[i].gameObject.SetActive(true);
+                this.massCount = massCount;
+            }
+            for (int i = linkObjects.Count; i < linkCount; i++)
+            {
+                linkObjects.Add(Instantiate(linkPrefab, transform));
+                linkObjects[i].gameObject.SetActive(true);
+                this.linkCount = linkCount;
+            }
+        }
+
+        void Fill(IEnumerable<Vector3> positions, IEnumerable<SpringLink> links)
+        {
+            PreparePool(positions.Count(), links.Count());
+            for (int i = 0; i < massBodies.Count; i++)
+            {
+                if (i < positions.Count())
+                {
+                    var position = positions.ElementAt(i);
+                    massBodies[i].gameObject.SetActive(true);
+                    ToMass(massBodies[i], position);
+                    massHash.AddAt(position, massBodies[i]);
+                }
+                else
+                {
+                    massBodies[i].gameObject.SetActive(false);
+                }
+            }
+            for (int i = 0; i < linkObjects.Count; i++)
+            {
+                if (i < links.Count())
+                {
+                    var link = links.ElementAt(i);
+                    linkObjects[i].gameObject.SetActive(true);
+                    ToLink(linkObjects[i], link);
+                }
+                else
+                {
+                    linkObjects[i].gameObject.SetActive(false);
+                }
+            }
+        }
+
         public void ExtractMesh(Mesh mesh)
         {
-            Mesh dmesh = DeduplicateVertices(mesh);
+            Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
+            var positions = dmesh.vertices;
+            if (rescaleToBounds)
+                MeshMod.RescaleToBounds(ref positions, dmesh.bounds, boundSize);
 
-            var positions = dmesh.vertices.Clone() as Vector3[];
             ConcurrentDictionary<uint, SpringLink> links = new();
-
-            // Unordered cantor pairing function
             static uint HashKey(int a, int b)
             {
                 if (a > b) { (a, b) = (b, a); }
                 return (uint)((a + b) * (a + b + 1) / 2 + b);
             }
 
-            Vector3 minBoundInput = dmesh.bounds.center - dmesh.bounds.size * 0.5f;
-            Vector3 maxBoundInput = dmesh.bounds.center + dmesh.bounds.size * 0.5f;
-            Vector3 minBoundOutput = -boundSize * 0.5f;
-            Vector3 maxBoundOutput = boundSize * 0.5f;
-            // Calculate the scale factor to maintain aspect ratio
-            Vector3 inputSize = maxBoundInput - minBoundInput;
-            Vector3 outputSize = maxBoundOutput - minBoundOutput;
-            // Find the dimension with the largest ratio (most constrained)
-            float scaleX = outputSize.x / inputSize.x;
-            float scaleY = outputSize.y / inputSize.y;
-            float scaleZ = outputSize.z / inputSize.z;
-            float uniformScale = Mathf.Min(scaleX, scaleY, scaleZ);
-            // Calculate centered scaling with preserved aspect ratio
-            Vector3 scaledSize = inputSize * uniformScale;
-            Vector3 outputCenter = (minBoundOutput + maxBoundOutput) * 0.5f;
-            Vector3 scaledMinBound = outputCenter - scaledSize * 0.5f;
-            Vector3 scaledMaxBound = outputCenter + scaledSize * 0.5f;
-            for (int i = 0; i < positions.Length; i++)
-            {
-                if (!rescaleToBounds) return;
-                // Remap each position from input bounds to output bounds
-                Vector3 pos = positions[i];
-                Vector3 normalizedPos = new(
-                    Mathf.InverseLerp(minBoundInput.x, maxBoundInput.x, pos.x),
-                    Mathf.InverseLerp(minBoundInput.y, maxBoundInput.y, pos.y),
-                    Mathf.InverseLerp(minBoundInput.z, maxBoundInput.z, pos.z)
-                );
-                positions[i] = new(
-                    Mathf.Lerp(scaledMinBound.x, scaledMaxBound.x, normalizedPos.x),
-                    Mathf.Lerp(scaledMinBound.y, scaledMaxBound.y, normalizedPos.y),
-                    Mathf.Lerp(scaledMinBound.z, scaledMaxBound.z, normalizedPos.z)
-                );
-            }
             for (int i = 0; i < dmesh.triangles.Length; i += 3)
             {
                 var i0 = dmesh.triangles[i + 0];
@@ -332,59 +301,7 @@ namespace Assets.SpringSim
                     length = Vector3.Distance(positions[i2], positions[i0])
                 });
             }
-            Fill(positions, links.Select(kvp => kvp.Value).ToArray());
-        }
-
-        public Mesh DeduplicateVertices(Mesh mesh, float epsilon = 0.005f)
-        {
-            Vector3[] vertices = mesh.vertices;
-            int[] triangles = mesh.triangles;
-
-            List<Vector3> newVertices = new();
-            List<int> newTriangles = new();
-
-            for (int i = 0; i < triangles.Length; i += 3)
-            {
-                // Get vertices for this triangle
-                Vector3 v1 = vertices[triangles[i]];
-                Vector3 v2 = vertices[triangles[i + 1]];
-                Vector3 v3 = vertices[triangles[i + 2]];
-
-                // Find or add vertices to our deduplicated list
-                int index1 = FindOrAddVertex(newVertices, v1, epsilon);
-                int index2 = FindOrAddVertex(newVertices, v2, epsilon);
-                int index3 = FindOrAddVertex(newVertices, v3, epsilon);
-
-                // Add triangle indices
-                newTriangles.Add(index1);
-                newTriangles.Add(index2);
-                newTriangles.Add(index3);
-            }
-
-            // Create new mesh with deduplicated vertices
-            Mesh result = new()
-            {
-                vertices = newVertices.ToArray(),
-                triangles = newTriangles.ToArray()
-            };
-            result.RecalculateNormals();
-            result.RecalculateBounds();
-
-            return result;
-        }
-
-        private int FindOrAddVertex(List<Vector3> vertices, Vector3 vertex, float epsilon = 0.0001f)
-        {
-            for (int i = 0; i < vertices.Count; i++)
-            {
-                if (Vector3.SqrMagnitude(vertices[i] - vertex) < epsilon)
-                    return i;
-            }
-
-            // If vertex not found, add it
-            vertices.Add(vertex);
-            return vertices.Count - 1;
+            Fill(positions, links.Values);
         }
     }
-
 }
