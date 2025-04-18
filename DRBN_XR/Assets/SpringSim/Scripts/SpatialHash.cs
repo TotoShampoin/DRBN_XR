@@ -3,7 +3,6 @@ using Unity.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Threading.Tasks;
 
 public class SpatialHash<T>
 {
@@ -12,7 +11,7 @@ public class SpatialHash<T>
 
     public SpatialHash(float cellSize)
     {
-        hashmap = new ConcurrentDictionary<Vector3Int, ConcurrentBag<T>>();
+        hashmap = new();
         this.cellSize = cellSize;
     }
 

@@ -43,6 +43,11 @@ public class MarchingCubes : MonoBehaviour
         Gizmos.DrawWireCube(Vector3.zero, new Vector3(1, 1, 1));
     }
 
+    public void ClearMesh()
+    {
+        meshFilter.mesh = new();
+    }
+
     public void GenerateAndApplyMesh(RenderTexture renderTexture, float threshold)
     {
         meshFilter.mesh = GenerateMesh(renderTexture, threshold);

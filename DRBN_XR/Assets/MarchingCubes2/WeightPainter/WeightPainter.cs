@@ -19,7 +19,7 @@ public class WeightPainter : MonoBehaviour
     bool isErasing = false;
     public bool needsRegenerate = false;
 
-    void OnEnable()
+    void Start()
     {
         paintTrigger.action.performed += _ => isUsingBrush = true;
         paintTrigger.action.canceled += _ => isUsingBrush = false;
@@ -80,6 +80,11 @@ public class WeightPainter : MonoBehaviour
             Mathf.CeilToInt((float)renderTexture.width / 8),
             Mathf.CeilToInt((float)renderTexture.height / 8),
             Mathf.CeilToInt((float)renderTexture.volumeDepth / 8));
+    }
+
+    public void SetRadius(float radius)
+    {
+        this.radius = radius;
     }
 
     public enum ActionMode
