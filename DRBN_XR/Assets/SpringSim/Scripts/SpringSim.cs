@@ -58,6 +58,7 @@ namespace Assets.SpringSim
 
         private readonly List<Mass> massBodies = new();
         private readonly List<Link> linkObjects = new();
+        private SpatialHash<Mass> massHash;
         private int massCount = 0;
         private int linkCount = 0;
 
@@ -72,18 +73,21 @@ namespace Assets.SpringSim
         public void SetComeback(float comeback) => comebackForce = comeback;
         public void SetDamping(float damping) => this.dragForce = damping;
         public void SetDivide(bool divide) => divideWhenTooLong = divide;
+        public void SetAvoidForce(float force) => avoidForce = force;
         public void Clear()
         {
             massBodies.ForEach(mb => Destroy(mb.gameObject));
             massBodies.Clear();
             linkObjects.ForEach(lb => Destroy(lb.gameObject));
             linkObjects.Clear();
+            massHash.Clear();
         }
 
         void Start()
         {
             Time.fixedDeltaTime = 1.0f / rate;
             if (entryPoint) ExtractMesh(entryPoint);
+            massHash = new(avoidRadius / 2f);
         }
 
         void FixedUpdate()
@@ -95,33 +99,34 @@ namespace Assets.SpringSim
             }
 
             var delta = Time.deltaTime;
-            Parallel.For(0, Mathf.Max(linkObjects.Count, massBodies.Count), (i) =>
+            Parallel.ForEach(linkObjects, (link) =>
             {
-                if (i < linkObjects.Count)
-                {
-                    var link = linkObjects[i];
-                    var F = link.GetForce() / particleMass * delta;
-                    link.a.tmpVelocity += F;
-                    link.b.tmpVelocity -= F;
-                }
-                if (i < massBodies.Count)
-                {
-                    massBodies[i].tmpVelocity += (
-                        // massBodies[i].AvoidForce(massBodies) +
-                        massBodies[i].ComebackForce() +
-                        massBodies[i].DragForce()
-                    ) / particleMass * delta;
-                    // massBodies[i].tmpVelocity += massBodies[i].DragForce();
-                }
+                var F = link.GetForce() / particleMass * delta;
+                link.a.tmpVelocity += F;
+                link.b.tmpVelocity -= F;
+
+                link.a.mark = false;
             });
-            Parallel.For(0, massBodies.Count, (i) =>
+            Parallel.ForEach(massBodies, (mass) =>
             {
-                if (massBodies[i].isSelected)
-                    massBodies[i].tmpVelocity = new(0, 0, 0);
-                massBodies[i].velocity = massBodies[i].tmpVelocity;
+                mass.tmpVelocity += (
+                    // mass.AvoidForce(massHash) +
+                    mass.ComebackForce() +
+                    mass.DragForce()
+                ) / particleMass * delta;
 
-                massBodies[i].position += massBodies[i].velocity * delta;
+                if (mass.isSelected)
+                {
+                    mass.tmpVelocity = new(0, 0, 0);
+                    massHash
+                        .GetSurrounding(mass.position, avoidRadius)
+                        .ForEach(m => m.mark = true);
+                }
+                mass.velocity = mass.tmpVelocity;
 
+                var oldPosition = mass.position;
+                mass.position += mass.velocity * delta;
+                massHash.Move(oldPosition, mass.position, mass);
             });
             Mass.size = displaySize;
             Mass.mass = particleMass;
@@ -191,6 +196,7 @@ namespace Assets.SpringSim
                 {
                     massBodies[i].gameObject.SetActive(true);
                     ToMass(massBodies[i], positions[i]);
+                    massHash.AddAt(positions[i], massBodies[i]);
                 }
                 else
                 {
@@ -220,6 +226,7 @@ namespace Assets.SpringSim
             }
             mass.gameObject.SetActive(true);
             ToMass(mass, p, useInital);
+            massHash.AddAt(p, mass);
             return mass;
         }
         public Link AddLink(Mass a, Mass b, float length)

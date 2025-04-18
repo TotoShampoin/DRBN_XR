@@ -18,9 +18,11 @@ namespace Assets.SpringSim
         [NonSerialized] public Vector3 tmpVelocity = Vector3.zero;
         [NonSerialized] public bool isSelected = false;
         [NonSerialized] public bool useInitial = true;
+        [NonSerialized] public bool mark = true;
         Rigidbody rb;
         Material material;
         Transform originalParent; // Necessary because XRGrab actually changes the object's parent, which disrupts the simulation
+        Color color;
 
         [NonSerialized] public static float size;
         [NonSerialized] public static float mass;
@@ -36,8 +38,7 @@ namespace Assets.SpringSim
             rb = GetComponent<Rigidbody>();
             material = GetComponent<MeshRenderer>().material;
             originalParent = transform.parent;
-
-            material.color = Color.white;
+            color = Color.white;
         }
 
         void Update()
@@ -53,6 +54,9 @@ namespace Assets.SpringSim
 
             rb.mass = mass;
             transform.localScale = size * Vector3.one;
+
+            if (mark) material.color = Color.magenta;
+            else material.color = color;
         }
 
         public Vector3 ComebackForce()
@@ -65,11 +69,11 @@ namespace Assets.SpringSim
             return -dragForce * mass * tmpVelocity;
         }
 
-        public Vector3 AvoidForce(List<Mass> masses)
+        public Vector3 AvoidForce(SpatialHash<Mass> masses)
         {
             var p = position;
             Vector3 F = Vector3.zero;
-            foreach (var _m in masses)
+            foreach (var _m in masses.GetSurrounding(position, avoidForce))
             {
                 var _p = _m.position;
                 float factor = Mathf.SmoothStep(1, 0, Mathf.InverseLerp(0f, avoidRadius, Vector3.Distance(p, _p)));
@@ -82,21 +86,21 @@ namespace Assets.SpringSim
         public void Select()
         {
             isSelected = true;
-            material.color = Color.red;
+            color = Color.red;
         }
         public void Deselect()
         {
             isSelected = false;
-            material.color = Color.white;
+            color = Color.white;
         }
         public void Hover()
         {
-            material.color = Color.yellow;
+            color = Color.yellow;
         }
         public void DeHover()
         {
             if (!isSelected)
-                material.color = Color.white;
+                color = Color.white;
         }
     }
 }
