@@ -44,7 +44,6 @@ namespace Assets.SpringSim
         [Header("Interaction")]
         [SerializeField] Mass massPrefab;
         [SerializeField] Link linkPrefab;
-        [SerializeField] bool reset = false;
 
         [Header("Init")]
         [SerializeField] Mesh entryPoint;
@@ -64,36 +63,32 @@ namespace Assets.SpringSim
             set => entryPoint = value;
         }
 
-        public void Reset() => reset = true;
         public void SetStiffness(float stiffness) => linkStiffness = stiffness;
         public void SetComeback(float comeback) => comebackForce = comeback;
         public void SetDamping(float damping) => this.dragForce = damping;
         public void SetDivide(bool divide) => divideWhenTooLong = divide;
         public void SetAvoidForce(float force) => avoidForce = force;
+        public void SetAvoidRadius(float radius) => avoidRadius = radius;
         public void Clear()
         {
             massBodies.ForEach(mb => Destroy(mb.gameObject));
             massBodies.Clear();
+            massHash.Clear();
+            massCount = 0;
             linkObjects.ForEach(lb => Destroy(lb.gameObject));
             linkObjects.Clear();
-            massHash.Clear();
+            linkCount = 0;
         }
 
         void Start()
         {
             Time.fixedDeltaTime = 1.0f / rate;
             if (entryPoint) ExtractMesh(entryPoint);
-            massHash = new(avoidRadius / 2f);
+            massHash = new(0.3f);
         }
 
         void FixedUpdate()
         {
-            if (reset)
-            {
-                ExtractMesh(entryPoint);
-                reset = false;
-            }
-
             var delta = Time.deltaTime;
             Parallel.ForEach(linkObjects, (link) =>
             {
@@ -114,9 +109,9 @@ namespace Assets.SpringSim
                 if (mass.isSelected)
                 {
                     mass.tmpVelocity = new(0, 0, 0);
-                    massHash
-                        .GetSurrounding(mass.position, avoidRadius)
-                        .ForEach(m => m.mark = true);
+                    // massHash
+                    //     .GetSurrounding(mass.position, avoidRadius)
+                    //     .ForEach(m => m.mark = Vector3.Distance(m.position, mass.position) < avoidRadius);
                 }
                 mass.velocity = mass.tmpVelocity;
 

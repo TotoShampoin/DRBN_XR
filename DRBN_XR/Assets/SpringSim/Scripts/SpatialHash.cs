@@ -11,7 +11,7 @@ public class SpatialHash<T>
 
     public SpatialHash(float cellSize)
     {
-        hashmap = new ConcurrentDictionary<Vector3Int, ConcurrentBag<T>>();
+        hashmap = new();
         this.cellSize = cellSize;
     }
 
