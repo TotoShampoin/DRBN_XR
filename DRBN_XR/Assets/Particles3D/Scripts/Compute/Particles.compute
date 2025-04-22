@@ -203,8 +203,8 @@ void MoveParticles (uint3 id : SV_DispatchThreadID)
 
     p += v * DeltaTime;
 
-    AttractToCenter(p, v);
-    // AttractToBottom(p, v);
+    // AttractToCenter(p, v);
+    AttractToBottom(p, v);
     Collisions(p, v);
 
     Positions[id.x] = p;

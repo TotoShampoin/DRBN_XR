@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 12d25d9114705bf48a2c88c8fbebacd1
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - simulator: {instanceID: 0}
+  - display: {instanceID: 0}
+  - cursor: {instanceID: 0}
+  - grabTrigger: {instanceID: 0}
+  - attractToCursor: {fileID: 7200000, guid: d515fa2960c8e4d4696bfdb3e2aaaf4f, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

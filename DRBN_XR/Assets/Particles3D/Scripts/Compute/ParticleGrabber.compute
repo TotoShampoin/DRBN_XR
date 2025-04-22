@@ -1,0 +1,28 @@
+#pragma kernel Attract
+
+RWStructuredBuffer<float3> Positions;
+RWStructuredBuffer<float3> Velocities;
+
+float deltaTime;
+uint particleCount;
+
+float3 attractTo;
+float attractForce;
+float attractRadius;
+
+[numthreads(256,1,1)]
+void Attract(uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= particleCount) return;
+    if(distance(Positions[id.x], attractTo) > attractRadius) return;
+
+    float dist = distance(Positions[id.x], attractTo);
+    float normalizedDist = dist / attractRadius;
+    float smoothFactor = 1.0 - smoothstep(0.0, 1.0, normalizedDist);
+
+
+    float3 direction = normalize(attractTo - Positions[id.x]);
+    float3 attractionForce = direction * attractForce * smoothFactor;
+
+    Velocities[id.x] += attractionForce * deltaTime;
+}

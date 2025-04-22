@@ -80,11 +80,11 @@ Shader "Instanced/ParticleRender"
                 float3 cameraUp = normalize(UNITY_MATRIX_IT_MV[1].xyz);
                 
                 float3 localPos = v.vertex.xyz * _ParticleSize;
-                float3 worldPos = mul(_LocalToWorld, worldPosition)
-                               + cameraRight * localPos.x 
-                               + cameraUp * localPos.y;
+                float4 worldPos = mul(_LocalToWorld, float4(worldPosition, 1))
+                               + float4(cameraRight, 0) * localPos.x 
+                               + float4(cameraUp, 0) * localPos.y;
                 
-                o.pos = mul(UNITY_MATRIX_VP, float4(worldPos, 1.0));
+                o.pos = mul(UNITY_MATRIX_VP, worldPos);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.instanceID = v.instanceID;
                 UNITY_TRANSFER_FOG(o, o.pos);
@@ -103,7 +103,7 @@ Shader "Instanced/ParticleRender"
                 );
 
                 // fixed4 c = lerp(_ColorA, _ColorB, normalizedIndex);
-                fixed4 c = fixed4(normalizedIndex, 1);
+                fixed4 c = fixed4(pow(normalizedIndex, 2.2), 1);
                 if(_Indices[i.instanceID] >= _ParticleCount)
                     c = fixed4(1,0,1,1);
                 // c.rgb = normalize(c.rgb);

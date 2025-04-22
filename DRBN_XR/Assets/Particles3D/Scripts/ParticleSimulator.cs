@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEditor;
 
 public struct Particle
 {
@@ -77,15 +78,24 @@ public class ParticleSimulator : MonoBehaviour
         predictedPositionsBuffer?.Release();
         densityBuffer?.Release();
         nearbyDensityBuffer?.Release();
-
         particlesIndices?.Release();
         subgridIndices?.Release();
         subgridStarts?.Release();
         subgridCounts?.Release();
-
         testBuffer?.Release();
-
         argsBuffer?.Release();
+
+        positionsBuffer = null;
+        velocitiesBuffer = null;
+        predictedPositionsBuffer = null;
+        densityBuffer = null;
+        nearbyDensityBuffer = null;
+        particlesIndices = null;
+        subgridIndices = null;
+        subgridStarts = null;
+        subgridCounts = null;
+        testBuffer = null;
+        argsBuffer = null;
     }
 
     void Update()
@@ -111,7 +121,7 @@ public class ParticleSimulator : MonoBehaviour
         );
     }
 
-    void ResetParticles()
+    public void ResetParticles()
     {
         List<Vector3> positions = new(particleCount);
         List<Vector3> velocities = new(particleCount);
