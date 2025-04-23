@@ -30,6 +30,15 @@ public class ParticleSimulator : MonoBehaviour
     [SerializeField] float targetDensity = 6f;
     [SerializeField] float pressureScale = 15f;
     [SerializeField] float nearbyPressureScale = 2f;
+    [SerializeField] float viscosityRadius = 0.5f;
+    [SerializeField] float viscosityStrength = 3f;
+
+    [Header("Flow Control")]
+    [SerializeField] bool predictPositions = true;
+    [SerializeField] bool calculateDensities = true;
+    [SerializeField] bool calculatePressures = true;
+    [SerializeField] bool calculateViscosity = true;
+    [SerializeField] bool moveParticles = true;
 
     [Header("Debug")]
     [SerializeField] GameObject particlePrefab;
@@ -106,7 +115,7 @@ public class ParticleSimulator : MonoBehaviour
             resetOnNextFrame = false;
         }
         UpdateParticles();
-        PartitionParticles();
+        // PartitionParticles();
         if (drawParticles)
             DrawParticles();
     }
@@ -172,40 +181,67 @@ public class ParticleSimulator : MonoBehaviour
         particleComputeShader.SetVector("AttractionCenter", attractionCenter != null ? attractionCenter.position : Vector3.zero);
         particleComputeShader.SetFloat("AttractionStrength", attractionScale);
         particleComputeShader.SetFloat("PartitionResolution", partitionResolution);
+        particleComputeShader.SetFloat("ViscosityRadius", viscosityRadius);
+        particleComputeShader.SetFloat("ViscosityStrength", viscosityStrength);
 
         particleComputeShader.SetVector("CenterBound", centerBounds);
         particleComputeShader.SetVector("SizeBound", sizeBounds);
 
-        var predict = particleComputeShader.FindKernel("PredictPositions");
-        particleComputeShader.SetBuffer(predict, "Positions", positionsBuffer);
-        particleComputeShader.SetBuffer(predict, "Velocities", velocitiesBuffer);
-        particleComputeShader.SetBuffer(predict, "PredictedPositions", predictedPositionsBuffer);
-        particleComputeShader.Dispatch(predict, threadsCount, 1, 1);
+        if (predictPositions)
+        {
+            var predict = particleComputeShader.FindKernel("PredictPositions");
+            particleComputeShader.SetBuffer(predict, "Positions", positionsBuffer);
+            particleComputeShader.SetBuffer(predict, "Velocities", velocitiesBuffer);
+            particleComputeShader.SetBuffer(predict, "PredictedPositions", predictedPositionsBuffer);
+            particleComputeShader.Dispatch(predict, threadsCount, 1, 1);
+        }
 
-        var density = particleComputeShader.FindKernel("CalculateDensities");
-        particleComputeShader.SetBuffer(density, "Positions", positionsBuffer);
-        particleComputeShader.SetBuffer(density, "Velocities", velocitiesBuffer);
-        particleComputeShader.SetBuffer(density, "PredictedPositions", predictedPositionsBuffer);
-        particleComputeShader.SetBuffer(density, "Densities", densityBuffer);
-        particleComputeShader.SetBuffer(density, "NearbyDensities", nearbyDensityBuffer);
-        particleComputeShader.SetBuffer(density, "ParticlesIndices", particlesIndices);
-        particleComputeShader.SetBuffer(density, "SubgridStarts", subgridStarts);
-        particleComputeShader.Dispatch(density, threadsCount, 1, 1);
+        if (calculateDensities)
+        {
+            var density = particleComputeShader.FindKernel("CalculateDensities");
+            particleComputeShader.SetBuffer(density, "Positions", positionsBuffer);
+            particleComputeShader.SetBuffer(density, "Velocities", velocitiesBuffer);
+            particleComputeShader.SetBuffer(density, "PredictedPositions", predictedPositionsBuffer);
+            particleComputeShader.SetBuffer(density, "Densities", densityBuffer);
+            particleComputeShader.SetBuffer(density, "NearbyDensities", nearbyDensityBuffer);
+            particleComputeShader.SetBuffer(density, "ParticlesIndices", particlesIndices);
+            particleComputeShader.SetBuffer(density, "SubgridStarts", subgridStarts);
+            particleComputeShader.Dispatch(density, threadsCount, 1, 1);
+        }
 
-        var pressure = particleComputeShader.FindKernel("CalculatePressures");
-        particleComputeShader.SetBuffer(pressure, "Positions", positionsBuffer);
-        particleComputeShader.SetBuffer(pressure, "Velocities", velocitiesBuffer);
-        particleComputeShader.SetBuffer(pressure, "PredictedPositions", predictedPositionsBuffer);
-        particleComputeShader.SetBuffer(pressure, "Densities", densityBuffer);
-        particleComputeShader.SetBuffer(pressure, "NearbyDensities", nearbyDensityBuffer);
-        particleComputeShader.SetBuffer(pressure, "ParticlesIndices", particlesIndices);
-        particleComputeShader.SetBuffer(pressure, "SubgridStarts", subgridStarts);
-        particleComputeShader.Dispatch(pressure, threadsCount, 1, 1);
+        if (calculatePressures)
+        {
+            var pressure = particleComputeShader.FindKernel("CalculatePressures");
+            particleComputeShader.SetBuffer(pressure, "Positions", positionsBuffer);
+            particleComputeShader.SetBuffer(pressure, "Velocities", velocitiesBuffer);
+            particleComputeShader.SetBuffer(pressure, "PredictedPositions", predictedPositionsBuffer);
+            particleComputeShader.SetBuffer(pressure, "Densities", densityBuffer);
+            particleComputeShader.SetBuffer(pressure, "NearbyDensities", nearbyDensityBuffer);
+            particleComputeShader.SetBuffer(pressure, "ParticlesIndices", particlesIndices);
+            particleComputeShader.SetBuffer(pressure, "SubgridStarts", subgridStarts);
+            particleComputeShader.Dispatch(pressure, threadsCount, 1, 1);
+        }
 
-        var movement = particleComputeShader.FindKernel("MoveParticles");
-        particleComputeShader.SetBuffer(movement, "Positions", positionsBuffer);
-        particleComputeShader.SetBuffer(movement, "Velocities", velocitiesBuffer);
-        particleComputeShader.Dispatch(movement, threadsCount, 1, 1);
+        if (calculateViscosity)
+        {
+            var viscosity = particleComputeShader.FindKernel("CalculateViscosity");
+            particleComputeShader.SetBuffer(viscosity, "Positions", positionsBuffer);
+            particleComputeShader.SetBuffer(viscosity, "Velocities", velocitiesBuffer);
+            particleComputeShader.SetBuffer(viscosity, "PredictedPositions", predictedPositionsBuffer);
+            particleComputeShader.SetBuffer(viscosity, "Densities", densityBuffer);
+            particleComputeShader.SetBuffer(viscosity, "NearbyDensities", nearbyDensityBuffer);
+            particleComputeShader.SetBuffer(viscosity, "ParticlesIndices", particlesIndices);
+            particleComputeShader.SetBuffer(viscosity, "SubgridStarts", subgridStarts);
+            particleComputeShader.Dispatch(viscosity, threadsCount, 1, 1);
+        }
+
+        if (moveParticles)
+        {
+            var movement = particleComputeShader.FindKernel("MoveParticles");
+            particleComputeShader.SetBuffer(movement, "Positions", positionsBuffer);
+            particleComputeShader.SetBuffer(movement, "Velocities", velocitiesBuffer);
+            particleComputeShader.Dispatch(movement, threadsCount, 1, 1);
+        }
     }
 
     void PartitionParticles()
@@ -256,6 +292,7 @@ public class ParticleSimulator : MonoBehaviour
         if (particleMesh == null || particleMaterial == null) return;
 
         particleMaterial.SetBuffer("_Positions", positionsBuffer);
+        particleMaterial.SetBuffer("_Velocities", velocitiesBuffer);
         particleMaterial.SetBuffer("_Indices", particlesIndices);
         particleMaterial.SetBuffer("_SubgridIndices", subgridIndices);
         particleMaterial.SetFloat("_ParticleSize", particleSize);

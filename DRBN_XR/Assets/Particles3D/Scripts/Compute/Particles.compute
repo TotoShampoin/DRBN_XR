@@ -2,6 +2,7 @@
 #pragma kernel CalculateDensities
 #pragma kernel CalculatePressures
 #pragma kernel PredictPositions
+#pragma kernel CalculateViscosity
 
 RWStructuredBuffer<float3> Positions;
 RWStructuredBuffer<float3> Velocities;
@@ -22,6 +23,10 @@ float PressureScale = 1.0f;
 float NearbyPressureScale = 1.0f;
 
 float DensityRadius = 3.0f;
+
+float ViscosityRadius = 0.5f;
+float ViscosityStrength = 3.0f;
+
 const float PI = 3.14159265358979323846f;
 
 float3 CenterBound;
@@ -125,6 +130,15 @@ float PressureKernelGradient(float radius, float dist)
     return scale * v * v / dist; // Note the division by dist for direction
 }
 
+float ViscosityKernel(float radius, float dist)
+{
+    const float PI = 3.14159265358979323846f;
+    if(dist > radius || dist < 0.0001f) return 0.0f;
+    float scale = 315 / (64 * PI * pow(radius, 9));
+    float v = radius * radius - dist * dist;
+    return v * v * v * scale;
+}
+
 void Collisions(inout float3 p, inout float3 v)
 {
     float3 minBound = CenterBound - SizeBound / 2;
@@ -132,27 +146,27 @@ void Collisions(inout float3 p, inout float3 v)
 
     if(p.x < minBound.x) {
         v.x += (minBound.x - p.x);
-        p.x = minBound.x;
+        // p.x = minBound.x;
     }
     if(p.x > maxBound.x) {
         v.x += (maxBound.x - p.x);
-        p.x = maxBound.x;
+        // p.x = maxBound.x;
     }
     if(p.y < minBound.y) {
         v.y += (minBound.y - p.y);
-        p.y = minBound.y;
+        // p.y = minBound.y;
     }
     if(p.y > maxBound.y) {
         v.y += (maxBound.y - p.y);
-        p.y = maxBound.y;
+        // p.y = maxBound.y;
     }
     if(p.z < minBound.z) {
         v.z += (minBound.z - p.z);
-        p.z = minBound.z;
+        // p.z = minBound.z;
     }
     if(p.z > maxBound.z) {
         v.z += (maxBound.z - p.z);
-        p.z = maxBound.z;
+        // p.z = maxBound.z;
     }
 }
 
@@ -195,7 +209,9 @@ void MoveParticles (uint3 id : SV_DispatchThreadID)
             Random(id.x + 1),
             Random(id.x + 2),
             Random(id.x + 3)) * 2 - 1;
-        p *= 10;
+        // p *= 10;
+        // Scale and center random position within the bounds
+        p = p * SizeBound * 0.5f + CenterBound;
         v = float3(0, 0, 0);
     }
 
@@ -269,28 +285,28 @@ void CalculateDensities (uint3 id : SV_DispatchThreadID)
     float density = 0;
     float nearbyDensity = 0;
 
-    int3 min, max;
-    NearbySubgrids(min, max, id, DensityRadius);
-    for(int z = min.z; z <= max.z; z++) {
-        for(int y = min.y; y <= max.y; y++) {
-            for(int x = min.x; x <= max.x; x++) {
-                uint subgridIndex = GetSubgridIndex(float3(x, y, z));
-                if(subgridIndex >= PartitionResolution * PartitionResolution * PartitionResolution) continue;
-                uint start = SubgridStarts[subgridIndex];
-                uint end = SubgridStarts[subgridIndex + 1];
-                for(uint i = start; i < end && i < ParticleCount; i++) {
-                    uint index = ParticlesIndices[i];
-                    if (index == id.x) continue;
-                    CalcDensity(density, nearbyDensity, id, index);
-                }
-            }
-        }
-    }
-    CalcDensity(density, nearbyDensity, id, id.x);
-
-    // for(uint i = 0; i < ParticleCount; i++) {
-    //     CalcDensity(density, nearbyDensity, id, i);
+    // int3 min, max;
+    // NearbySubgrids(min, max, id, DensityRadius);
+    // for(int z = min.z; z <= max.z; z++) {
+    //     for(int y = min.y; y <= max.y; y++) {
+    //         for(int x = min.x; x <= max.x; x++) {
+    //             uint subgridIndex = GetSubgridIndex(float3(x, y, z));
+    //             if(subgridIndex >= PartitionResolution * PartitionResolution * PartitionResolution) continue;
+    //             uint start = SubgridStarts[subgridIndex];
+    //             uint end = SubgridStarts[subgridIndex + 1];
+    //             for(uint i = start; i < end && i < ParticleCount; i++) {
+    //                 uint index = ParticlesIndices[i];
+    //                 if (index == id.x) continue;
+    //                 CalcDensity(density, nearbyDensity, id, index);
+    //             }
+    //         }
+    //     }
     // }
+    // CalcDensity(density, nearbyDensity, id, id.x);
+
+    for(uint i = 0; i < ParticleCount; i++) {
+        CalcDensity(density, nearbyDensity, id, i);
+    }
     Densities[id.x] = density;
     NearbyDensities[id.x] = nearbyDensity;
 }
@@ -309,18 +325,23 @@ void CalcPressure(
     float3 dir = delta / dist;
 
     float influence = DensityKernelGradient(DensityRadius, dist);
-    // float nearbyInfluence = NearbyDensityKernelGradient(DensityRadius, dist);
     float nearbyInfluence = PressureKernelGradient(DensityRadius, dist);
 
     float otherPressure = DensityToPressure(Densities[i]);
     float otherNearbyPressure = NearbyDensityToPressure(NearbyDensities[i]);
 
     float sharedPressure = 0.5 * (pressure + otherPressure);
-    float sharedNearbyPressure = 0.5 * 
-        (nearbyPressure + otherNearbyPressure);
-
+    float sharedNearbyPressure = 0.5 * (nearbyPressure + otherNearbyPressure);
+    
+    
     force += sharedPressure * dir * influence / Densities[i];
     force += sharedNearbyPressure * dir * nearbyInfluence / Densities[i];
+
+    // float density_i = Densities[id.x];
+    // float density_j = Densities[i];
+    // float density = (density_i*density_j);
+    // force += sharedPressure * dir * influence / density;
+    // force += sharedNearbyPressure * dir * nearbyInfluence / density;
 }
 
 [numthreads(256,1,1)]
@@ -358,4 +379,40 @@ void CalculatePressures (uint3 id : SV_DispatchThreadID)
 
     if(density < 0.0001f) return; // Avoid division by zero
     Velocities[id.x] += force / density * DeltaTime;
+}
+
+[numthreads(256,1,1)]
+void CalculateViscosity (uint3 id : SV_DispatchThreadID)
+{
+    if(id.x >= ParticleCount) return;
+    float3 force = 0;
+
+    // int3 min, max;
+    // NearbySubgrids(min, max, id, ViscosityRadius);
+    // for(int z = min.z; z <= max.z; z++) {
+    //     for(int y = min.y; y <= max.y; y++) {
+    //         for(int x = min.x; x <= max.x; x++) {
+    //             uint subgridIndex = GetSubgridIndex(float3(x, y, z));
+    //             if(subgridIndex >= PartitionResolution * PartitionResolution * PartitionResolution) continue;
+    //             uint start = SubgridStarts[subgridIndex];
+    //             uint end = SubgridStarts[subgridIndex + 1];
+    //             for(uint i = start; i < end && i < ParticleCount; i++) {
+    //                 uint index = ParticlesIndices[i];
+    //                 if (index == id.x) continue;
+    //                 float dist = distance(Positions[index], Positions[id.x]);
+    //                 float influence = ViscosityKernel(ViscosityRadius, dist);
+    //                 force += (Velocities[index] - Velocities[id.x]) * influence;
+    //             }
+    //         }
+    //     }
+    // }
+    
+    for(uint i = 0; i < ParticleCount; i++) {
+        if (i == id.x) continue;
+        float dist = distance(Positions[i], Positions[id.x]);
+        float influence = ViscosityKernel(ViscosityRadius, dist);
+        force += (Velocities[i] - Velocities[id.x]) * influence;
+    }
+
+    Velocities[id.x] += force * DeltaTime * ViscosityStrength;
 }
