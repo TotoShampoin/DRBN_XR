@@ -1,9 +1,5 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEditor;
 
 public struct Particle
 {
@@ -22,8 +18,7 @@ public class ParticleSimulator : MonoBehaviour
     [SerializeField] int partitionResolution = 8;
 
     [Header("Parameters")]
-    [SerializeField] Vector3 centerBounds = new(0, 0, 0);
-    [SerializeField] Vector3 sizeBounds = new(10, 10, 10);
+    [SerializeField] Bounds bounds = new(new(0, 0, 0), new(10, 10, 10));
     [SerializeField] Transform attractionCenter;
     [SerializeField] float attractionScale = 1f;
     [SerializeField] float densityRadius = 0.5f;
@@ -33,18 +28,14 @@ public class ParticleSimulator : MonoBehaviour
     [SerializeField] float viscosityRadius = 0.5f;
     [SerializeField] float viscosityStrength = 3f;
 
-    [Header("Flow Control")]
-    [SerializeField] bool predictPositions = true;
-    [SerializeField] bool calculateDensities = true;
-    [SerializeField] bool calculatePressures = true;
-    [SerializeField] bool calculateViscosity = true;
-    [SerializeField] bool moveParticles = true;
-
     [Header("Debug")]
-    [SerializeField] GameObject particlePrefab;
-    [SerializeField] float particleSize = 0.1f;
     [SerializeField] bool resetOnNextFrame = false;
-    [SerializeField] bool drawParticles = true;
+    readonly bool predictPositions = true;
+    readonly bool calculateDensities = true;
+    readonly bool calculatePressures = true;
+    readonly bool calculateViscosity = true;
+    readonly bool moveParticles = true;
+
 
     int currentParticleCount = 0;
 
@@ -57,27 +48,21 @@ public class ParticleSimulator : MonoBehaviour
     public ComputeBuffer subgridIndices;
     public ComputeBuffer subgridStarts;
     public ComputeBuffer subgridCounts;
-    private ComputeBuffer argsBuffer;
 
     public ComputeBuffer testBuffer;
 
-    public Vector3 CenterBounds => centerBounds;
-    public Vector3 SizeBounds => sizeBounds;
-    public Vector3 MinBounds => centerBounds - sizeBounds / 2;
-    public Vector3 MaxBounds => centerBounds + sizeBounds / 2;
+    public Bounds Bounds => bounds;
+    public Vector3 MinBounds => bounds.center - bounds.size / 2;
+    public Vector3 MaxBounds => bounds.center + bounds.size / 2;
     public float DensityRadius => densityRadius;
     public int ParticleCount => currentParticleCount;
+    public int PartitionResolution => partitionResolution;
     public int PartitionCount =>
         partitionResolution * partitionResolution * partitionResolution;
-
-    private Mesh particleMesh;
-    private Material particleMaterial;
 
     void OnEnable()
     {
         ResetParticles();
-        particleMesh = particlePrefab.GetComponent<MeshFilter>().sharedMesh;
-        particleMaterial = particlePrefab.GetComponent<MeshRenderer>().material;
     }
 
     void OnDisable()
@@ -92,7 +77,6 @@ public class ParticleSimulator : MonoBehaviour
         subgridStarts?.Release();
         subgridCounts?.Release();
         testBuffer?.Release();
-        argsBuffer?.Release();
 
         positionsBuffer = null;
         velocitiesBuffer = null;
@@ -104,7 +88,6 @@ public class ParticleSimulator : MonoBehaviour
         subgridStarts = null;
         subgridCounts = null;
         testBuffer = null;
-        argsBuffer = null;
     }
 
     void Update()
@@ -116,18 +99,6 @@ public class ParticleSimulator : MonoBehaviour
         }
         UpdateParticles();
         // PartitionParticles();
-        if (drawParticles)
-            DrawParticles();
-    }
-
-    void OnDrawGizmos()
-    {
-        Gizmos.color = Color.white;
-        Gizmos.matrix = transform.localToWorldMatrix;
-        Gizmos.DrawWireCube(
-            centerBounds,
-            sizeBounds
-        );
     }
 
     public void ResetParticles()
@@ -139,9 +110,9 @@ public class ParticleSimulator : MonoBehaviour
         for (int i = 0; i < particleCount; i++)
         {
             positions.Add(new(
-                UnityEngine.Random.Range(MinBounds.x, MaxBounds.x),
-                UnityEngine.Random.Range(MinBounds.y, MaxBounds.y),
-                UnityEngine.Random.Range(MinBounds.z, MaxBounds.z)
+                Random.Range(MinBounds.x, MaxBounds.x),
+                Random.Range(MinBounds.y, MaxBounds.y),
+                Random.Range(MinBounds.z, MaxBounds.z)
             ));
             velocities.Add(new(0, 0, 0));
             densities.Add(0f);
@@ -184,8 +155,8 @@ public class ParticleSimulator : MonoBehaviour
         particleComputeShader.SetFloat("ViscosityRadius", viscosityRadius);
         particleComputeShader.SetFloat("ViscosityStrength", viscosityStrength);
 
-        particleComputeShader.SetVector("CenterBound", centerBounds);
-        particleComputeShader.SetVector("SizeBound", sizeBounds);
+        particleComputeShader.SetVector("CenterBound", bounds.center);
+        particleComputeShader.SetVector("SizeBound", bounds.size);
 
         if (predictPositions)
         {
@@ -258,8 +229,8 @@ public class ParticleSimulator : MonoBehaviour
         var powerOf2Size = (uint)1 << power;
 
         partitioningComputeShader.SetInt("PartitionResolution", partitionResolution);
-        partitioningComputeShader.SetVector("CenterBound", centerBounds);
-        partitioningComputeShader.SetVector("SizeBound", sizeBounds);
+        partitioningComputeShader.SetVector("CenterBound", bounds.center);
+        partitioningComputeShader.SetVector("SizeBound", bounds.size);
 
         partitioningComputeShader.SetBuffer(clear, "SubgridCounts", subgridCounts);
         partitioningComputeShader.Dispatch(clear, threadsCountSubgrid, 1, 1);
@@ -285,38 +256,5 @@ public class ParticleSimulator : MonoBehaviour
                 partitioningComputeShader.Dispatch(sortSubgridsGlobal, threadsCountParticle, 1, 1);
             }
         }
-    }
-
-    void DrawParticles()
-    {
-        if (particleMesh == null || particleMaterial == null) return;
-
-        particleMaterial.SetBuffer("_Positions", positionsBuffer);
-        particleMaterial.SetBuffer("_Velocities", velocitiesBuffer);
-        particleMaterial.SetBuffer("_Indices", particlesIndices);
-        particleMaterial.SetBuffer("_SubgridIndices", subgridIndices);
-        particleMaterial.SetFloat("_ParticleSize", particleSize);
-        particleMaterial.SetInt("_ParticleCount", currentParticleCount);
-        particleMaterial.SetInt("_PartitionResolution", partitionResolution);
-        particleMaterial.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);
-
-        // Set up the arguments buffer for indirect drawing
-        argsBuffer ??=
-            new(1, sizeof(uint) * 5, ComputeBufferType.IndirectArguments);
-
-        uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
-        args[0] = particleMesh.GetIndexCount(0);
-        args[1] = (uint)currentParticleCount;
-        args[2] = particleMesh.GetIndexStart(0);
-        args[3] = particleMesh.GetBaseVertex(0);
-        argsBuffer.SetData(args);
-
-        // Draw all particles in a single draw call
-        Graphics.DrawMeshInstancedIndirect(
-            particleMesh, 0,
-            particleMaterial,
-            new Bounds(centerBounds, sizeBounds * 2),
-            argsBuffer
-        );
     }
 }

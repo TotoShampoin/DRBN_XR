@@ -55,6 +55,20 @@ class ParticleGrabber : MonoBehaviour
                 {
                     return display.InverseTransformPoint(cursor.position);
                 }
+            case ParticleDisplayType.Remap:
+                {
+                    // Map cursor position from display local space [-0.5,0.5] to simulator bounds
+                    Vector3 localPos = display.InverseTransformPoint(cursor.position);
+                    Bounds bounds = simulator.Bounds;
+                    Vector3 min = bounds.min;
+                    Vector3 max = bounds.max;
+                    Vector3 remapped = new(
+                        Mathf.LerpUnclamped(min.x, max.x, localPos.x + 0.5f),
+                        Mathf.LerpUnclamped(min.y, max.y, localPos.y + 0.5f),
+                        Mathf.LerpUnclamped(min.z, max.z, localPos.z + 0.5f)
+                    );
+                    return remapped;
+                }
 
         }
     }
@@ -65,5 +79,5 @@ enum ParticleDisplayType
 {
     NoTransform,
     UseTransform,
-    // Remap,
+    Remap,
 }

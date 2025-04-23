@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8807520379558830786}
   - component: {fileID: 3373212701852859468}
+  - component: {fileID: 1227396343519546546}
   m_Layer: 0
   m_Name: ParticleSimulator
   m_TagString: Untagged
@@ -44,18 +45,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0b7bfe8c224a754c8804b1ff2ab2461, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  particlePrefab: {fileID: 0}
-  particleCount: 4096
   particleComputeShader: {fileID: 7200000, guid: f0190bb646261c847857dbe6793ac171,
     type: 3}
+  partitioningComputeShader: {fileID: 7200000, guid: 22705d456df3ce44d98780017234b8b1,
+    type: 3}
+  particleCount: 4096
+  partitionResolution: 8
+  bounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 5, y: 5, z: 5}
+  attractionCenter: {fileID: 0}
+  attractionScale: 1
   densityRadius: 0.5
   targetDensity: 6
   pressureScale: 15
   nearbyPressureScale: 2
-  attractionScale: 1
-  attractionCenter: {fileID: 0}
-  centerBounds: {x: 0, y: 0, z: 0}
-  sizeBounds: {x: 5, y: 5, z: 5}
+  viscosityRadius: 0.5
+  viscosityStrength: 3
+  predictPositions: 1
+  calculateDensities: 1
+  calculatePressures: 1
+  calculateViscosity: 1
+  moveParticles: 1
   resetOnNextFrame: 0
+--- !u!114 &1227396343519546546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4968504487694027585}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b2ff5ede0877414d95f9cc43452cc6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  material: {fileID: 2100000, guid: 3122ee03db9f304479311a885b4f8ebc, type: 2}
   particleSize: 0.1
-  drawParticles: 1

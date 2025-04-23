@@ -1,4 +1,4 @@
-Shader "Instanced/ParticleRender"
+Shader "Instanced/ParticleBillboard"
 {
     Properties
     {
