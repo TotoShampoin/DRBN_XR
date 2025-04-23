@@ -18,6 +18,7 @@ public class WeightPainter : MonoBehaviour
     bool isUsingBrush = false;
     bool isErasing = false;
     public bool needsRegenerate = false;
+    public bool clearAtStart = true;
 
     void Start()
     {
@@ -26,8 +27,11 @@ public class WeightPainter : MonoBehaviour
         eraseTrigger.action.performed += _ => isErasing = true;
         eraseTrigger.action.canceled += _ => isErasing = false;
 
-        Clear(renderTexture);
-        needsRegenerate = true;
+        if (clearAtStart)
+        {
+            Clear(renderTexture);
+            needsRegenerate = true;
+        }
     }
 
     void Update()

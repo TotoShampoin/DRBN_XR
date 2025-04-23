@@ -84,6 +84,10 @@ namespace Assets.SpringSim
                 {
                     control.ReturnToMarchingCubes();
                 }
+                if (GUILayout.Button("Reset Marching cubes"))
+                {
+                    control.GenerateMarchingCubes();
+                }
             }
         }
     }

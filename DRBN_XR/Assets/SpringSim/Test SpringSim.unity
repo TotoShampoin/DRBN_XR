@@ -3993,7 +3993,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 15
   m_WholeNumbers: 0
-  m_Value: 5
+  m_Value: 7.5
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
@@ -4552,7 +4552,7 @@ PrefabInstance:
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 3b40eb11091cdb3459c84c7491d48d68, type: 2}
+      objectReference: {fileID: 2100000, guid: 08a64ac00a929664991ca1dddbec9d59, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5216,7 +5216,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 3000
   m_WholeNumbers: 1
-  m_Value: 2000
+  m_Value: 3000
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
@@ -6035,6 +6035,7 @@ MonoBehaviour:
   radius: 0.1
   weight: 0.5
   needsRegenerate: 0
+  clearAtStart: 0
 --- !u!1 &2116106810
 GameObject:
   m_ObjectHideFlags: 0
@@ -6167,7 +6168,7 @@ PrefabInstance:
     - target: {fileID: 3557724596718408267, guid: 51113aa8ba0507843b7dda85e2848317,
         type: 3}
       propertyPath: dragForce
-      value: 5
+      value: 7.5
       objectReference: {fileID: 0}
     - target: {fileID: 3557724596718408267, guid: 51113aa8ba0507843b7dda85e2848317,
         type: 3}
@@ -6212,7 +6213,12 @@ PrefabInstance:
     - target: {fileID: 3557724596718408267, guid: 51113aa8ba0507843b7dda85e2848317,
         type: 3}
       propertyPath: comebackForce
-      value: 200
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 3557724596718408267, guid: 51113aa8ba0507843b7dda85e2848317,
+        type: 3}
+      propertyPath: linkStiffness
+      value: 3000
       objectReference: {fileID: 0}
     - target: {fileID: 3557724596718408267, guid: 51113aa8ba0507843b7dda85e2848317,
         type: 3}
