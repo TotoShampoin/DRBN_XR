@@ -22,17 +22,21 @@ namespace Assets.SpringSim
         {
             if (weightPainter.enabled && weightPainter.needsRegenerate)
             {
-                marchingCubes.GenerateAndApplyMesh(renderTexture,
-                    weightGenerator.Threshold);
+                RefreshMarchingCubes();
                 weightPainter.needsRegenerate = false;
             }
+        }
+
+        public void RefreshMarchingCubes()
+        {
+            marchingCubes.GenerateAndApplyMesh(renderTexture,
+                    weightGenerator.Threshold);
         }
 
         public void GenerateMarchingCubes()
         {
             weightGenerator.Generate(renderTexture);
-            marchingCubes.GenerateAndApplyMesh(renderTexture,
-                    weightGenerator.Threshold);
+            RefreshMarchingCubes();
         }
 
         public void GenerateSprings()
@@ -49,8 +53,7 @@ namespace Assets.SpringSim
         {
             springSim.Clear();
             weightPainter.enabled = true;
-            marchingCubes.GenerateAndApplyMesh(renderTexture,
-                    weightGenerator.Threshold);
+            RefreshMarchingCubes();
         }
 
         public void Quit()

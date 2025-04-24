@@ -13,13 +13,6 @@ namespace Assets.SpringSim
         public int b;
         public float length;
     };
-    public class SpringMass
-    {
-        public Vector3 position;
-        public Vector3 initial;
-        public Vector3 velocity = Vector3.zero;
-        public Vector3 tmpVelocity = Vector3.zero;
-    }
 
     public class SpringSim : MonoBehaviour
     {
@@ -37,8 +30,6 @@ namespace Assets.SpringSim
         [SerializeField] bool divideWhenTooLong = true;
 
         [Header("Rendering")]
-        [SerializeField] Mesh displayMesh;
-        [SerializeField] Material displayMaterial;
         [SerializeField] float displaySize = 0.1f;
 
         [Header("Interaction")]
@@ -48,8 +39,8 @@ namespace Assets.SpringSim
         [Header("Init")]
         [SerializeField] Mesh entryPoint;
         [SerializeField] bool rescaleToBounds = true;
-        [SerializeField] Vector3 boundSize = new(1, 1, 1);
-        [SerializeField] float extractionEpsilon = 0.005f;
+        [SerializeField] Bounds bounds = new(new(0, 0, 0), new(1, 1, 1));
+        [SerializeField] public float extractionEpsilon = 0.005f;
 
         private readonly List<Mass> massBodies = new();
         private readonly List<Link> linkObjects = new();
@@ -66,6 +57,7 @@ namespace Assets.SpringSim
         public void SetStiffness(float stiffness) => linkStiffness = stiffness;
         public void SetComeback(float comeback) => comebackForce = comeback;
         public void SetDamping(float damping) => this.dragForce = damping;
+        public void SetViscosity(float viscosity) => this.viscosity = viscosity;
         public void SetDivide(bool divide) => divideWhenTooLong = divide;
         public void SetAvoidForce(float force) => avoidForce = force;
         public void SetAvoidRadius(float radius) => avoidRadius = radius;
@@ -126,6 +118,7 @@ namespace Assets.SpringSim
             Mass.avoidForce = avoidForce;
             Mass.avoidRadius = avoidRadius;
             Link.stiffness = linkStiffness;
+            Link.viscosity = viscosity;
 
             if (divideWhenTooLong)
             {
@@ -258,7 +251,7 @@ namespace Assets.SpringSim
             Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
             var positions = dmesh.vertices;
             if (rescaleToBounds)
-                MeshMod.RescaleToBounds(ref positions, dmesh.bounds, boundSize);
+                MeshMod.RescaleToBounds(ref positions, dmesh.bounds, bounds);
 
             ConcurrentDictionary<uint, SpringLink> links = new();
             static uint HashKey(int a, int b)

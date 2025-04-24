@@ -43,12 +43,12 @@ public class MeshMod
         return result;
     }
 
-    static public void RescaleToBounds(ref Vector3[] positions, Bounds oldBounds, Vector3 newBounds)
+    static public void RescaleToBounds(ref Vector3[] positions, Bounds oldBounds, Bounds newBounds)
     {
         Vector3 minBoundInput = oldBounds.center - oldBounds.size * 0.5f;
         Vector3 maxBoundInput = oldBounds.center + oldBounds.size * 0.5f;
-        Vector3 minBoundOutput = -newBounds * 0.5f;
-        Vector3 maxBoundOutput = newBounds * 0.5f;
+        Vector3 minBoundOutput = newBounds.center - newBounds.size * 0.5f;
+        Vector3 maxBoundOutput = newBounds.center + newBounds.size * 0.5f;
         // Calculate the scale factor to maintain aspect ratio
         Vector3 inputSize = maxBoundInput - minBoundInput;
         Vector3 outputSize = maxBoundOutput - minBoundOutput;
