@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Assets.SpringSim
+namespace Assets.SpringSim.V1
 {
 
     public struct SpringLink

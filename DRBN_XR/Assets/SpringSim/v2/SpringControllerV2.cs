@@ -1,16 +1,15 @@
-using TMPro;
 using UnityEngine;
 
-namespace Assets.SpringSim
+namespace Assets.SpringSim.V2
 {
 
-    public class SpringSimControl : MonoBehaviour
+    public class SpringController : MonoBehaviour
     {
-        [SerializeField] RenderTexture renderTexture;
-        [SerializeField] SpringSim springSim;
-        [SerializeField] MarchingCubes marchingCubes;
-        [SerializeField] WeightGenerator weightGenerator;
-        [SerializeField] WeightPainter weightPainter;
+        public SpringSimulator simulator;
+        public RenderTexture renderTexture;
+        public MarchingCubes marchingCubes;
+        public WeightGenerator weightGenerator;
+        public WeightPainter weightPainter;
 
         void Start()
         {
@@ -44,14 +43,13 @@ namespace Assets.SpringSim
             marchingCubes.ClearMesh();
             var mesh = marchingCubes.GenerateMesh(renderTexture,
                 weightGenerator.Threshold);
-            springSim.Clear();
-            springSim.ExtractMesh(mesh);
+            simulator.UseMesh(mesh);
             weightPainter.enabled = false;
         }
 
         public void ReturnToMarchingCubes()
         {
-            springSim.Clear();
+            simulator.Clear();
             weightPainter.enabled = true;
             RefreshMarchingCubes();
         }
@@ -66,12 +64,12 @@ namespace Assets.SpringSim
     }
 
 #if UNITY_EDITOR
-    [UnityEditor.CustomEditor(typeof(SpringSimControl))]
+    [UnityEditor.CustomEditor(typeof(SpringController))]
     public class SpringSimControlEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
-            SpringSimControl control = (SpringSimControl)target;
+            SpringController control = (SpringController)target;
 
             DrawDefaultInspector();
 
