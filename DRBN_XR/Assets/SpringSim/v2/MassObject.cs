@@ -11,15 +11,34 @@ namespace Assets.SpringSim.V2
 
         bool hovered = false;
 
+        public Vector3 initial;
+        public bool returnToOrigin;
+
         public Vector3 Position => rigidbody.position;
         public Vector3 Velocity => rigidbody.linearVelocity;
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force) => rigidbody.AddForce(force, mode);
-
+        public bool UseGravity
+        {
+            get => rigidbody.useGravity;
+            set => rigidbody.useGravity = value;
+        }
+        public float comebackStiffness;
 
         void Start()
         {
             mesh = GetComponent<MeshRenderer>();
             rigidbody = GetComponent<Rigidbody>();
+            initial = Position;
+        }
+
+        void FixedUpdate()
+        {
+            if (returnToOrigin)
+            {
+                var k = comebackStiffness;
+                var force = k * (initial - Position);
+                AddForce(force);
+            }
         }
 
         void Update()

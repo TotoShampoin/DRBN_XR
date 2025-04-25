@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
+using System.Diagnostics;
+using TMPro;
 
 namespace Assets.SpringSim.V2
 {
@@ -13,17 +15,33 @@ namespace Assets.SpringSim.V2
         public float length;
     };
 
+    public enum MassReturns
+    {
+        None,
+        Corners,
+        Edges,
+        All,
+    }
+
     public class SpringSimulator : MonoBehaviour
     {
         [Header("Properties")]
         public float stiffness = 1000f;
         public float viscosity = 2f;
+        public float comebackStiffness = 1000f;
 
         public MassObject massPrefab;
         public LinkObject linkPrefab;
-        public Bounds bounds;
-        public float extractionEpsilon = 0.005f;
+        public bool useBounds = true;
+        public Bounds bounds = new(new(0, 0, 0), new(1, 1, 1));
         public float forcedRate = 240f;
+        public bool useGravity = false;
+        public MassReturns returnType = MassReturns.None;
+
+        int? selected = null;
+        readonly List<int> surrounding = new();
+
+        public TextMeshProUGUI profiler;
 
         private readonly List<MassObject> massObjects = new();
         private readonly List<SpringLink> links = new();
@@ -35,6 +53,10 @@ namespace Assets.SpringSim.V2
 
         public void SetStiffness(float s) => stiffness = s;
         public void SetViscosity(float v) => viscosity = v;
+        public void SetComeback(float c) => comebackStiffness = c;
+        public void SetUseGravity(bool g) => useGravity = g;
+        public void SetReturn(MassReturns r) => returnType = r;
+        public void SetReturn(int r) => returnType = (MassReturns)r;
 
         void Start()
         {
@@ -43,6 +65,7 @@ namespace Assets.SpringSim.V2
 
         void FixedUpdate()
         {
+            var stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < massObjects.Count; i++)
             {
                 positionCache[i] = massObjects[i].Position;
@@ -74,7 +97,11 @@ namespace Assets.SpringSim.V2
             for (int i = 0; i < massObjects.Count; i++)
             {
                 massObjects[i].AddForce(forces[i]);
+                massObjects[i].UseGravity = useGravity;
+                massObjects[i].comebackStiffness = comebackStiffness;
             }
+            stopwatch.Stop();
+            profiler.text = $"Tick rate: {Mathf.Round(1f / (float)stopwatch.Elapsed.TotalSeconds)} tps";
         }
 
         void OnDrawGizmos()
@@ -95,11 +122,12 @@ namespace Assets.SpringSim.V2
             veloctiyCache.Clear();
             forces.Clear();
         }
-        public void UseMesh(Mesh mesh)
+        public void UseMesh(Mesh mesh, float extractionEpsilon = 0.005f)
         {
             Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
             var positions = dmesh.vertices;
-            MeshMod.RescaleToBounds(ref positions, dmesh.bounds, bounds);
+            if (useBounds)
+                MeshMod.RescaleToBounds(ref positions, dmesh.bounds, bounds);
             ConcurrentDictionary<uint, SpringLink> links = new();
             static uint HashKey(int a, int b)
             {
@@ -136,6 +164,45 @@ namespace Assets.SpringSim.V2
                 {
                     var mass = Instantiate(massPrefab, transform.TransformPoint(p), Quaternion.identity, transform);
                     mass.gameObject.SetActive(true);
+                    switch (returnType)
+                    {
+                        case MassReturns.None: default: break;
+                        case MassReturns.Corners:
+                            {
+                                // Check if p is at least at 2 of the 3 axes of the bounds (i.e., on a corner)
+                                int axesOnBounds = 0;
+                                Vector3 min = bounds.min;
+                                Vector3 max = bounds.max;
+                                if (Mathf.Abs(p.x - min.x) < extractionEpsilon || Mathf.Abs(p.x - max.x) < extractionEpsilon) axesOnBounds++;
+                                if (Mathf.Abs(p.y - min.y) < extractionEpsilon || Mathf.Abs(p.y - max.y) < extractionEpsilon) axesOnBounds++;
+                                if (Mathf.Abs(p.z - min.z) < extractionEpsilon || Mathf.Abs(p.z - max.z) < extractionEpsilon) axesOnBounds++;
+                                if (axesOnBounds >= 2)
+                                {
+                                    mass.returnToOrigin = true;
+                                }
+                            }
+                            break;
+                        case MassReturns.Edges:
+                            {
+                                // Check if p is at least on one of the axes of the bounds (i.e., on an edge)
+                                Vector3 min = bounds.min;
+                                Vector3 max = bounds.max;
+                                if (
+                                    Mathf.Abs(p.x - min.x) < extractionEpsilon || Mathf.Abs(p.x - max.x) < extractionEpsilon ||
+                                    Mathf.Abs(p.y - min.y) < extractionEpsilon || Mathf.Abs(p.y - max.y) < extractionEpsilon ||
+                                    Mathf.Abs(p.z - min.z) < extractionEpsilon || Mathf.Abs(p.z - max.z) < extractionEpsilon
+                                )
+                                {
+                                    mass.returnToOrigin = true;
+                                }
+                            }
+                            break;
+                        case MassReturns.All:
+                            {
+                                mass.returnToOrigin = true;
+                            }
+                            break;
+                    }
                     return mass;
                 }));
             this.links.AddRange(links.Values);

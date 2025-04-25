@@ -10,6 +10,13 @@ namespace Assets.SpringSim.V2
         public MarchingCubes marchingCubes;
         public WeightGenerator weightGenerator;
         public WeightPainter weightPainter;
+        public float meshExtractionEpsilon = 0.005f;
+
+        public float MarchingCubeResolution // if this is not a float, Unity's slider won't accept it -_-
+        {
+            get => marchingCubes.resolution;
+            set => marchingCubes.resolution = (int)value;
+        }
 
         void Start()
         {
@@ -43,7 +50,7 @@ namespace Assets.SpringSim.V2
             marchingCubes.ClearMesh();
             var mesh = marchingCubes.GenerateMesh(renderTexture,
                 weightGenerator.Threshold);
-            simulator.UseMesh(mesh);
+            simulator.UseMesh(mesh, meshExtractionEpsilon);
             weightPainter.enabled = false;
         }
 
