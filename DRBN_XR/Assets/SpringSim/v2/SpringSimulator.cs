@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,13 +19,15 @@ namespace Assets.SpringSim.V2
         public float stiffness = 1000f;
         public float viscosity = 2f;
 
-        public Rigidbody massPrefab;
+        public MassObject massPrefab;
+        public LinkObject linkPrefab;
         public Bounds bounds;
         public float extractionEpsilon = 0.005f;
         public float forcedRate = 240f;
 
-        private readonly List<Rigidbody> massObjects = new();
+        private readonly List<MassObject> massObjects = new();
         private readonly List<SpringLink> links = new();
+        private readonly List<LinkObject> linkObjects = new();
 
         private readonly List<Vector3> positionCache = new();
         private readonly List<Vector3> veloctiyCache = new();
@@ -44,14 +45,13 @@ namespace Assets.SpringSim.V2
         {
             for (int i = 0; i < massObjects.Count; i++)
             {
-                positionCache[i] = massObjects[i].position;
-                veloctiyCache[i] = massObjects[i].linearVelocity;
+                positionCache[i] = massObjects[i].Position;
+                veloctiyCache[i] = massObjects[i].Velocity;
+                forces[i] = Vector3.zero;
             }
             Parallel.For(0, links.Count, i =>
             {
                 var link = links[i];
-                forces[i] = Vector3.zero;
-
                 var p1 = positionCache[link.a];
                 var p2 = positionCache[link.b];
                 var v1 = veloctiyCache[link.a];
@@ -62,10 +62,14 @@ namespace Assets.SpringSim.V2
                 var d = Vector3.Distance(p1, p2);
 
                 if (d == 0) return;
-
-                forces[i] += k * (1 - l0 / d) * (p2 - p1);
-                forces[i] += viscosity * (v2 - v1);
-
+                var dir = (p2 - p1).normalized;
+                var springForce = k * (d - l0) * dir;
+                var dampingForce = viscosity * (v2 - v1);
+                lock (forces)
+                {
+                    forces[link.a] += springForce + dampingForce;
+                    forces[link.b] -= springForce + dampingForce;
+                }
             });
             for (int i = 0; i < massObjects.Count; i++)
             {
@@ -80,19 +84,12 @@ namespace Assets.SpringSim.V2
             Gizmos.DrawWireCube(bounds.center, bounds.size);
         }
 
-        public void ForEach(Action<int, Rigidbody> massCallback, Action<int, SpringLink> linkCallback)
-        {
-            for (int i = 0; i < Mathf.Max(massObjects.Count, links.Count); i++)
-            {
-                if (i < massObjects.Count) massCallback(i, massObjects[i]);
-                if (i < links.Count) linkCallback(i, links[i]);
-            }
-        }
-
         public void Clear()
         {
             massObjects.ForEach(rb => Destroy(rb.gameObject));
             massObjects.Clear();
+            linkObjects.ForEach(lk => Destroy(lk.gameObject));
+            linkObjects.Clear();
             links.Clear();
             positionCache.Clear();
             veloctiyCache.Clear();
@@ -142,9 +139,21 @@ namespace Assets.SpringSim.V2
                     return mass;
                 }));
             this.links.AddRange(links.Values);
+            linkObjects.AddRange(
+                links.Values.Select(lk =>
+                {
+                    var link = Instantiate(linkPrefab, transform);
+                    link.a = massObjects[lk.a].gameObject;
+                    link.b = massObjects[lk.b].gameObject;
+                    link.length = lk.length;
+                    link.gameObject.SetActive(true);
+                    return link;
+                })
+            );
             positionCache.AddRange(positions);
             veloctiyCache.AddRange(positions.Select(_ => Vector3.zero));
-            forces.AddRange(links.Select(_ => Vector3.zero));
+            // forces.AddRange(links.Select(_ => Vector3.zero));
+            forces.AddRange(positions.Select(_ => Vector3.zero));
         }
     }
 }
