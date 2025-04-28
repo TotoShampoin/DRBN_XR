@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using System.Diagnostics;
 using TMPro;
-using System;
 
 namespace Assets.SpringSim.V2
 {
@@ -102,13 +101,6 @@ namespace Assets.SpringSim.V2
                 massObjects[i].AddForce(forces[i]);
                 massObjects[i].UseGravity = useGravity;
                 massObjects[i].comebackStiffness = comebackStiffness;
-
-                // if (selected && massObjects[i].partiallyGrabbed)
-                // {
-                //     var delta = selected.Position - selected.grabOrigin;
-                //     var factor = Mathf.InverseLerp(0, grabDistance, Vector3.Distance(selected.grabOrigin, massObjects[i].grabOrigin));
-                //     massObjects[i].grabInfluenceTarget = massObjects[i].grabOrigin + delta * Mathf.SmoothStep(0, 1, Mathf.Lerp(1, 0, factor));
-                // }
             }
             stopwatch.Stop();
             profiler.text = $"Tick rate: {Mathf.Round(1f / (float)stopwatch.Elapsed.TotalSeconds)} tps";

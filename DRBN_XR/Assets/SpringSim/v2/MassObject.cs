@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace Assets.SpringSim.V2
@@ -11,8 +10,6 @@ namespace Assets.SpringSim.V2
 
         bool hovered = false;
         bool grabbed = false;
-        // public Vector3 grabOrigin;
-        // public Vector3 grabInfluenceTarget;
 
         public Vector3 initial;
         public bool returnToOrigin;
@@ -56,12 +53,6 @@ namespace Assets.SpringSim.V2
                 var force = k * (initial - Position);
                 AddForce(force);
             }
-            // if (partiallyGrabbed)
-            // {
-            //     var k = comebackStiffness;
-            //     var force = k * (grabInfluenceTarget - Position);
-            //     AddForce(force);
-            // }
         }
 
         Color transparent = new(0, 0, 0, 0);
@@ -70,8 +61,8 @@ namespace Assets.SpringSim.V2
             // THIS ASSUMES A SPECIFIC SHADER!
             if (grabbed)
                 mesh.material.color = Color.red;
-            else if (partiallyGrabbed)
-                mesh.material.color = Color.magenta;
+            // else if (partiallyGrabbed)
+            //     mesh.material.color = Color.magenta;
             else if (hovered)
                 mesh.material.color = Color.yellow;
             else
@@ -84,7 +75,6 @@ namespace Assets.SpringSim.V2
         {
             grabbed = true;
             parentSimulator.OnMassGrabbed(this);
-            // grabOrigin = Position;
         }
         public void OnUngrabbed()
         {
@@ -95,7 +85,6 @@ namespace Assets.SpringSim.V2
         public void PartialGrab()
         {
             partiallyGrabbed = true;
-            // grabOrigin = Position;
         }
         public void PartialUngrab()
         {
