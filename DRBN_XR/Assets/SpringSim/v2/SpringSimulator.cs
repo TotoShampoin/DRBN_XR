@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using System.Diagnostics;
 using TMPro;
+using System;
 
 namespace Assets.SpringSim.V2
 {
@@ -37,9 +38,10 @@ namespace Assets.SpringSim.V2
         public float forcedRate = 240f;
         public bool useGravity = false;
         public MassReturns returnType = MassReturns.None;
+        public float grabDistance = 0.5f;
 
-        int? selected = null;
-        readonly List<int> surrounding = new();
+        MassObject selected = null;
+        readonly List<MassObject> surrounding = new();
 
         public TextMeshProUGUI profiler;
 
@@ -55,6 +57,7 @@ namespace Assets.SpringSim.V2
         public void SetViscosity(float v) => viscosity = v;
         public void SetComeback(float c) => comebackStiffness = c;
         public void SetUseGravity(bool g) => useGravity = g;
+        public void SetGrabRadius(float r) => grabDistance = r;
         public void SetReturn(MassReturns r) => returnType = r;
         public void SetReturn(int r) => returnType = (MassReturns)r;
 
@@ -99,6 +102,13 @@ namespace Assets.SpringSim.V2
                 massObjects[i].AddForce(forces[i]);
                 massObjects[i].UseGravity = useGravity;
                 massObjects[i].comebackStiffness = comebackStiffness;
+
+                // if (selected && massObjects[i].partiallyGrabbed)
+                // {
+                //     var delta = selected.Position - selected.grabOrigin;
+                //     var factor = Mathf.InverseLerp(0, grabDistance, Vector3.Distance(selected.grabOrigin, massObjects[i].grabOrigin));
+                //     massObjects[i].grabInfluenceTarget = massObjects[i].grabOrigin + delta * Mathf.SmoothStep(0, 1, Mathf.Lerp(1, 0, factor));
+                // }
             }
             stopwatch.Stop();
             profiler.text = $"Tick rate: {Mathf.Round(1f / (float)stopwatch.Elapsed.TotalSeconds)} tps";
@@ -109,6 +119,30 @@ namespace Assets.SpringSim.V2
             Gizmos.color = Color.white;
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.DrawWireCube(bounds.center, bounds.size);
+        }
+
+        public IEnumerable<MassObject> GetSurroundingMasses(Vector3 position, float distance)
+        {
+            return massObjects.Where(o => Vector3.Distance(o.Position, position) <= distance);
+        }
+
+        public void ResetGrabbed()
+        {
+            selected = null;
+            surrounding.ForEach(o => o.PartialUngrab());
+            surrounding.Clear();
+        }
+        public void OnMassGrabbed(MassObject grabbed)
+        {
+            if (selected) return;
+            selected = grabbed;
+            surrounding.AddRange(GetSurroundingMasses(grabbed.Position, grabDistance));
+            surrounding.ForEach(o => o.PartialGrab());
+        }
+        public void OnMassUngrabbed(MassObject ungrabbed)
+        {
+            if (selected != ungrabbed) return;
+            ResetGrabbed();
         }
 
         public void Clear()
