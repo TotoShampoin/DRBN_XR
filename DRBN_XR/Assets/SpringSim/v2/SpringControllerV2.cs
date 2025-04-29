@@ -1,16 +1,22 @@
-using TMPro;
 using UnityEngine;
 
-namespace Assets.SpringSim
+namespace Assets.SpringSim.V2
 {
 
-    public class SpringSimControl : MonoBehaviour
+    public class SpringController : MonoBehaviour
     {
-        [SerializeField] RenderTexture renderTexture;
-        [SerializeField] SpringSim springSim;
-        [SerializeField] MarchingCubes marchingCubes;
-        [SerializeField] WeightGenerator weightGenerator;
-        [SerializeField] WeightPainter weightPainter;
+        public SpringSimulator simulator;
+        public RenderTexture renderTexture;
+        public MarchingCubes marchingCubes;
+        public WeightGenerator weightGenerator;
+        public WeightPainter weightPainter;
+        public float meshExtractionEpsilon = 0.005f;
+
+        public float MarchingCubeResolution // if this is not a float, Unity's slider won't accept it -_-
+        {
+            get => marchingCubes.resolution;
+            set => marchingCubes.resolution = (int)value;
+        }
 
         void Start()
         {
@@ -22,17 +28,21 @@ namespace Assets.SpringSim
         {
             if (weightPainter.enabled && weightPainter.needsRegenerate)
             {
-                marchingCubes.GenerateAndApplyMesh(renderTexture,
-                    weightGenerator.Threshold);
+                RefreshMarchingCubes();
                 weightPainter.needsRegenerate = false;
             }
+        }
+
+        public void RefreshMarchingCubes()
+        {
+            marchingCubes.GenerateAndApplyMesh(renderTexture,
+                    weightGenerator.Threshold);
         }
 
         public void GenerateMarchingCubes()
         {
             weightGenerator.Generate(renderTexture);
-            marchingCubes.GenerateAndApplyMesh(renderTexture,
-                    weightGenerator.Threshold);
+            RefreshMarchingCubes();
         }
 
         public void GenerateSprings()
@@ -40,17 +50,15 @@ namespace Assets.SpringSim
             marchingCubes.ClearMesh();
             var mesh = marchingCubes.GenerateMesh(renderTexture,
                 weightGenerator.Threshold);
-            springSim.Clear();
-            springSim.ExtractMesh(mesh);
+            simulator.UseMesh(mesh, meshExtractionEpsilon);
             weightPainter.enabled = false;
         }
 
         public void ReturnToMarchingCubes()
         {
-            springSim.Clear();
+            simulator.Clear();
             weightPainter.enabled = true;
-            marchingCubes.GenerateAndApplyMesh(renderTexture,
-                    weightGenerator.Threshold);
+            RefreshMarchingCubes();
         }
 
         public void Quit()
@@ -63,12 +71,12 @@ namespace Assets.SpringSim
     }
 
 #if UNITY_EDITOR
-    [UnityEditor.CustomEditor(typeof(SpringSimControl))]
+    [UnityEditor.CustomEditor(typeof(SpringController))]
     public class SpringSimControlEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
-            SpringSimControl control = (SpringSimControl)target;
+            SpringController control = (SpringController)target;
 
             DrawDefaultInspector();
 

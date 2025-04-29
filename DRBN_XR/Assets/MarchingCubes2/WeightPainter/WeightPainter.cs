@@ -90,6 +90,10 @@ public class WeightPainter : MonoBehaviour
     {
         this.radius = radius;
     }
+    public void SetStrength(float weight)
+    {
+        this.weight = weight;
+    }
 
     public enum ActionMode
     {

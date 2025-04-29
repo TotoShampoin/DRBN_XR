@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Assets.SpringSim
+namespace Assets.SpringSim.V1
 {
 
     [RequireComponent(
@@ -43,11 +43,11 @@ namespace Assets.SpringSim
         {
             if (isSelected)
             {
-                position = originalParent.InverseTransformPoint(transform.position);
+                position = originalParent.InverseTransformPoint(rb.position);
             }
             else
             {
-                transform.position = originalParent.TransformPoint(position);
+                rb.position = originalParent.TransformPoint(position);
             }
 
             rb.mass = mass;

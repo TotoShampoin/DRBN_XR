@@ -50,7 +50,11 @@ public class MarchingCubes : MonoBehaviour
 
     public void GenerateAndApplyMesh(RenderTexture renderTexture, float threshold)
     {
-        meshFilter.mesh = GenerateMesh(renderTexture, threshold);
+        ApplyMesh(GenerateMesh(renderTexture, threshold));
+    }
+    public void ApplyMesh(Mesh mesh)
+    {
+        meshFilter.mesh = mesh;
     }
 
     public Mesh GenerateMesh(RenderTexture renderTexture, float threshold)
