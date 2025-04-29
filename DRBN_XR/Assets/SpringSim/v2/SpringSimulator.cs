@@ -52,13 +52,13 @@ namespace Assets.SpringSim.V2
         private readonly List<Vector3> veloctiyCache = new();
         private readonly List<Vector3> forces = new();
 
-        public void SetStiffness(float s) => stiffness = s;
-        public void SetViscosity(float v) => viscosity = v;
-        public void SetComeback(float c) => comebackStiffness = c;
-        public void SetUseGravity(bool g) => useGravity = g;
-        public void SetGrabRadius(float r) => grabDistance = r;
-        public void SetReturn(MassReturns r) => returnType = r;
-        public void SetReturn(int r) => returnType = (MassReturns)r;
+        public float Stiffness { get => stiffness; set => stiffness = value; }
+        public float Viscosity { get => viscosity; set => viscosity = value; }
+        public float Comeback { get => comebackStiffness; set => comebackStiffness = value; }
+        public bool UseGravity { get => useGravity; set => useGravity = value; }
+        public float GrabRadius { get => grabDistance; set => grabDistance = value; }
+        public MassReturns Return { get => returnType; set => returnType = value; }
+        public int ReturnAsInt { get => (int)returnType; set => returnType = (MassReturns)value; }
 
         void Start()
         {
@@ -100,7 +100,7 @@ namespace Assets.SpringSim.V2
             {
                 massObjects[i].AddForce(forces[i]);
                 massObjects[i].UseGravity = useGravity;
-                massObjects[i].comebackStiffness = comebackStiffness;
+                massObjects[i].ComebackStiffness = comebackStiffness;
             }
             stopwatch.Stop();
             profiler.text = $"Tick rate: {Mathf.Round(1f / (float)stopwatch.Elapsed.TotalSeconds)} tps";
@@ -204,7 +204,7 @@ namespace Assets.SpringSim.V2
                                 if (Mathf.Abs(p.z - min.z) < extractionEpsilon || Mathf.Abs(p.z - max.z) < extractionEpsilon) axesOnBounds++;
                                 if (axesOnBounds >= 2)
                                 {
-                                    mass.returnToOrigin = true;
+                                    mass.ReturnToOrigin = true;
                                 }
                             }
                             break;
@@ -219,13 +219,13 @@ namespace Assets.SpringSim.V2
                                     Mathf.Abs(p.z - min.z) < extractionEpsilon || Mathf.Abs(p.z - max.z) < extractionEpsilon
                                 )
                                 {
-                                    mass.returnToOrigin = true;
+                                    mass.ReturnToOrigin = true;
                                 }
                             }
                             break;
                         case MassReturns.All:
                             {
-                                mass.returnToOrigin = true;
+                                mass.ReturnToOrigin = true;
                             }
                             break;
                     }

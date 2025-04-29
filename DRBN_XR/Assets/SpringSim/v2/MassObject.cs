@@ -7,39 +7,25 @@ namespace Assets.SpringSim.V2
     {
         new Rigidbody rigidbody;
         MeshRenderer mesh;
+        SpringSimulator parentSimulator;
 
-        bool hovered = false;
-        bool grabbed = false;
-
-        public Vector3 initial;
-        public bool returnToOrigin;
-
-        public Vector3 Position
-        {
-            get => rigidbody.position;
-            set => rigidbody.position = value;
-        }
-        public Vector3 Velocity
-        {
-            get => rigidbody.linearVelocity;
-            set => rigidbody.linearVelocity = value;
-        }
+        public Vector3 Position { get => rigidbody.position; set => rigidbody.position = value; }
+        public Vector3 Velocity { get => rigidbody.linearVelocity; set => rigidbody.linearVelocity = value; }
+        public bool UseGravity { get => rigidbody.useGravity; set => rigidbody.useGravity = value; }
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force) => rigidbody.AddForce(force, mode);
-        public bool UseGravity
-        {
-            get => rigidbody.useGravity;
-            set => rigidbody.useGravity = value;
-        }
-        public float comebackStiffness;
-        public bool partiallyGrabbed = false;
 
-        public SpringSimulator parentSimulator;
+        public Vector3 Initial { get; set; }
+        public bool ReturnToOrigin { get; set; }
+        public float ComebackStiffness { get; set; }
+        public bool Hovered { get; set; } = false;
+        public bool Grabbed { get; set; } = false;
+        public bool PartiallyGrabbed { get; set; } = false;
 
         void Start()
         {
             mesh = GetComponent<MeshRenderer>();
             rigidbody = GetComponent<Rigidbody>();
-            initial = Position;
+            Initial = Position;
 
             var sim = transform.parent.gameObject.GetComponent<SpringSimulator>();
             if (sim) parentSimulator = sim;
@@ -47,10 +33,10 @@ namespace Assets.SpringSim.V2
 
         void FixedUpdate()
         {
-            if (returnToOrigin)
+            if (ReturnToOrigin)
             {
-                var k = comebackStiffness;
-                var force = k * (initial - Position);
+                var k = ComebackStiffness;
+                var force = k * (Initial - Position);
                 AddForce(force);
             }
         }
@@ -59,36 +45,36 @@ namespace Assets.SpringSim.V2
         void Update()
         {
             // THIS ASSUMES A SPECIFIC SHADER!
-            if (grabbed)
+            if (Grabbed)
                 mesh.material.color = Color.red;
             // else if (partiallyGrabbed)
             //     mesh.material.color = Color.magenta;
-            else if (hovered)
+            else if (Hovered)
                 mesh.material.color = Color.yellow;
             else
                 mesh.material.color = transparent;
         }
 
-        public void OnHovered() => hovered = true;
-        public void OnUnhovered() => hovered = false;
+        public void OnHovered() => Hovered = true;
+        public void OnUnhovered() => Hovered = false;
         public void OnGrabbed()
         {
-            grabbed = true;
+            Grabbed = true;
             parentSimulator.OnMassGrabbed(this);
         }
         public void OnUngrabbed()
         {
-            grabbed = false;
+            Grabbed = false;
             parentSimulator.OnMassUngrabbed(this);
         }
 
         public void PartialGrab()
         {
-            partiallyGrabbed = true;
+            PartiallyGrabbed = true;
         }
         public void PartialUngrab()
         {
-            partiallyGrabbed = false;
+            PartiallyGrabbed = false;
         }
     }
 }

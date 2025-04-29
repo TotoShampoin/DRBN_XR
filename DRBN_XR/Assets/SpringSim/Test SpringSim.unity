@@ -2709,7 +2709,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1987122}
         m_TargetAssemblyTypeName: Assets.SpringSim.V2.SpringSimulator, Assembly-CSharp
-        m_MethodName: SetViscosity
+        m_MethodName: set_Viscosity
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -5396,7 +5396,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1987122}
         m_TargetAssemblyTypeName: Assets.SpringSim.V2.SpringSimulator, Assembly-CSharp
-        m_MethodName: SetStiffness
+        m_MethodName: set_Stiffness
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -6058,7 +6058,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1987122}
         m_TargetAssemblyTypeName: Assets.SpringSim.V2.SpringSimulator, Assembly-CSharp
-        m_MethodName: SetGrabRadius
+        m_MethodName: set_GrabRadius
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -12101,7 +12101,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1987122}
         m_TargetAssemblyTypeName: Assets.SpringSim.V2.SpringSimulator, Assembly-CSharp
-        m_MethodName: SetReturn
+        m_MethodName: set_ReturnAsInt
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -12539,7 +12539,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1987122}
         m_TargetAssemblyTypeName: Assets.SpringSim.V2.SpringSimulator, Assembly-CSharp
-        m_MethodName: SetUseGravity
+        m_MethodName: set_UseGravity
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -13109,7 +13109,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1987122}
         m_TargetAssemblyTypeName: Assets.SpringSim.V2.SpringSimulator, Assembly-CSharp
-        m_MethodName: SetComeback
+        m_MethodName: set_Comeback
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
