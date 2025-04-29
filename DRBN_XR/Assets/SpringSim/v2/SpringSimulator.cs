@@ -52,6 +52,8 @@ namespace Assets.SpringSim.V2
         private readonly List<Vector3> veloctiyCache = new();
         private readonly List<Vector3> forces = new();
 
+        private Stopwatch stopwatch;
+
         public float Stiffness { get => stiffness; set => stiffness = value; }
         public float Viscosity { get => viscosity; set => viscosity = value; }
         public float Comeback { get => comebackStiffness; set => comebackStiffness = value; }
@@ -65,9 +67,14 @@ namespace Assets.SpringSim.V2
             Time.fixedDeltaTime = 1f / forcedRate;
         }
 
+        void Update()
+        {
+            profiler.text = $"Spring tickrate: {Mathf.Round(1f / (float)stopwatch.Elapsed.TotalSeconds)} tps\nFramerate: {Mathf.Round(1f / (float)Time.deltaTime)} fps";
+        }
+
         void FixedUpdate()
         {
-            var stopwatch = Stopwatch.StartNew();
+            stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < massObjects.Count; i++)
             {
                 positionCache[i] = massObjects[i].Position;
@@ -103,7 +110,6 @@ namespace Assets.SpringSim.V2
                 massObjects[i].ComebackStiffness = comebackStiffness;
             }
             stopwatch.Stop();
-            profiler.text = $"Tick rate: {Mathf.Round(1f / (float)stopwatch.Elapsed.TotalSeconds)} tps";
         }
 
         void OnDrawGizmos()

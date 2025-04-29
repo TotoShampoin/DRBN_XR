@@ -1948,6 +1948,13 @@ PrefabInstance:
       propertyPath: m_AnchorMin.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7712181987957483594, guid: 3a728cdf39a155c45b51c82b31d2174c,
+        type: 3}
+      propertyPath: m_text
+      value: 'Tick rate: 0 tps
+
+        Framerate: 0 fps'
+      objectReference: {fileID: 0}
     - target: {fileID: 7761094009653071637, guid: 3a728cdf39a155c45b51c82b31d2174c,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -2182,6 +2189,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchorMin.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9140642997166414211, guid: 3a728cdf39a155c45b51c82b31d2174c,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 64
       objectReference: {fileID: 0}
     - target: {fileID: 9140642997166414211, guid: 3a728cdf39a155c45b51c82b31d2174c,
         type: 3}
