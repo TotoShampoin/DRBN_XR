@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Metal small
+  m_Name: Impalla
   m_Shader: {fileID: 4800000, guid: 57f1477163505f24e9d8aeb8f4c02d08, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -76,8 +76,8 @@ Material:
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
-    - _StdMetallic: 1
-    - _StdSmoothness: 0.5
+    - _StdMetallic: 0
+    - _StdSmoothness: 0
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:

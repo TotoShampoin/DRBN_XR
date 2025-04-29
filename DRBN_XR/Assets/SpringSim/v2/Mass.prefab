@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 337741410047415248}
   - component: {fileID: 5788611918950878755}
   - component: {fileID: 597995365826268439}
+  - component: {fileID: 5506648272515032438}
   - component: {fileID: 1690623175523193289}
   m_Layer: 0
   m_Name: Mass
@@ -130,7 +131,7 @@ Rigidbody:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1028
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
@@ -150,12 +151,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f24c9d886e6b22542afc6515e2e13f31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  grabOrigin: {x: 0, y: 0, z: 0}
-  initial: {x: 0, y: 0, z: 0}
-  returnToOrigin: 0
-  comebackStiffness: 0
-  partiallyGrabbed: 0
-  parentSimulator: {fileID: 0}
+--- !u!114 &5506648272515032438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 517667349768458754}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee5586b2a4158364bb36ec680c70578f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1690623175523193289
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -4,6 +4,10 @@ Shader "Custom/StandardWithRim"
     {
         _Color ("Color", Color) = (1,1,1,1)
         _RimGamma ("Rim Gamma", Range(0,5)) = 1.0
+
+        _StdColor ("Albedo", Color) = (1,1,1,1)
+        _StdMetallic ("Metallic", Range(0,1)) = 1.0
+        _StdSmoothness ("Smoothness", Range(0,1)) = 0.5
     }
     SubShader
     {
@@ -29,6 +33,10 @@ Shader "Custom/StandardWithRim"
         fixed4 _Color;
         float _RimGamma;
 
+        fixed4 _StdColor;
+        float _StdMetallic;
+        float _StdSmoothness;
+
         // Add instancing support for this shader. You need to check 'Enable Instancing' on materials that use the shader.
         // See https://docs.unity3d.com/Manual/GPUInstancing.html for more information about instancing.
         // #pragma instancing_options assumeuniformscaling
@@ -43,12 +51,12 @@ Shader "Custom/StandardWithRim"
             fixed4 r = _Color * fixed4(1,1,1,pow(rim, _RimGamma));
 
             // Albedo comes from a texture tinted by color
-            fixed4 c = fixed4(1,1,1,1);
+            fixed4 c = _StdColor;
             // o.Albedo = c.rgb * (1 - r.a);
             o.Albedo = lerp(c, r, r.a);
             o.Emission = r.rgb * r.a;
-            o.Metallic = 1.0;
-            o.Smoothness = 0.333333333333;
+            o.Metallic = _StdMetallic;
+            o.Smoothness = _StdSmoothness;
             o.Alpha = c.a;
         }
         ENDCG
