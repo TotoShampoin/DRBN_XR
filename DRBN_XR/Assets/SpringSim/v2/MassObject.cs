@@ -61,12 +61,12 @@ namespace Assets.SpringSim.V2
         public void OnGrabbed()
         {
             Grabbed = true;
-            parentSimulator.OnMassGrabbed(this);
+            parentSimulator?.OnMassGrabbed(this);
         }
         public void OnUngrabbed()
         {
             Grabbed = false;
-            parentSimulator.OnMassUngrabbed(this);
+            parentSimulator?.OnMassUngrabbed(this);
         }
 
         public void PartialGrab()
