@@ -38,6 +38,7 @@ namespace Assets.SpringSim.V2
         public bool useGravity = false;
         public MassReturns returnType = MassReturns.None;
         public float grabDistance = 0.5f;
+        public float dampingForce = 1f;
 
         MassObject selected = null;
         readonly List<MassObject> surrounding = new();
@@ -52,6 +53,8 @@ namespace Assets.SpringSim.V2
         private readonly List<Vector3> veloctiyCache = new();
         private readonly List<Vector3> forces = new();
 
+        private Bounds usedBounds;
+
         private Stopwatch stopwatch;
 
         public float Stiffness { get => stiffness; set => stiffness = value; }
@@ -61,6 +64,8 @@ namespace Assets.SpringSim.V2
         public float GrabRadius { get => grabDistance; set => grabDistance = value; }
         public MassReturns Return { get => returnType; set => returnType = value; }
         public int ReturnAsInt { get => (int)returnType; set => returnType = (MassReturns)value; }
+        public bool UseBounds { get => useBounds; set => useBounds = value; }
+        public float DampingForce { get => dampingForce; set => dampingForce = value; }
 
         void Start()
         {
@@ -108,6 +113,7 @@ namespace Assets.SpringSim.V2
                 massObjects[i].AddForce(forces[i]);
                 massObjects[i].UseGravity = useGravity;
                 massObjects[i].ComebackStiffness = comebackStiffness;
+                massObjects[i].Damping = dampingForce;
             }
             stopwatch.Stop();
         }
@@ -159,7 +165,14 @@ namespace Assets.SpringSim.V2
             Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
             var positions = dmesh.vertices;
             if (useBounds)
+            {
                 MeshMod.RescaleToBounds(ref positions, dmesh.bounds, bounds);
+                usedBounds = bounds;
+            }
+            else
+            {
+                usedBounds = dmesh.bounds;
+            }
             ConcurrentDictionary<uint, SpringLink> links = new();
             static uint HashKey(int a, int b)
             {
@@ -203,8 +216,8 @@ namespace Assets.SpringSim.V2
                             {
                                 // Check if p is at least at 2 of the 3 axes of the bounds (i.e., on a corner)
                                 int axesOnBounds = 0;
-                                Vector3 min = bounds.min;
-                                Vector3 max = bounds.max;
+                                Vector3 min = usedBounds.min;
+                                Vector3 max = usedBounds.max;
                                 if (Mathf.Abs(p.x - min.x) < extractionEpsilon || Mathf.Abs(p.x - max.x) < extractionEpsilon) axesOnBounds++;
                                 if (Mathf.Abs(p.y - min.y) < extractionEpsilon || Mathf.Abs(p.y - max.y) < extractionEpsilon) axesOnBounds++;
                                 if (Mathf.Abs(p.z - min.z) < extractionEpsilon || Mathf.Abs(p.z - max.z) < extractionEpsilon) axesOnBounds++;
@@ -217,8 +230,8 @@ namespace Assets.SpringSim.V2
                         case MassReturns.Edges:
                             {
                                 // Check if p is at least on one of the axes of the bounds (i.e., on an edge)
-                                Vector3 min = bounds.min;
-                                Vector3 max = bounds.max;
+                                Vector3 min = usedBounds.min;
+                                Vector3 max = usedBounds.max;
                                 if (
                                     Mathf.Abs(p.x - min.x) < extractionEpsilon || Mathf.Abs(p.x - max.x) < extractionEpsilon ||
                                     Mathf.Abs(p.y - min.y) < extractionEpsilon || Mathf.Abs(p.y - max.y) < extractionEpsilon ||

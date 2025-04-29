@@ -12,6 +12,11 @@ namespace Assets.SpringSim.V2
         public WeightPainter weightPainter;
         public float meshExtractionEpsilon = 0.005f;
 
+        public float MeshExtractionEpsilon
+        {
+            get => meshExtractionEpsilon;
+            set => meshExtractionEpsilon = value;
+        }
         public float MarchingCubeResolution // if this is not a float, Unity's slider won't accept it -_-
         {
             get => marchingCubes.resolution;

@@ -13,6 +13,7 @@ namespace Assets.SpringSim.V2
         public Vector3 Velocity { get => rigidbody.linearVelocity; set => rigidbody.linearVelocity = value; }
         public bool UseGravity { get => rigidbody.useGravity; set => rigidbody.useGravity = value; }
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force) => rigidbody.AddForce(force, mode);
+        public float Damping { get => rigidbody.linearDamping; set => rigidbody.linearDamping = value; }
 
         public Vector3 Initial { get; set; }
         public bool ReturnToOrigin { get; set; }
