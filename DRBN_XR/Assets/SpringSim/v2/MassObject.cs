@@ -21,6 +21,18 @@ namespace Assets.SpringSim.V2
         public bool Hovered { get; set; } = false;
         public bool Grabbed { get; set; } = false;
         public bool PartiallyGrabbed { get; set; } = false;
+        public float Rigidity { get; set; } = 1f;
+
+        const double k = 1.380649e-23; // J K−1
+
+        // p[i].r = a + b
+        // a = dT * sum(j => p[j].v * diffusion(p[i], p[j]))
+        // b = dT / (k * T°) * sum(j => p[j].f * diffusion(p[i], p[j]))
+        // c = noise(i, dT)
+
+        // noise(i, dT): gaussian process (what's that?)
+
+        // now, how does that translate to a Mass-Spring simulation :D
 
         void Start()
         {
@@ -48,8 +60,8 @@ namespace Assets.SpringSim.V2
             // THIS ASSUMES A SPECIFIC SHADER!
             if (Grabbed)
                 mesh.material.color = Color.red;
-            // else if (partiallyGrabbed)
-            //     mesh.material.color = Color.magenta;
+            else if (PartiallyGrabbed)
+                mesh.material.color = Color.magenta;
             else if (Hovered)
                 mesh.material.color = Color.yellow;
             else

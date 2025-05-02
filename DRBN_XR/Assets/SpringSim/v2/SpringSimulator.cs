@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using System.Diagnostics;
 using TMPro;
+using UnityEngine.XR;
 
 namespace Assets.SpringSim.V2
 {
@@ -13,6 +14,14 @@ namespace Assets.SpringSim.V2
         public int a;
         public int b;
         public float length;
+    };
+
+    class CachedMass
+    {
+        public Vector3 position;
+        public Vector3 velocity;
+        public Vector3 force;
+        public float rigidity;
     };
 
     public enum MassReturns
@@ -49,9 +58,7 @@ namespace Assets.SpringSim.V2
         private readonly List<SpringLink> links = new();
         private readonly List<LinkObject> linkObjects = new();
 
-        private readonly List<Vector3> positionCache = new();
-        private readonly List<Vector3> veloctiyCache = new();
-        private readonly List<Vector3> forces = new();
+        private readonly List<CachedMass> cache = new();
 
         private Bounds usedBounds;
 
@@ -70,6 +77,7 @@ namespace Assets.SpringSim.V2
         void Start()
         {
             Time.fixedDeltaTime = 1f / forcedRate;
+            XRSettings.eyeTextureResolutionScale = 1.5f; // to make the vr hd
         }
 
         void Update()
@@ -82,35 +90,40 @@ namespace Assets.SpringSim.V2
             stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < massObjects.Count; i++)
             {
-                positionCache[i] = massObjects[i].Position;
-                veloctiyCache[i] = massObjects[i].Velocity;
-                forces[i] = Vector3.zero;
+                cache[i].position = massObjects[i].Position;
+                cache[i].velocity = massObjects[i].Velocity;
+                cache[i].rigidity = massObjects[i].Rigidity;
+                cache[i].force = Vector3.zero;
             }
             Parallel.For(0, links.Count, i =>
             {
                 var link = links[i];
-                var p1 = positionCache[link.a];
-                var p2 = positionCache[link.b];
-                var v1 = veloctiyCache[link.a];
-                var v2 = veloctiyCache[link.b];
+                var p1 = cache[link.a].position;
+                var p2 = cache[link.b].position;
+                var v1 = cache[link.a].velocity;
+                var v2 = cache[link.b].velocity;
+                var r1 = cache[link.a].rigidity;
+                var r2 = cache[link.b].rigidity;
+
+                var r = (r1 + r2) / 2f;
 
                 var l0 = link.length;
-                var k = stiffness;
+                var k = stiffness * r;
                 var d = Vector3.Distance(p1, p2);
 
                 if (d == 0) return;
                 var dir = (p2 - p1).normalized;
                 var springForce = k * (d - l0) * dir;
                 var dampingForce = viscosity * (v2 - v1);
-                lock (forces)
+                lock (cache)
                 {
-                    forces[link.a] += springForce + dampingForce;
-                    forces[link.b] -= springForce + dampingForce;
+                    cache[link.a].force += springForce + dampingForce;
+                    cache[link.b].force -= springForce + dampingForce;
                 }
             });
             for (int i = 0; i < massObjects.Count; i++)
             {
-                massObjects[i].AddForce(forces[i]);
+                massObjects[i].AddForce(cache[i].force);
                 massObjects[i].UseGravity = useGravity;
                 massObjects[i].ComebackStiffness = comebackStiffness;
                 massObjects[i].Damping = dampingForce;
@@ -156,9 +169,7 @@ namespace Assets.SpringSim.V2
             linkObjects.ForEach(lk => Destroy(lk.gameObject));
             linkObjects.Clear();
             links.Clear();
-            positionCache.Clear();
-            veloctiyCache.Clear();
-            forces.Clear();
+            cache.Clear();
         }
         public void UseMesh(Mesh mesh, float extractionEpsilon = 0.005f)
         {
@@ -262,10 +273,7 @@ namespace Assets.SpringSim.V2
                     return link;
                 })
             );
-            positionCache.AddRange(positions);
-            veloctiyCache.AddRange(positions.Select(_ => Vector3.zero));
-            // forces.AddRange(links.Select(_ => Vector3.zero));
-            forces.AddRange(positions.Select(_ => Vector3.zero));
+            cache.AddRange(positions.Select(p => new CachedMass { position = p }));
         }
     }
 }
