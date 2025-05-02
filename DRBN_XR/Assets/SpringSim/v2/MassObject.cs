@@ -18,10 +18,16 @@ namespace Assets.SpringSim.V2
         public Vector3 Initial { get; set; }
         public bool ReturnToOrigin { get; set; }
         public float ComebackStiffness { get; set; }
+        public float Rigidity { get; set; } = 1f;
+
         public bool Hovered { get; set; } = false;
         public bool Grabbed { get; set; } = false;
+        public Vector3 GrabOrigin { get; set; }
+
         public bool PartiallyGrabbed { get; set; } = false;
-        public float Rigidity { get; set; } = 1f;
+        public Vector3 PartialDelta { get; set; }
+        public float PartialInfluence { get; set; }
+        public float PartialStrength { get; set; }
 
         const double k = 1.380649e-23; // J K−1
 
@@ -48,9 +54,12 @@ namespace Assets.SpringSim.V2
         {
             if (ReturnToOrigin)
             {
-                var k = ComebackStiffness;
-                var force = k * (Initial - Position);
-                AddForce(force);
+                AddForce(ComebackStiffness * (Initial - Position));
+            }
+            if (PartiallyGrabbed)
+            {
+                var target = GrabOrigin + PartialDelta;
+                AddForce(PartialStrength * PartialInfluence * (target - Position));
             }
         }
 
@@ -73,6 +82,7 @@ namespace Assets.SpringSim.V2
         public void OnGrabbed()
         {
             Grabbed = true;
+            GrabOrigin = Position;
             parentSimulator?.OnMassGrabbed(this);
         }
         public void OnUngrabbed()
@@ -81,9 +91,12 @@ namespace Assets.SpringSim.V2
             parentSimulator?.OnMassUngrabbed(this);
         }
 
-        public void PartialGrab()
+        public void PartialGrab(float influence)
         {
             PartiallyGrabbed = true;
+            GrabOrigin = Position;
+            // PartialInfluence = Mathf.SmoothStep(0, radius, Vector3.Distance(center, Position));
+            PartialInfluence = influence;
         }
         public void PartialUngrab()
         {

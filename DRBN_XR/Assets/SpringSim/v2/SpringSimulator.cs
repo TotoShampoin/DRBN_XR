@@ -32,6 +32,12 @@ namespace Assets.SpringSim.V2
         All,
     }
 
+    public enum GrabInfluenceFunction
+    {
+        Linear,
+        Cubic,
+    }
+
     public class SpringSimulator : MonoBehaviour
     {
         [Header("Properties")]
@@ -48,6 +54,8 @@ namespace Assets.SpringSim.V2
         public MassReturns returnType = MassReturns.None;
         public float grabDistance = 0.5f;
         public float dampingForce = 1f;
+        public float grabStregth = 3000f;
+        public GrabInfluenceFunction influenceFunction = GrabInfluenceFunction.Cubic;
 
         MassObject selected = null;
         readonly List<MassObject> surrounding = new();
@@ -73,6 +81,9 @@ namespace Assets.SpringSim.V2
         public int ReturnAsInt { get => (int)returnType; set => returnType = (MassReturns)value; }
         public bool UseBounds { get => useBounds; set => useBounds = value; }
         public float DampingForce { get => dampingForce; set => dampingForce = value; }
+        public float GrabStregth { get => grabStregth; set => grabStregth = value; }
+        public GrabInfluenceFunction InfluenceFunction { get => influenceFunction; set => influenceFunction = value; }
+        public int InfluenceFunctionAsInt { get => (int)influenceFunction; set => influenceFunction = (GrabInfluenceFunction)value; }
 
         void Start()
         {
@@ -121,12 +132,18 @@ namespace Assets.SpringSim.V2
                     cache[link.b].force -= springForce + dampingForce;
                 }
             });
+
+            Vector3? partialDelta = null;
+            if (selected)
+                partialDelta = selected.Position - selected.GrabOrigin;
             for (int i = 0; i < massObjects.Count; i++)
             {
                 massObjects[i].AddForce(cache[i].force);
                 massObjects[i].UseGravity = useGravity;
                 massObjects[i].ComebackStiffness = comebackStiffness;
                 massObjects[i].Damping = dampingForce;
+                massObjects[i].PartialDelta = partialDelta ?? Vector3.zero;
+                massObjects[i].PartialStrength = grabStregth;
             }
             stopwatch.Stop();
         }
@@ -152,9 +169,22 @@ namespace Assets.SpringSim.V2
         public void OnMassGrabbed(MassObject grabbed)
         {
             if (selected) return;
+
+            float Influence(MassObject o)
+            {
+                return influenceFunction switch
+                {
+                    GrabInfluenceFunction.Cubic => Mathf.SmoothStep(
+                        0, grabDistance, Vector3.Distance(grabbed.Position, o.Position)),
+                    GrabInfluenceFunction.Linear => Vector3.Distance(grabbed.Position, o.Position),
+                    _ => 0,
+                };
+
+            }
+
             selected = grabbed;
             surrounding.AddRange(GetSurroundingMasses(grabbed.Position, grabDistance));
-            surrounding.ForEach(o => o.PartialGrab());
+            surrounding.ForEach(o => o.PartialGrab(Influence(o)));
         }
         public void OnMassUngrabbed(MassObject ungrabbed)
         {
