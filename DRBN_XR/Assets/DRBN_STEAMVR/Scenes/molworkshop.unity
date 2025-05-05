@@ -1202,6 +1202,11 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 736271387290140609, guid: 3a728cdf39a155c45b51c82b31d2174c,
+        type: 3}
+      propertyPath: m_Value
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 745696223425227892, guid: 3a728cdf39a155c45b51c82b31d2174c,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -2243,6 +2248,12 @@ PrefabInstance:
       propertyPath: m_text
       value: Linear
       objectReference: {fileID: 0}
+    - target: {fileID: 7048281204599437222, guid: 3a728cdf39a155c45b51c82b31d2174c,
+        type: 3}
+      propertyPath: rigidityController
+      value: 
+      objectReference: {fileID: 678435681617481926, guid: c348712bda248c246b8c49b3db54643f,
+        type: 3}
     - target: {fileID: 7070858601178704646, guid: 3a728cdf39a155c45b51c82b31d2174c,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -2418,7 +2429,7 @@ PrefabInstance:
     - target: {fileID: 7976746038202853555, guid: 3a728cdf39a155c45b51c82b31d2174c,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8092723459130650870, guid: 3a728cdf39a155c45b51c82b31d2174c,
         type: 3}
@@ -2678,7 +2689,11 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2236146481553244420, guid: 3a728cdf39a155c45b51c82b31d2174c,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 3a728cdf39a155c45b51c82b31d2174c, type: 3}
 --- !u!4 &250113256 stripped
 Transform:
