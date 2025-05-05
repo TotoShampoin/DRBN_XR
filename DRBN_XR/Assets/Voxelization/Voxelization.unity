@@ -366,7 +366,7 @@ Transform:
   m_GameObject: {fileID: 346229347}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -406,7 +406,7 @@ MonoBehaviour:
   voxelMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   voxelMaterial: {fileID: 2100000, guid: 45d8df7bab0a8444aacaedca794d29ee, type: 2}
   bounds:
-    m_Center: {x: 0, y: 1, z: 0}
+    m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.5, y: 0.5, z: 0.5}
 --- !u!1 &438324435
 GameObject:

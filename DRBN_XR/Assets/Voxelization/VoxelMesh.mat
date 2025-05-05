@@ -82,6 +82,7 @@ Material:
     - _MinValue: -1
     - _Mode: 0
     - _OcclusionStrength: 1
+    - _Opacity: 0.5
     - _Parallax: 0.02
     - _ParticleSize: 0.2
     - _PartitionResolution: 8
@@ -89,7 +90,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _VoxelSize: 0.025
+    - _VoxelSize: 0.01
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
