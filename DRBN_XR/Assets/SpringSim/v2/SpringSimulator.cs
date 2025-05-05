@@ -35,7 +35,8 @@ namespace Assets.SpringSim.V2
     public enum GrabInfluenceFunction
     {
         Linear,
-        Cubic,
+        InoutCubic,
+        OutCubic,
     }
 
     public class SpringSimulator : MonoBehaviour
@@ -55,7 +56,7 @@ namespace Assets.SpringSim.V2
         public float grabDistance = 0.5f;
         public float dampingForce = 1f;
         public float grabStregth = 3000f;
-        public GrabInfluenceFunction influenceFunction = GrabInfluenceFunction.Cubic;
+        public GrabInfluenceFunction influenceFunction = GrabInfluenceFunction.OutCubic;
 
         MassObject selected = null;
         readonly List<MassObject> surrounding = new();
@@ -119,7 +120,7 @@ namespace Assets.SpringSim.V2
                 var r = (r1 + r2) / 2f;
 
                 var l0 = link.length;
-                var k = stiffness * r;
+                var k = stiffness * Mathf.Exp(r);
                 var d = Vector3.Distance(p1, p2);
 
                 if (d == 0) return;
@@ -172,11 +173,12 @@ namespace Assets.SpringSim.V2
 
             float Influence(MassObject o)
             {
+                var d = Vector3.Distance(grabbed.Position, o.Position);
                 return influenceFunction switch
                 {
-                    GrabInfluenceFunction.Cubic => Mathf.SmoothStep(
-                        0, grabDistance, Vector3.Distance(grabbed.Position, o.Position)),
-                    GrabInfluenceFunction.Linear => Vector3.Distance(grabbed.Position, o.Position),
+                    GrabInfluenceFunction.Linear => d,
+                    GrabInfluenceFunction.InoutCubic => Mathf.SmoothStep(0, grabDistance, d),
+                    GrabInfluenceFunction.OutCubic => 1 - Mathf.Pow(1 - d, 3),
                     _ => 0,
                 };
 
