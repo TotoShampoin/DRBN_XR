@@ -11,7 +11,11 @@ public class VolumeRenderer : MonoBehaviour
     readonly uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
     int meshCountTrack = -1;
 
-    void OnEnable() { Initialize(); }
+    void OnEnable()
+    {
+        voxelMaterial = new(voxelMaterial);
+        Initialize();
+    }
     void OnDisable() { argsBuffer?.Release(); argsBuffer = null; }
 
     void Update()

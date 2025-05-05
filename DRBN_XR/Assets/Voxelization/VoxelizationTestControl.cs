@@ -7,21 +7,14 @@ namespace Assets.Voxelization
     {
         public RenderTexture weightTexture;
         public RenderTexture sdfTexture;
-        public MarchingCubes marchingCubes;
+        public MarchingCubes marchingCubes1;
+        public MarchingCubes marchingCubes2;
+        public Voxelizer voxelizer;
         public WeightGenerator weightGenerator;
         public WeightPainter weightPainter;
         public float meshExtractionEpsilon = 0.005f;
 
-        public float MeshExtractionEpsilon
-        {
-            get => meshExtractionEpsilon;
-            set => meshExtractionEpsilon = value;
-        }
-        public float MarchingCubeResolution
-        {
-            get => marchingCubes.resolution;
-            set => marchingCubes.resolution = (int)value;
-        }
+        Mesh mesh;
 
         void Start()
         {
@@ -40,8 +33,11 @@ namespace Assets.Voxelization
 
         public void RefreshMarchingCubes()
         {
-            marchingCubes.GenerateAndApplyMesh(weightTexture,
-                    weightGenerator.Threshold);
+            mesh = marchingCubes1.GenerateMesh(weightTexture,
+                weightGenerator.Threshold);
+            marchingCubes1.ApplyMesh(mesh);
+            voxelizer.Voxelize(mesh, sdfTexture);
+            marchingCubes2.GenerateAndApplyMesh(sdfTexture, 0);
         }
 
         public void GenerateMarchingCubes()

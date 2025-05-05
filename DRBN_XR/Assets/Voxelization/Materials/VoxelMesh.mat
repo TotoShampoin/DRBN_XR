@@ -76,13 +76,13 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _MaxValue: 1
+    - _MaxValue: 2
     - _MaxVelocity: 100
     - _Metallic: 0
-    - _MinValue: -1
+    - _MinValue: -2
     - _Mode: 0
     - _OcclusionStrength: 1
-    - _Opacity: 0.5
+    - _Opacity: 1
     - _Parallax: 0.02
     - _ParticleSize: 0.2
     - _PartitionResolution: 8
