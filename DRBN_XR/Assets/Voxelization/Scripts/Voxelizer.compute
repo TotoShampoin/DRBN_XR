@@ -8,8 +8,10 @@ int _TriangleCount;
 RWTexture3D<float> _Output;
 int3 _OutputSize;
 
-float3 _MinBound;
-float3 _MaxBound;
+float3 _VoxelMinBound;
+float3 _VoxelMaxBound;
+float3 _MeshMinBound;
+float3 _MeshMaxBound;
 float _Multiplier;
 
 void GetTriangle(int index, out float3 vertices[3], out float3 normals[3])
@@ -27,8 +29,13 @@ float dot2(float3 v)
     return dot(v, v);
 }
 
+float3 remap(float3 value, float3 inMin, float3 inMax, float3 outMin, float3 outMax)
+{
+    return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+
 // https://iquilezles.org/articles/distfunctions/
-float TriangleSdf(float3 position, float3 vertices[3], float3 normals[3])
+float TriangleDistance(float3 position, float3 vertices[3])
 {
     float3 a = vertices[0];
     float3 b = vertices[1];
@@ -53,33 +60,27 @@ float TriangleSdf(float3 position, float3 vertices[3], float3 normals[3])
     }
     else
     {
-        d = (dot(nor, pa) * dot(nor, pa)) / dot2(nor);
+        d = (dot(nor, pa) * dot(nor, pa)) / (dot2(nor) + 0);
     }
 
-    float dist = sqrt(d);
-
-    // float3 avgNormal = normalize(normals[0] + normals[1] + normals[2]);
-    // float3 triCenter = (a + b + c) / 3.0;
-    // float3 dir = triCenter - position;
-    // float signVal = sign(dot(dir, avgNormal));
-    // return dist * signVal;
-    
-    float3 faceNormal = normalize(nor);
-    float signDist = dot(faceNormal, position - a) < 0 ? -dist : dist;
-    
-    return signDist;
+    return sqrt(d);
 }
 
 [numthreads(8,8,8)]
 void Voxelize (uint3 id : SV_DispatchThreadID)
 {
-    if(id.x >= (uint)_OutputSize.x || id.y >= (uint)_OutputSize.y || id.z >= (uint)_OutputSize.z)
+    if(id.x > (uint)_OutputSize.x || id.y > (uint)_OutputSize.y || id.z > (uint)_OutputSize.z)
         return;
 
     // Map the current texel id (id.x, id.y, id.z) to a position in world space within the bounds
-    // float3 uvw = float3(id.x / (float)width, id.y / (float)height, id.z / (float)depth);
-    float3 uvw = float3(id.x / (float)_OutputSize.x, id.y / (float)_OutputSize.y, id.z / (float)_OutputSize.z);
-    float3 position = lerp(_MinBound, _MaxBound, uvw);
+    float3 uvw = float3(
+        (id.x + 0.5) / (float)_OutputSize.x,
+        (id.y + 0.5) / (float)_OutputSize.y,
+        (id.z + 0.5) / (float)_OutputSize.z
+    ) - 0.5;
+    float3 position;
+    // position = lerp(_VoxelMinBound, _VoxelMaxBound, uvw);
+    position = remap(uvw, _MeshMinBound, _MeshMaxBound, _VoxelMinBound, _VoxelMaxBound);
 
     float distance = 1000000.0;
     
@@ -89,8 +90,13 @@ void Voxelize (uint3 id : SV_DispatchThreadID)
         float3 normals[3];
         GetTriangle(i, vertices, normals);
 
-        float current = TriangleSdf(position, vertices, normals);
-        
+        float current = TriangleDistance(position, vertices);
+
+        float3 mVertex = normalize(vertices[0] + vertices[1] + vertices[2]);
+        float3 mNormal = normalize(normals[0] + normals[1] + normals[2]);
+        float signVal = sign(dot(mNormal, position - mVertex));
+        current *= -signVal;
+
         if(abs(current) < abs(distance))
             distance = current;
     }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEditor;
 
 namespace Assets.Voxelization
 {
@@ -14,6 +15,10 @@ namespace Assets.Voxelization
         public WeightPainter weightPainter;
         public float meshExtractionEpsilon = 0.005f;
 
+        public bool refreshMarchingCubes;
+        public bool generateMarchingCubes;
+        public bool alwaysGenerate;
+
         Mesh mesh;
 
         void Start()
@@ -28,6 +33,17 @@ namespace Assets.Voxelization
             {
                 RefreshMarchingCubes();
                 weightPainter.needsRegenerate = false;
+            }
+
+            if (refreshMarchingCubes)
+            {
+                RefreshMarchingCubes();
+                refreshMarchingCubes = false;
+            }
+            if (generateMarchingCubes || alwaysGenerate)
+            {
+                GenerateMarchingCubes();
+                generateMarchingCubes = false;
             }
         }
 

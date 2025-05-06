@@ -9,6 +9,8 @@ namespace Assets.Voxelization
         public Vector3Int threadGroups = new(8, 8, 8);
         [Range(0, 10)] public float multiplier = 1;
 
+        public Bounds voxelBounds = new(Vector3.zero, Vector3.one);
+
         ComputeBuffer verticesBuffer;
         ComputeBuffer normalsBuffer;
         ComputeBuffer trianglesBuffer;
@@ -24,8 +26,10 @@ namespace Assets.Voxelization
             voxelizer.SetInt("_TriangleCount", mesh.triangles.Length);
             voxelizer.SetTexture(kernel, "_Output", output);
             voxelizer.SetVector("_OutputSize", new(output.width, output.height, output.volumeDepth));
-            voxelizer.SetVector("_MinBound", new(-1, -1, -1));
-            voxelizer.SetVector("_MaxBound", new(1, 1, 1));
+            voxelizer.SetVector("_VoxelMinBound", voxelBounds.min);
+            voxelizer.SetVector("_VoxelMaxBound", voxelBounds.max);
+            voxelizer.SetVector("_MeshMinBound", mesh.bounds.min);
+            voxelizer.SetVector("_MeshMaxBound", mesh.bounds.max);
             voxelizer.SetFloat("_Multiplier", multiplier);
 
             voxelizer.Dispatch(kernel,
