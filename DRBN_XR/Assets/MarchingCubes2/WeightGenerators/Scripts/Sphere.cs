@@ -11,6 +11,7 @@ class Sphere : WeightGenerator
     }
     [SerializeField] ComputeShader sphereShader;
     [SerializeField] float radius = 1f;
+    [SerializeField] float n = 2f;
 
     [SerializeField] Vector3 minBounds = new(-1, -1, -1);
     [SerializeField] Vector3 maxBounds = new(1, 1, 1);
@@ -22,6 +23,7 @@ class Sphere : WeightGenerator
         sphereShader.SetTexture(kernel, "_Output", renderTexture);
 
         sphereShader.SetFloat("_Radius", radius);
+        sphereShader.SetFloat("_N", n);
         sphereShader.SetVector("_MinBounds", minBounds);
         sphereShader.SetVector("_MaxBounds", maxBounds);
 

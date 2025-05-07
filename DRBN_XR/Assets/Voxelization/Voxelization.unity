@@ -146,7 +146,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 16565910}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e69537c8c694908469eb420f3e36df49, type: 3}
   m_Name: 
@@ -335,7 +335,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 50077238}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e69537c8c694908469eb420f3e36df49, type: 3}
   m_Name: 
@@ -631,7 +631,7 @@ MonoBehaviour:
   marchingCubes1: {fileID: 50077241}
   marchingCubes2: {fileID: 16565913}
   voxelizer: {fileID: 346229353}
-  weightGenerator: {fileID: 1249291445}
+  weightGenerator: {fileID: 1568180578}
   weightPainter: {fileID: 346229349}
   meshExtractionEpsilon: 0.005
   refreshMarchingCubes: 0
@@ -1079,16 +1079,16 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: aae94addadf73694bbcb95fb2f255f0e, type: 3}
---- !u!114 &1249291445 stripped
+--- !u!114 &1568180578 stripped
 MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 957340273645472436, guid: aae94addadf73694bbcb95fb2f255f0e,
+  m_CorrespondingSourceObject: {fileID: 3253422867867162311, guid: c0033be5f4e08974da5d60f21abc8671,
     type: 3}
-  m_PrefabInstance: {fileID: 1249291444}
+  m_PrefabInstance: {fileID: 9119596578872591858}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a14c8c3fb250e4741b8a7a4bcf3582fb, type: 3}
+  m_Script: {fileID: 11500000, guid: aca88169cc91f754f8a5c31de99fec5a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1001 &9119596578872591858
