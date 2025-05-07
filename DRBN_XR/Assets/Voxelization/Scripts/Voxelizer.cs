@@ -28,8 +28,10 @@ namespace Assets.Voxelization
             voxelizer.SetVector("_OutputSize", new(output.width, output.height, output.volumeDepth));
             voxelizer.SetVector("_VoxelMinBound", voxelBounds.min);
             voxelizer.SetVector("_VoxelMaxBound", voxelBounds.max);
-            voxelizer.SetVector("_MeshMinBound", mesh.bounds.min);
-            voxelizer.SetVector("_MeshMaxBound", mesh.bounds.max);
+            // voxelizer.SetVector("_MeshMinBound", mesh.bounds.min);
+            // voxelizer.SetVector("_MeshMaxBound", mesh.bounds.max);
+            voxelizer.SetVector("_MeshMinBound", -Vector3.one);
+            voxelizer.SetVector("_MeshMaxBound", Vector3.one);
             voxelizer.SetFloat("_Multiplier", multiplier);
 
             voxelizer.Dispatch(kernel,

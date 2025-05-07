@@ -87,7 +87,7 @@ void MarchingCubes (uint3 id : SV_DispatchThreadID)
             cornerOffsets[e21], cubeValues[e21]) + id) 
             / float(_Resolution);
 
-        // Remap the triangle vertices to the range [0, 1]
+        // Remap the triangle vertices from [0, 1] to [-0.5, 0.5]
         tri.a = remap(tri.a, 
             float3( 0, 0, 0), float3(1, 1, 1), 
             float3(-0.5,-0.5,-0.5), float3(0.5, 0.5, 0.5));

@@ -79,18 +79,8 @@ float TriangleDistance(float3 position, float3 vertices[3])
 
     float3 position = remap(uvw, _MeshMinBound, _MeshMaxBound, _VoxelMinBound, _VoxelMaxBound);
 
-    // Supersampling offsets (corners of the voxel)
-    float3 voxelSize = (_VoxelMaxBound - _VoxelMinBound) / (float3)_OutputSize;
-    float3 offsets[8] = {float3(-0.25, -0.25, -0.25), float3(0.25, -0.25, -0.25), float3(-0.25, 0.25, -0.25),
-                         float3(0.25, 0.25, -0.25),   float3(-0.25, -0.25, 0.25), float3(0.25, -0.25, 0.25),
-                         float3(-0.25, 0.25, 0.25),   float3(0.25, 0.25, 0.25)};
-
     float distance = 0.0;
-    int samples = 8;
 
-    for (int s = 0; s < samples; s++)
-    {
-        float3 samplePos = position + offsets[s] * voxelSize;
         float minDist = 1000000.0;
         for (int i = 0; i < _TriangleCount; i++)
         {
@@ -98,19 +88,17 @@ float TriangleDistance(float3 position, float3 vertices[3])
             float3 normals[3];
             GetTriangle(i, vertices, normals);
 
-            float current = TriangleDistance(samplePos, vertices);
+            float current = TriangleDistance(position, vertices);
 
             float3 mVertex = (vertices[0] + vertices[1] + vertices[2]) / 3.0;
             float3 mNormal = normalize(normals[0] + normals[1] + normals[2]);
-            float signVal = sign(dot(mNormal, samplePos - mVertex));
+            float signVal = sign(dot(mNormal, position - mVertex));
             current *= -signVal;
 
             if (abs(current) < abs(minDist))
                 minDist = current;
         }
         distance += minDist;
-    }
-    distance /= samples;
 
     _Output[id] = distance * _Multiplier;
 }
