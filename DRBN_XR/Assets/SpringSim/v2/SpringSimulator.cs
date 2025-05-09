@@ -15,6 +15,15 @@ namespace Assets.SpringSim.V2
         public int b;
         public float length;
     };
+    public struct Triangle
+    {
+        public int l1;
+        public int l2;
+        public int l3;
+        public int p1;
+        public int p2;
+        public int p3;
+    };
 
     class CachedMass
     {
@@ -66,6 +75,7 @@ namespace Assets.SpringSim.V2
         private readonly List<MassObject> massObjects = new();
         private readonly List<SpringLink> links = new();
         private readonly List<LinkObject> linkObjects = new();
+        private readonly List<Triangle> triangles = new();
 
         private readonly List<CachedMass> cache = new();
 
@@ -85,6 +95,8 @@ namespace Assets.SpringSim.V2
         public float GrabStregth { get => grabStregth; set => grabStregth = value; }
         public GrabInfluenceFunction InfluenceFunction { get => influenceFunction; set => influenceFunction = value; }
         public int InfluenceFunctionAsInt { get => (int)influenceFunction; set => influenceFunction = (GrabInfluenceFunction)value; }
+
+        public bool HasMasses => massObjects.Count > 0;
 
         void Start()
         {
@@ -200,6 +212,7 @@ namespace Assets.SpringSim.V2
             massObjects.Clear();
             linkObjects.ForEach(lk => Destroy(lk.gameObject));
             linkObjects.Clear();
+            triangles.Clear();
             links.Clear();
             cache.Clear();
         }
@@ -294,6 +307,78 @@ namespace Assets.SpringSim.V2
                     return mass;
                 }));
             this.links.AddRange(links.Values);
+
+            // Build triangles using link indices
+            var indexToLink = new Dictionary<(int, int), int>();
+            int linkIdx = 0;
+            foreach (var link in links.Values)
+            {
+                int a = link.a;
+                int b = link.b;
+                if (a > b) (a, b) = (b, a);
+                indexToLink[(a, b)] = linkIdx++;
+            }
+
+            for (int i = 0; i < dmesh.triangles.Length; i += 3)
+            {
+                int i0 = dmesh.triangles[i + 0];
+                int i1 = dmesh.triangles[i + 1];
+                int i2 = dmesh.triangles[i + 2];
+
+                int l1 = indexToLink[(Mathf.Min(i0, i1), Mathf.Max(i0, i1))];
+                int l2 = indexToLink[(Mathf.Min(i1, i2), Mathf.Max(i1, i2))];
+                int l3 = indexToLink[(Mathf.Min(i2, i0), Mathf.Max(i2, i0))];
+
+                triangles.Add(new Triangle
+                {
+                    l1 = l1,
+                    l2 = l2,
+                    l3 = l3,
+                });
+            }
+
+            // Update triangles to store p1, p2, p3 as the three unique vertex indices for each triangle
+            for (int i = 0; i < triangles.Count; i++)
+            {
+                var tri = triangles[i];
+
+                var linkA = this.links[tri.l1];
+                var linkB = this.links[tri.l2];
+                var linkC = this.links[tri.l3];
+
+                int[] endpoints = { linkA.a, linkA.b, linkB.a, linkB.b, linkC.a, linkC.b };
+                var counts = endpoints.GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count());
+                var verts = counts.Keys.ToArray();
+
+                if (verts.Length != 3)
+                    continue; // skip degenerate triangles
+
+                int v0 = linkA.a;
+                int v1 = linkA.b;
+                int v2 = verts.First(x => x != v0 && x != v1);
+
+                // Check winding order
+                Vector3 p0 = positions[v0];
+                Vector3 p1 = positions[v1];
+                Vector3 p2 = positions[v2];
+                Vector3 normal = Vector3.Cross(p1 - p0, p2 - p0);
+                if (Vector3.Dot(normal, Vector3.up) < 0)
+                {
+                    // Flip winding
+                    (v1, v2) = (v2, v1);
+                }
+
+                triangles[i] = new Triangle
+                {
+                    l1 = tri.l1,
+                    l2 = tri.l2,
+                    l3 = tri.l3,
+                    p1 = v0,
+                    p2 = v1,
+                    p3 = v2
+                };
+            }
+
             linkObjects.AddRange(
                 links.Values.Select(lk =>
                 {
@@ -306,6 +391,22 @@ namespace Assets.SpringSim.V2
                 })
             );
             cache.AddRange(positions.Select(p => new CachedMass { position = p }));
+        }
+
+        public Mesh ToMesh()
+        {
+            Mesh mesh = new()
+            {
+                vertices = massObjects.Select(m => transform.InverseTransformPoint(m.Position)).ToArray(),
+                triangles = this.triangles
+                    .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
+                    .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
+                    .ToArray(),
+            };
+
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
         }
     }
 }
