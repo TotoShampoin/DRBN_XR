@@ -26672,7 +26672,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 1
   m_WholeNumbers: 0
-  m_Value: 0.2
+  m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
@@ -29472,6 +29472,11 @@ PrefabInstance:
         type: 3}
       propertyPath: dampingForce
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6822968914096546241, guid: 2b7d2b53843df004282e4844ed06a1eb,
+        type: 3}
+      propertyPath: grabDistance
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
