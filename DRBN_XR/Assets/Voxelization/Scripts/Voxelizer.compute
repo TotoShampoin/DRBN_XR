@@ -1,0 +1,105 @@
+#pragma kernel Voxelize
+
+RWStructuredBuffer<float3> _Vertices;
+RWStructuredBuffer<float3> _Normals;
+RWStructuredBuffer<int3> _Triangles;
+int _TriangleCount;
+
+RWTexture3D<float> _Output;
+int3 _OutputSize;
+
+float3 _VoxelMinBound;
+float3 _VoxelMaxBound;
+float3 _MeshMinBound;
+float3 _MeshMaxBound;
+float _Multiplier;
+
+void GetTriangle(int index, out float3 vertices[3], out float3 normals[3])
+{
+    vertices[0] = _Vertices[_Triangles[index].x];
+    vertices[1] = _Vertices[_Triangles[index].y];
+    vertices[2] = _Vertices[_Triangles[index].z];
+    normals[0] = _Normals[_Triangles[index].x];
+    normals[1] = _Normals[_Triangles[index].y];
+    normals[2] = _Normals[_Triangles[index].z];
+}
+
+float dot2(float3 v)
+{
+    return dot(v, v);
+}
+
+float3 remap(float3 value, float3 inMin, float3 inMax, float3 outMin, float3 outMax)
+{
+    return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+
+// https://iquilezles.org/articles/distfunctions/
+float TriangleDistance(float3 position, float3 vertices[3])
+{
+    float3 a = vertices[0];
+    float3 b = vertices[1];
+    float3 c = vertices[2];
+
+    float3 ba = b - a;
+    float3 pa = position - a;
+    float3 cb = c - b;
+    float3 pb = position - b;
+    float3 ac = a - c;
+    float3 pc = position - c;
+    float3 nor = cross(ba, ac);
+
+    float s1 = sign(dot(cross(ba, nor), pa));
+    float s2 = sign(dot(cross(cb, nor), pb));
+    float s3 = sign(dot(cross(ac, nor), pc));
+
+    float d;
+    if (s1 + s2 + s3 < 2.0)
+    {
+        float d1 = dot2(ba * clamp(dot(ba, pa) / dot2(ba), 0.0, 1.0) - pa);
+        float d2 = dot2(cb * clamp(dot(cb, pb) / dot2(cb), 0.0, 1.0) - pb);
+        float d3 = dot2(ac * clamp(dot(ac, pc) / dot2(ac), 0.0, 1.0) - pc);
+        d = min(min(d1, d2), d3);
+    }
+    else
+    {
+        d = (dot(nor, pa) * dot(nor, pa)) / (dot2(nor) + 0);
+    }
+
+    return sqrt(d);
+}
+
+[numthreads(8, 8, 8)]
+void Voxelize(uint3 id : SV_DispatchThreadID) {
+    if (id.x >= (uint)_OutputSize.x || id.y >= (uint)_OutputSize.y || id.z >= (uint)_OutputSize.z)
+        return;
+
+    float3 uvw = float3((id.x + 0.5) / (float)_OutputSize.x, (id.y + 0.5) / (float)_OutputSize.y,
+                        (id.z + 0.5) / (float)_OutputSize.z) -
+                 0.5;
+
+    float3 position = remap(uvw, _MeshMinBound, _MeshMaxBound, _VoxelMinBound, _VoxelMaxBound);
+
+    float distance = 0.0;
+
+        float minDist = 1000000.0;
+        for (int i = 0; i < _TriangleCount; i++)
+        {
+            float3 vertices[3];
+            float3 normals[3];
+            GetTriangle(i, vertices, normals);
+
+            float current = TriangleDistance(position, vertices);
+
+            float3 mVertex = (vertices[0] + vertices[1] + vertices[2]) / 3.0;
+            float3 mNormal = normalize(normals[0] + normals[1] + normals[2]);
+            float signVal = sign(dot(mNormal, position - mVertex));
+            current *= -signVal;
+
+            if (abs(current) < abs(minDist))
+                minDist = current;
+        }
+        distance += minDist;
+
+    _Output[id] = distance * _Multiplier;
+}
