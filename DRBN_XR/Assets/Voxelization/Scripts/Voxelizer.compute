@@ -69,8 +69,9 @@ float TriangleDistance(float3 position, float3 vertices[3])
     return sqrt(d);
 }
 
-[numthreads(8, 8, 8)] void Voxelize(uint3 id : SV_DispatchThreadID) {
-    if (id.x > (uint)_OutputSize.x || id.y > (uint)_OutputSize.y || id.z > (uint)_OutputSize.z)
+[numthreads(8, 8, 8)]
+void Voxelize(uint3 id : SV_DispatchThreadID) {
+    if (id.x >= (uint)_OutputSize.x || id.y >= (uint)_OutputSize.y || id.z >= (uint)_OutputSize.z)
         return;
 
     float3 uvw = float3((id.x + 0.5) / (float)_OutputSize.x, (id.y + 0.5) / (float)_OutputSize.y,

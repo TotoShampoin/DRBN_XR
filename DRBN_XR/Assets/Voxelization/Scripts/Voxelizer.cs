@@ -35,9 +35,9 @@ namespace Assets.Voxelization
             voxelizer.SetFloat("_Multiplier", multiplier);
 
             voxelizer.Dispatch(kernel,
-                Mathf.CeilToInt(output.width / threadGroups.x),
-                Mathf.CeilToInt(output.height / threadGroups.y),
-                Mathf.CeilToInt(output.volumeDepth / threadGroups.z)
+                Mathf.CeilToInt((float)output.width / threadGroups.x),
+                Mathf.CeilToInt((float)output.height / threadGroups.y),
+                Mathf.CeilToInt((float)output.volumeDepth / threadGroups.z)
             );
         }
 
