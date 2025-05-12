@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Diagnostics;
 using TMPro;
 using UnityEngine.XR;
+using Assets.SpringSim.V1;
 
 namespace Assets.SpringSim.V2
 {
@@ -121,28 +122,31 @@ namespace Assets.SpringSim.V2
             }
             Parallel.For(0, links.Count, i =>
             {
+                // var link = links[i];
+                // var p1 = cache[link.a].position;
+                // var p2 = cache[link.b].position;
+                // var v1 = cache[link.a].velocity;
+                // var v2 = cache[link.b].velocity;
+                // var r1 = cache[link.a].rigidity;
+                // var r2 = cache[link.b].rigidity;
+
+                // var r = (r1 + r2) / 2f;
+
+                // var l0 = link.length;
+                // var k = stiffness * Mathf.Exp(r);
+                // var d = Vector3.Distance(p1, p2);
+
+                // if (d == 0) return;
+                // var dir = (p2 - p1).normalized;
+                // var springForce = k * (d - l0) * dir;
+                // var dampingForce = viscosity * (v2 - v1);
+
                 var link = links[i];
-                var p1 = cache[link.a].position;
-                var p2 = cache[link.b].position;
-                var v1 = cache[link.a].velocity;
-                var v2 = cache[link.b].velocity;
-                var r1 = cache[link.a].rigidity;
-                var r2 = cache[link.b].rigidity;
-
-                var r = (r1 + r2) / 2f;
-
-                var l0 = link.length;
-                var k = stiffness * Mathf.Exp(r);
-                var d = Vector3.Distance(p1, p2);
-
-                if (d == 0) return;
-                var dir = (p2 - p1).normalized;
-                var springForce = k * (d - l0) * dir;
-                var dampingForce = viscosity * (v2 - v1);
+                var force = SpringForce(link);
                 lock (cache)
                 {
-                    cache[link.a].force += springForce + dampingForce;
-                    cache[link.b].force -= springForce + dampingForce;
+                    cache[link.a].force += force;
+                    cache[link.b].force -= force;
                 }
             });
 
@@ -166,6 +170,28 @@ namespace Assets.SpringSim.V2
             Gizmos.color = Color.white;
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.DrawWireCube(bounds.center, bounds.size);
+        }
+
+        public Vector3 SpringForce(SpringLink link)
+        {
+            var p1 = cache[link.a].position;
+            var p2 = cache[link.b].position;
+            var v1 = cache[link.a].velocity;
+            var v2 = cache[link.b].velocity;
+            var r1 = cache[link.a].rigidity;
+            var r2 = cache[link.b].rigidity;
+
+            var r = (r1 + r2) / 2f;
+
+            var l0 = link.length;
+            var k = stiffness * Mathf.Exp(r);
+            var d = Vector3.Distance(p1, p2);
+
+            if (d == 0) return Vector3.zero;
+            var dir = (p2 - p1).normalized;
+            var springForce = k * (d - l0) * dir;
+            var dampingForce = viscosity * (v2 - v1);
+            return springForce + dampingForce;
         }
 
         public IEnumerable<MassObject> GetSurroundingMasses(Vector3 position, float distance)
@@ -228,6 +254,26 @@ namespace Assets.SpringSim.V2
             else
             {
                 usedBounds = dmesh.bounds;
+                // If any axis of the bounds size is 0, extend it to 2 * extractionEpsilon
+                Vector3 size = usedBounds.size;
+                Vector3 min = usedBounds.min;
+                Vector3 max = usedBounds.max;
+                if (size.x < extractionEpsilon)
+                {
+                    min.x -= extractionEpsilon;
+                    max.x += extractionEpsilon;
+                }
+                if (size.y < extractionEpsilon)
+                {
+                    min.y -= extractionEpsilon;
+                    max.y += extractionEpsilon;
+                }
+                if (size.z < extractionEpsilon)
+                {
+                    min.z -= extractionEpsilon;
+                    max.z += extractionEpsilon;
+                }
+                usedBounds.SetMinMax(min, max);
             }
             ConcurrentDictionary<uint, SpringLink> links = new();
             static uint HashKey(int a, int b)
@@ -260,6 +306,7 @@ namespace Assets.SpringSim.V2
                 });
             }
             Clear();
+            UnityEngine.Debug.Log($"bounds: {usedBounds.min} - {usedBounds.max}");
             massObjects.AddRange(
                 positions.Select(p =>
                 {
