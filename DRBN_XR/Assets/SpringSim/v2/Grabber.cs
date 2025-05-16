@@ -8,13 +8,28 @@ namespace Assets.SpringSim.V2
     {
         public bool IsGrabbed => xrgi.isSelected;
 
+        public Vector3 origin;
+        public Vector3 Position { get => transform.position; set => transform.position = value; }
+
         MeshRenderer mr;
         XRGrabInteractable xrgi;
+
+        public SpringSimulator simulator;
 
         void Start()
         {
             mr = GetComponent<MeshRenderer>();
             xrgi = GetComponent<XRGrabInteractable>();
+        }
+
+        public void OnGrab()
+        {
+            simulator?.Grab();
+            origin = Position;
+        }
+        public void OnUngrab()
+        {
+            simulator?.Ungrab();
         }
 
         public void OnHovered()

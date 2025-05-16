@@ -109,6 +109,7 @@ namespace Assets.SpringSim.V2
         {
             Time.fixedDeltaTime = 1f / forcedRate;
             XRSettings.eyeTextureResolutionScale = 1.5f; // to make the vr hd
+            grabber.simulator = this;
         }
 
         void Update()
@@ -140,7 +141,10 @@ namespace Assets.SpringSim.V2
 
             Vector3? partialDelta = null;
             if (selected)
-                partialDelta = selected.Position - selected.GrabOrigin;
+            {
+                // partialDelta = selected.Position - selected.GrabOrigin;
+                partialDelta = grabber.Position - grabber.origin;
+            }
             for (int i = 0; i < massObjects.Count; i++)
             {
                 massObjects[i].AddForce(cache[i].force);
@@ -204,6 +208,25 @@ namespace Assets.SpringSim.V2
             return massObjects.Where(o => Vector3.Distance(o.Position, position) <= distance);
         }
 
+        public void Grab()
+        {
+            MassObject closest = null;
+            float distance = 0f;
+            massObjects.ForEach(m =>
+            {
+                var d = Vector3.Distance(m.Position, grabber.Position);
+                if (closest == null || d < distance)
+                {
+                    closest = m;
+                    distance = d;
+                }
+            });
+            OnMassGrabbed(closest);
+        }
+        public void Ungrab()
+        {
+            OnMassUngrabbed(selected);
+        }
         public void ResetGrabbed()
         {
             selected = null;
@@ -212,7 +235,7 @@ namespace Assets.SpringSim.V2
         }
         public void OnMassHovered(MassObject hovered)
         {
-            grabber.transform.position = hovered.Position;
+            grabber.Position = hovered.Position;
         }
         public void OnMassGrabbed(MassObject grabbed)
         {
@@ -234,6 +257,7 @@ namespace Assets.SpringSim.V2
             selected = grabbed;
             surrounding.AddRange(GetSurroundingMasses(grabbed.Position, grabDistance));
             surrounding.ForEach(o => o.PartialGrab(Influence(o)));
+            selected.PartialGrab(1);
         }
         public void OnMassUngrabbed(MassObject ungrabbed)
         {

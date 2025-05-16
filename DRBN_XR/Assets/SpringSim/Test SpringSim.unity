@@ -547,10 +547,34 @@ MonoBehaviour:
       m_Calls: []
   m_FirstSelectEntered:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 55713718}
+        m_TargetAssemblyTypeName: Assets.SpringSim.V2.Grabber, Assembly-CSharp
+        m_MethodName: OnGrab
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   m_LastSelectExited:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 55713718}
+        m_TargetAssemblyTypeName: Assets.SpringSim.V2.Grabber, Assembly-CSharp
+        m_MethodName: OnUngrab
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   m_SelectEntered:
     m_PersistentCalls:
       m_Calls: []
@@ -741,6 +765,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27fe00ffdedf77f4b934e58e7c597e8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  simulator: {fileID: 0}
 --- !u!1 &63809321
 GameObject:
   m_ObjectHideFlags: 0
