@@ -1,3 +1,4 @@
+using Assets.Voxelization;
 using UnityEngine;
 
 namespace Assets.SpringSim.V2
@@ -12,6 +13,8 @@ namespace Assets.SpringSim.V2
         public WeightPainter weightPainter;
         public float meshExtractionEpsilon = 0.005f;
         public MeshFromSprings meshFromSprings;
+        public float voxeliseInterval = 0.5f;
+        public float voxeliseTimer = 0f;
 
         public float MeshExtractionEpsilon
         {
@@ -22,6 +25,11 @@ namespace Assets.SpringSim.V2
         {
             get => marchingCubes.resolution;
             set => marchingCubes.resolution = (int)value;
+        }
+        public float VoxeliseInterval // if this is not a float, Unity's slider won't accept it -_-
+        {
+            get => voxeliseInterval;
+            set => voxeliseInterval = value;
         }
 
         void Start()
@@ -37,11 +45,13 @@ namespace Assets.SpringSim.V2
                 RefreshMarchingCubes();
                 weightPainter.needsRegenerate = false;
             }
-            if (simulator.HasMasses)
-            {
-                meshFromSprings.Resolution = marchingCubes.resolution;
-                meshFromSprings.SetMesh(simulator.ToMesh());
-            }
+            Voxelize();
+
+            // if ((voxeliseTimer += Time.deltaTime) >= voxeliseInterval)
+            // {
+            //     GenerateSpringsWithVoxelizer();
+            //     voxeliseTimer = 0f;
+            // }
         }
 
         public void RefreshMarchingCubes()
@@ -70,6 +80,26 @@ namespace Assets.SpringSim.V2
             simulator.Clear();
             weightPainter.enabled = true;
             RefreshMarchingCubes();
+        }
+
+        public void Voxelize()
+        {
+            if (simulator.HasMasses)
+            {
+                meshFromSprings.Resolution = marchingCubes.resolution;
+                meshFromSprings.SetMesh(simulator.ToMesh());
+            }
+        }
+
+        public void GenerateSpringsWithVoxelizer()
+        {
+            if (simulator.HasMasses)
+            {
+                meshFromSprings.Resolution = marchingCubes.resolution;
+                var mesh = meshFromSprings.FetchMesh(simulator.ToMesh());
+                simulator.UseMesh(mesh, meshExtractionEpsilon);
+                weightPainter.enabled = false;
+            }
         }
 
         public void Quit()

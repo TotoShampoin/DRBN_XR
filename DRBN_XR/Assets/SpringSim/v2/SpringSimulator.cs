@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Diagnostics;
 using TMPro;
 using UnityEngine.XR;
+using Assets.SpringSim.V1;
 
 namespace Assets.SpringSim.V2
 {
@@ -79,6 +80,11 @@ namespace Assets.SpringSim.V2
 
         private readonly List<CachedMass> cache = new();
 
+        // --- Object Pools ---
+        private readonly Queue<MassObject> massPool = new();
+        private readonly Queue<LinkObject> linkPool = new();
+        // --------------------
+
         private Bounds usedBounds;
 
         private Stopwatch stopwatch;
@@ -122,27 +128,12 @@ namespace Assets.SpringSim.V2
             Parallel.For(0, links.Count, i =>
             {
                 var link = links[i];
-                var p1 = cache[link.a].position;
-                var p2 = cache[link.b].position;
-                var v1 = cache[link.a].velocity;
-                var v2 = cache[link.b].velocity;
-                var r1 = cache[link.a].rigidity;
-                var r2 = cache[link.b].rigidity;
-
-                var r = (r1 + r2) / 2f;
-
-                var l0 = link.length;
-                var k = stiffness * Mathf.Exp(r);
-                var d = Vector3.Distance(p1, p2);
-
-                if (d == 0) return;
-                var dir = (p2 - p1).normalized;
-                var springForce = k * (d - l0) * dir;
-                var dampingForce = viscosity * (v2 - v1);
+                var force = SpringForce(link);
+                // var force = EllasticForce(link);
                 lock (cache)
                 {
-                    cache[link.a].force += springForce + dampingForce;
-                    cache[link.b].force -= springForce + dampingForce;
+                    cache[link.a].force += force;
+                    cache[link.b].force -= force;
                 }
             });
 
@@ -166,6 +157,45 @@ namespace Assets.SpringSim.V2
             Gizmos.color = Color.white;
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.DrawWireCube(bounds.center, bounds.size);
+        }
+
+        public Vector3 SpringForce(SpringLink link)
+        {
+            var p1 = cache[link.a].position;
+            var p2 = cache[link.b].position;
+            var v1 = cache[link.a].velocity;
+            var v2 = cache[link.b].velocity;
+            var r1 = cache[link.a].rigidity;
+            var r2 = cache[link.b].rigidity;
+
+            var r = (r1 + r2) / 2f;
+
+            var l0 = link.length;
+            var k = stiffness * Mathf.Exp(r);
+            var d = Vector3.Distance(p1, p2);
+
+            if (d == 0) return Vector3.zero;
+            var dir = (p2 - p1).normalized;
+            var springForce = k * (d - l0) * dir;
+            var dampingForce = viscosity * (v2 - v1);
+            return springForce + dampingForce;
+        }
+
+        public Vector3 EllasticForce(SpringLink link)
+        {
+            var p1 = cache[link.a].position;
+            var p2 = cache[link.b].position;
+            var v1 = cache[link.a].velocity;
+            var v2 = cache[link.b].velocity;
+            var r1 = cache[link.a].rigidity;
+            var r2 = cache[link.b].rigidity;
+
+            var r = (r1 + r2) / 2f;
+
+            var k = stiffness * Mathf.Exp(r);
+            var springForce = k * (p2 - p1);
+            var dampingForce = viscosity * (v2 - v1);
+            return springForce + dampingForce;
         }
 
         public IEnumerable<MassObject> GetSurroundingMasses(Vector3 position, float distance)
@@ -208,9 +238,19 @@ namespace Assets.SpringSim.V2
 
         public void Clear()
         {
-            massObjects.ForEach(rb => Destroy(rb.gameObject));
+            // Pool and deactivate mass objects
+            foreach (var rb in massObjects)
+            {
+                rb.gameObject.SetActive(false);
+                massPool.Enqueue(rb);
+            }
             massObjects.Clear();
-            linkObjects.ForEach(lk => Destroy(lk.gameObject));
+            // Pool and deactivate link objects
+            foreach (var lk in linkObjects)
+            {
+                lk.gameObject.SetActive(false);
+                linkPool.Enqueue(lk);
+            }
             linkObjects.Clear();
             triangles.Clear();
             links.Clear();
@@ -228,6 +268,26 @@ namespace Assets.SpringSim.V2
             else
             {
                 usedBounds = dmesh.bounds;
+                // If any axis of the bounds size is 0, extend it to 2 * extractionEpsilon
+                Vector3 size = usedBounds.size;
+                Vector3 min = usedBounds.min;
+                Vector3 max = usedBounds.max;
+                if (size.x < extractionEpsilon)
+                {
+                    min.x -= 0.5f;
+                    max.x += 0.5f;
+                }
+                if (size.y < extractionEpsilon)
+                {
+                    min.y -= 0.5f;
+                    max.y += 0.5f;
+                }
+                if (size.z < extractionEpsilon)
+                {
+                    min.z -= 0.5f;
+                    max.z += 0.5f;
+                }
+                usedBounds.SetMinMax(min, max);
             }
             ConcurrentDictionary<uint, SpringLink> links = new();
             static uint HashKey(int a, int b)
@@ -260,17 +320,29 @@ namespace Assets.SpringSim.V2
                 });
             }
             Clear();
+            UnityEngine.Debug.Log($"bounds: {usedBounds.min} - {usedBounds.max}");
             massObjects.AddRange(
                 positions.Select(p =>
                 {
-                    var mass = Instantiate(massPrefab, transform.TransformPoint(p), Quaternion.identity, transform);
+                    MassObject mass;
+                    if (massPool.Count > 0)
+                    {
+                        mass = massPool.Dequeue();
+                        // mass.transform.SetParent(transform);
+                        // mass.transform.position = transform.TransformPoint(p);
+                        // mass.transform.rotation = Quaternion.identity;
+                        mass.ResetStates(transform.TransformPoint(p), Quaternion.identity, transform);
+                    }
+                    else
+                    {
+                        mass = Instantiate(massPrefab, transform.TransformPoint(p), Quaternion.identity, transform);
+                    }
                     mass.gameObject.SetActive(true);
                     switch (returnType)
                     {
                         case MassReturns.None: default: break;
                         case MassReturns.Corners:
                             {
-                                // Check if p is at least at 2 of the 3 axes of the bounds (i.e., on a corner)
                                 int axesOnBounds = 0;
                                 Vector3 min = usedBounds.min;
                                 Vector3 max = usedBounds.max;
@@ -285,7 +357,6 @@ namespace Assets.SpringSim.V2
                             break;
                         case MassReturns.Edges:
                             {
-                                // Check if p is at least on one of the axes of the bounds (i.e., on an edge)
                                 Vector3 min = usedBounds.min;
                                 Vector3 max = usedBounds.max;
                                 if (
@@ -382,7 +453,16 @@ namespace Assets.SpringSim.V2
             linkObjects.AddRange(
                 links.Values.Select(lk =>
                 {
-                    var link = Instantiate(linkPrefab, transform);
+                    LinkObject link;
+                    if (linkPool.Count > 0)
+                    {
+                        link = linkPool.Dequeue();
+                        link.transform.SetParent(transform);
+                    }
+                    else
+                    {
+                        link = Instantiate(linkPrefab, transform);
+                    }
                     link.a = massObjects[lk.a].gameObject;
                     link.b = massObjects[lk.b].gameObject;
                     link.length = lk.length;

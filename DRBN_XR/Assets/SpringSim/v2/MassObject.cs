@@ -109,6 +109,37 @@ namespace Assets.SpringSim.V2
             Rigidity += RigidityGradient * Time.deltaTime;
         }
 
+        public void ResetStates(Vector3 position, Quaternion rotation, Transform parent)
+        {
+            transform.SetParent(parent);
+            transform.SetPositionAndRotation(position, rotation);
+            if (rigidbody != null)
+            {
+                rigidbody.linearVelocity = Vector3.zero;
+                rigidbody.angularVelocity = Vector3.zero;
+                rigidbody.position = position;
+                rigidbody.rotation = rotation;
+            }
+
+            Initial = position;
+            ReturnToOrigin = false;
+            ComebackStiffness = 0f;
+            Rigidity = 0f;
+            RigidityGradient = 0f;
+
+            Hovered = false;
+            Grabbed = false;
+            GrabOrigin = Vector3.zero;
+
+            PartiallyGrabbed = false;
+            PartialDelta = Vector3.zero;
+            PartialInfluence = 0f;
+            PartialStrength = 0f;
+
+            if (debug != null)
+                debug.text = "";
+        }
+
         public void AxisControlsRigidity(Vector2 axis)
         {
             if (Grabbed)

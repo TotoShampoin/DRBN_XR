@@ -108,18 +108,25 @@ Shader "Instanced/VoxelMesh"
                 // Sample the 3D texture at this position
                 float value = tex3D(_Texture, normalizedPos).r;
 
-                // Remap value to [0,1] using min and max
+                // COLOR MODE
                 float t = saturate((value - _MinValue) / (_MaxValue - _MinValue));
                 // Sample color ramp using t
                 fixed4 rampColor = tex2D(_ColorRamp, float2(t, 0.5));
                 fixed4 col = rampColor;
                 col.a *= _Opacity;
-
-                // fixed4 col = tex2D(_MainTex, i.uv) ;
                 if(length(i.uv * 2 - 1) > 1) {
                     col.a = 0;
                     discard;
                 }
+
+                // // SIZE MODE
+                // fixed4 col = lerp(fixed4(0,0,0,1), fixed4(1,1,1,1), (value - _MinValue) / (_MaxValue - _MinValue));
+                // if(value < 0) discard;
+                // if(length(i.uv * 2 - 1) > value) {
+                //     col.a = 0;
+                //     discard;
+                // }
+
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
             }
