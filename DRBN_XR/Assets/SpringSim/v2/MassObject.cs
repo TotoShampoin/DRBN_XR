@@ -146,8 +146,15 @@ namespace Assets.SpringSim.V2
                 RigidityGradient = axis.y;
         }
 
-        public void OnHovered() => Hovered = true;
-        public void OnUnhovered() => Hovered = false;
+        public void OnHovered()
+        {
+            parentSimulator?.OnMassHovered(this);
+            Hovered = true;
+        }
+        public void OnUnhovered()
+        {
+            Hovered = false;
+        }
         public void OnGrabbed()
         {
             Grabbed = true;

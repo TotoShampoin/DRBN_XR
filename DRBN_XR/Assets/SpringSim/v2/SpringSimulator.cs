@@ -6,7 +6,6 @@ using UnityEngine;
 using System.Diagnostics;
 using TMPro;
 using UnityEngine.XR;
-using Assets.SpringSim.V1;
 
 namespace Assets.SpringSim.V2
 {
@@ -88,6 +87,8 @@ namespace Assets.SpringSim.V2
         private Bounds usedBounds;
 
         private Stopwatch stopwatch;
+
+        public Grabber grabber;
 
         public float Stiffness { get => stiffness; set => stiffness = value; }
         public float Viscosity { get => viscosity; set => viscosity = value; }
@@ -208,6 +209,10 @@ namespace Assets.SpringSim.V2
             selected = null;
             surrounding.ForEach(o => o.PartialUngrab());
             surrounding.Clear();
+        }
+        public void OnMassHovered(MassObject hovered)
+        {
+            grabber.transform.position = hovered.Position;
         }
         public void OnMassGrabbed(MassObject grabbed)
         {
