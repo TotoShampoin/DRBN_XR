@@ -12,6 +12,7 @@ namespace Assets.SpringSim.V2
         MarchingCubes marchingCubes;
 
         public RenderTexture renderTexture;
+        public RenderTexture normalTexture;
 
         public int Resolution { get => marchingCubes.resolution; set => marchingCubes.resolution = value; }
 
@@ -32,7 +33,7 @@ namespace Assets.SpringSim.V2
             Parallel.For(0, vertices.Length, (i) => vertices[i] *= 0.5f);
             mesh.vertices = vertices;
             mesh.RecalculateBounds();
-            voxelizer.Voxelize(mesh, renderTexture);
+            voxelizer.Voxelize(mesh, renderTexture, normalTexture);
             return marchingCubes.GenerateMesh(renderTexture, 0);
         }
     }

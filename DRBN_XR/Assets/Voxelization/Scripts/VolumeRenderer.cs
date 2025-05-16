@@ -3,6 +3,7 @@ using UnityEngine;
 public class VolumeRenderer : MonoBehaviour
 {
     public RenderTexture texture;
+    public RenderTexture normals;
     public Mesh voxelMesh;
     public Material voxelMaterial;
     public Bounds bounds = new(Vector3.zero, Vector3.one);
@@ -46,6 +47,7 @@ public class VolumeRenderer : MonoBehaviour
         voxelMaterial.SetFloat("_Height", texture.height);
         voxelMaterial.SetFloat("_Depth", texture.volumeDepth);
         voxelMaterial.SetTexture("_Texture", texture);
+        voxelMaterial.SetTexture("_Normals", normals);
         voxelMaterial.SetVector("_BoundsMin", bounds.min);
         voxelMaterial.SetVector("_BoundsMax", bounds.max);
         voxelMaterial.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);

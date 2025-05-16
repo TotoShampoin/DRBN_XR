@@ -6,6 +6,7 @@ RWStructuredBuffer<int3> _Triangles;
 int _TriangleCount;
 
 RWTexture3D<float> _Output;
+RWTexture3D<float4> _DebugNormals;
 int3 _OutputSize;
 
 float3 _VoxelMinBound;
@@ -69,6 +70,31 @@ float TriangleDistance(float3 position, float3 vertices[3])
     return sqrt(d);
 }
 
+float3 TriangleNormal(in float3 positions[3], in float3 normals[3], in float3 mVertex)
+{
+    // return normalize(normals[0] + normals[1] + normals[2]);
+    
+    float3 v0 = positions[1] - positions[0];
+    float3 v1 = positions[2] - positions[0];
+    float3 v2 = mVertex - positions[0];
+
+    float d00 = dot(v0, v0);
+    float d01 = dot(v0, v1);
+    float d11 = dot(v1, v1);
+    float d20 = dot(v2, v0);
+    float d21 = dot(v2, v1);
+
+    float denom = d00 * d11 - d01 * d01;
+    if(denom == 0) return normalize(normals[0] + normals[1] + normals[2]);
+
+    float v = (d11 * d20 - d01 * d21) / denom;
+    float w = (d00 * d21 - d01 * d20) / denom;
+    float u = 1.0 - v - w;
+
+    float3 normal = normalize(u * normals[0] + v * normals[1] + w * normals[2]);
+    return normal;
+}
+
 [numthreads(8, 8, 8)]
 void Voxelize(uint3 id : SV_DispatchThreadID) {
     if (id.x >= (uint)_OutputSize.x || id.y >= (uint)_OutputSize.y || id.z >= (uint)_OutputSize.z)
@@ -81,25 +107,30 @@ void Voxelize(uint3 id : SV_DispatchThreadID) {
     float3 position = remap(uvw, _MeshMinBound, _MeshMaxBound, _VoxelMinBound, _VoxelMaxBound);
 
     float distance = 0.0;
+    float3 usedNormal;
 
-        float minDist = 1000000.0;
-        for (int i = 0; i < _TriangleCount; i++)
+    float minDist = 1000000.0;
+    for (int i = 0; i < _TriangleCount; i++)
+    {
+        float3 vertices[3];
+        float3 normals[3];
+        GetTriangle(i, vertices, normals);
+
+        float current = TriangleDistance(position, vertices);
+
+        float3 mVertex = (vertices[0] + vertices[1] + vertices[2]) / 3.0;
+        float3 mNormal = TriangleNormal(vertices, normals, position);
+        float signVal = sign(dot(mNormal, position - mVertex));
+        current *= -signVal;
+
+        if (abs(current) < abs(minDist))
         {
-            float3 vertices[3];
-            float3 normals[3];
-            GetTriangle(i, vertices, normals);
-
-            float current = TriangleDistance(position, vertices);
-
-            float3 mVertex = (vertices[0] + vertices[1] + vertices[2]) / 3.0;
-            float3 mNormal = normalize(normals[0] + normals[1] + normals[2]);
-            float signVal = sign(dot(mNormal, position - mVertex));
-            current *= -signVal;
-
-            if (abs(current) < abs(minDist))
-                minDist = current;
+            minDist = current;
+            usedNormal = mNormal;
         }
-        distance += minDist;
+    }
+    distance += minDist;
 
     _Output[id] = distance * _Multiplier;
+    _DebugNormals[id] = float4(usedNormal, 1);
 }

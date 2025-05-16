@@ -15,8 +15,26 @@ namespace Assets.Voxelization
         ComputeBuffer normalsBuffer;
         ComputeBuffer trianglesBuffer;
 
-        public void Voxelize(Mesh mesh, RenderTexture output)
+        public void Voxelize(Mesh mesh, RenderTexture output, RenderTexture normals = null)
         {
+            bool useNormals = normals != null;
+            if (useNormals)
+            {
+                if (output.width != normals.width || output.height != normals.height || output.volumeDepth != normals.volumeDepth)
+                    throw new System.ArgumentException("Output and normals RenderTextures must have the same dimensions.");
+            }
+            else
+            {
+                // Create a dummy RenderTexture with the same dimensions and format as output
+                normals = new RenderTexture(output.width, output.height, 0, output.format)
+                {
+                    dimension = output.dimension,
+                    volumeDepth = output.volumeDepth,
+                    enableRandomWrite = true
+                };
+                normals.Create();
+            }
+
             AllocateBuffers(mesh);
             var kernel = voxelizer.FindKernel("Voxelize");
 
@@ -24,12 +42,11 @@ namespace Assets.Voxelization
             voxelizer.SetBuffer(kernel, "_Normals", normalsBuffer);
             voxelizer.SetBuffer(kernel, "_Triangles", trianglesBuffer);
             voxelizer.SetInt("_TriangleCount", mesh.triangles.Length);
-            voxelizer.SetTexture(kernel, "_Output", output);
             voxelizer.SetVector("_OutputSize", new(output.width, output.height, output.volumeDepth));
+            voxelizer.SetTexture(kernel, "_Output", output);
+            voxelizer.SetTexture(kernel, "_DebugNormals", normals);
             voxelizer.SetVector("_VoxelMinBound", voxelBounds.min);
             voxelizer.SetVector("_VoxelMaxBound", voxelBounds.max);
-            // voxelizer.SetVector("_MeshMinBound", mesh.bounds.min);
-            // voxelizer.SetVector("_MeshMaxBound", mesh.bounds.max);
             voxelizer.SetVector("_MeshMinBound", -Vector3.one);
             voxelizer.SetVector("_MeshMaxBound", Vector3.one);
             voxelizer.SetFloat("_Multiplier", multiplier);
@@ -39,6 +56,10 @@ namespace Assets.Voxelization
                 Mathf.CeilToInt((float)output.height / threadGroups.y),
                 Mathf.CeilToInt((float)output.volumeDepth / threadGroups.z)
             );
+            if (!useNormals)
+            {
+                normals.Release();
+            }
         }
 
         void OnDisable()

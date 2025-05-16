@@ -5243,6 +5243,7 @@ GameObject:
   - component: {fileID: 828791928}
   - component: {fileID: 828791929}
   - component: {fileID: 828791930}
+  - component: {fileID: 828791931}
   m_Layer: 0
   m_Name: RebuildMesh
   m_TagString: Untagged
@@ -5331,6 +5332,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   renderTexture: {fileID: 8400000, guid: 3d9406e2dc9327a4b9f1782ef4b4ec11, type: 2}
+  normalTexture: {fileID: 8400000, guid: 8390a6b477a51dc4abfaae10267198df, type: 2}
 --- !u!114 &828791929
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5364,6 +5366,25 @@ MonoBehaviour:
   marchingCubesShader: {fileID: 7200000, guid: daf38f6f439c47346b6fcb0da4bb114e, type: 3}
   resolution: 32
   smooth: 1
+--- !u!114 &828791931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 828791924}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e69537c8c694908469eb420f3e36df49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  texture: {fileID: 8400000, guid: 3d9406e2dc9327a4b9f1782ef4b4ec11, type: 2}
+  normals: {fileID: 8400000, guid: 8390a6b477a51dc4abfaae10267198df, type: 2}
+  voxelMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  voxelMaterial: {fileID: 2100000, guid: 45d8df7bab0a8444aacaedca794d29ee, type: 2}
+  bounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0.5, y: 0.5, z: 0.5}
 --- !u!1 &832837676
 GameObject:
   m_ObjectHideFlags: 0
@@ -27474,6 +27495,8 @@ MonoBehaviour:
   weightPainter: {fileID: 5835797095169048600}
   meshExtractionEpsilon: 0.005
   meshFromSprings: {fileID: 828791928}
+  voxeliseInterval: 0.5
+  voxeliseTimer: 0
 --- !u!114 &5843694868373114341
 MonoBehaviour:
   m_ObjectHideFlags: 0
