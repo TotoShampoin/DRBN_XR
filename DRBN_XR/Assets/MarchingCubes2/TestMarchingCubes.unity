@@ -1609,6 +1609,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2016607944097866032, guid: 687d26cb7ceeb754c857f5dd034d115f,
         type: 3}
+      propertyPath: smooth
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2016607944097866032, guid: 687d26cb7ceeb754c857f5dd034d115f,
+        type: 3}
       propertyPath: threshold
       value: 0
       objectReference: {fileID: 0}
@@ -1769,6 +1774,7 @@ MonoBehaviour:
   radius: 0.1
   weight: 1
   needsRegenerate: 0
+  clearAtStart: 1
 --- !u!1001 &4346094725728792469
 PrefabInstance:
   m_ObjectHideFlags: 0

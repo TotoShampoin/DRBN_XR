@@ -87,22 +87,23 @@ public class MarchingCubes : MonoBehaviour
 
     Mesh SharpMeshFromTriangles(Triangle[] triangles)
     {
-        List<Vector3> verts = new(triangles.Length * 3);
-        List<int> tris = new(triangles.Length * 3);
+        Vector3[] verts = new Vector3[triangles.Length * 3];
+        int[] tris = new int[triangles.Length * 3];
         Parallel.For(0, triangles.Length, i =>
         {
-            verts.Add(triangles[i].a);
-            verts.Add(triangles[i].b);
-            verts.Add(triangles[i].c);
-            tris.Add(i * 3);
-            tris.Add(i * 3 + 1);
-            tris.Add(i * 3 + 2);
+            int vi = i * 3;
+            verts[vi] = triangles[i].a;
+            verts[vi + 1] = triangles[i].b;
+            verts[vi + 2] = triangles[i].c;
+            tris[vi] = vi;
+            tris[vi + 1] = vi + 1;
+            tris[vi + 2] = vi + 2;
         });
 
         Mesh mesh = new()
         {
-            vertices = verts.ToArray(),
-            triangles = tris.ToArray()
+            vertices = verts,
+            triangles = tris
         };
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
