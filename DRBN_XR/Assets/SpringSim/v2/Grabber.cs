@@ -6,7 +6,10 @@ namespace Assets.SpringSim.V2
     [RequireComponent(typeof(XRGrabInteractable), typeof(MeshRenderer))]
     public class Grabber : MonoBehaviour
     {
+        bool isHovered;
+
         public bool IsGrabbed => xrgi.isSelected;
+        public bool IsHovered => isHovered;
 
         public Vector3 origin;
         public Vector3 Position { get => transform.position; set => transform.position = value; }
@@ -22,25 +25,36 @@ namespace Assets.SpringSim.V2
             xrgi = GetComponent<XRGrabInteractable>();
         }
 
+        Color transparent = new(0, 0, 0, 0);
+        void Update()
+        {
+            if (isHovered)
+                mr.material.color = transparent;
+            else if (IsGrabbed)
+                mr.material.color = Color.yellow;
+            else
+                mr.material.color = Color.red;
+        }
+
         public void OnGrab()
         {
-            simulator?.Grab();
+            if (simulator) simulator.Grab();
             origin = Position;
         }
         public void OnUngrab()
         {
-            simulator?.Ungrab();
+            if (simulator) simulator.Ungrab();
         }
 
         public void OnHovered()
         {
             Debug.Log("hover");
-            mr.enabled = true;
+            isHovered = true;
         }
         public void OnUnhovered()
         {
             Debug.Log("unhover");
-            mr.enabled = IsGrabbed;
+            isHovered = IsGrabbed;
         }
     }
 }

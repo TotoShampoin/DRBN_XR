@@ -12,7 +12,7 @@ namespace Assets.SpringSim.V2
         SpringSimulator parentSimulator;
         TextMeshPro debug;
 
-        public Vector3 Position { get => rigidbody?.position ?? Vector3.zero; set { if (rigidbody) rigidbody.position = value; } }
+        public Vector3 Position { get => rigidbody ? rigidbody.position : Vector3.zero; set { if (rigidbody) rigidbody.position = value; } }
         public Vector3 Velocity { get => rigidbody.linearVelocity; set => rigidbody.linearVelocity = value; }
         public bool UseGravity { get => rigidbody.useGravity; set => rigidbody.useGravity = value; }
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force) => rigidbody.AddForce(force, mode);
@@ -148,7 +148,7 @@ namespace Assets.SpringSim.V2
 
         public void OnHovered()
         {
-            parentSimulator?.OnMassHovered(this);
+            if (parentSimulator) parentSimulator.OnMassHovered(this);
             Hovered = true;
         }
         public void OnUnhovered()
@@ -159,12 +159,12 @@ namespace Assets.SpringSim.V2
         {
             Grabbed = true;
             GrabOrigin = Position;
-            parentSimulator?.OnMassGrabbed(this);
+            if (parentSimulator) parentSimulator.OnMassGrabbed(this);
         }
         public void OnUngrabbed()
         {
             Grabbed = false;
-            parentSimulator?.OnMassUngrabbed(this);
+            if (parentSimulator) parentSimulator.OnMassUngrabbed(this);
         }
 
         public void PartialGrab(float influence)
