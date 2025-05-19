@@ -32,6 +32,7 @@ Shader "Unlit/TransparentRim"
             {
                 UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
+                float3 worldPos : TEXCOORD0;
                 float3 normal : NORMAL;
             };
 
@@ -39,6 +40,7 @@ Shader "Unlit/TransparentRim"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 o.normal = UnityObjectToWorldNormal(v.normal);
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
@@ -49,10 +51,8 @@ Shader "Unlit/TransparentRim"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                // Calculate view direction in view space
-                float3 viewDir = normalize(-UnityObjectToViewPos(float4(0,0,0,1)).xyz);
-                float3 normalVS = normalize(mul((float3x3)UNITY_MATRIX_IT_MV, i.normal));
-                float dotNV = dot(normalVS, viewDir);
+                float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+                float dotNV = saturate(dot(i.normal, viewDir));
 
                 float rim = 1.0 - saturate(dotNV);
                 fixed4 col = _Color * fixed4(1,1,1,pow(rim, _RimGamma));

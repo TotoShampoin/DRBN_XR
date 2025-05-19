@@ -143,7 +143,8 @@ namespace Assets.SpringSim.V2
             if (selected)
             {
                 // partialDelta = selected.Position - selected.GrabOrigin;
-                partialDelta = grabber.Position - grabber.origin;
+                // partialDelta = grabber.Position - grabber.origin;
+                partialDelta = grabber.Position - selected.Position;
             }
             for (int i = 0; i < massObjects.Count; i++)
             {
