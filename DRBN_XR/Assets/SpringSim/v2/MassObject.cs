@@ -33,7 +33,7 @@ namespace Assets.SpringSim.V2
         public float PartialInfluence { get; set; }
         public float PartialStrength { get; set; }
 
-        public InputActionReference rigidityController;
+        // public InputActionReference rigidityController;
 
         const double k = 1.380649e-23; // J K−1
 
@@ -58,21 +58,21 @@ namespace Assets.SpringSim.V2
             var sim = transform.parent.gameObject.GetComponent<SpringSimulator>();
             if (sim) parentSimulator = sim;
 
-            if (rigidityController != null)
-            {
-                rigidityController.action.performed += ctx =>
-                {
-                    Debug.Log($"{ctx.ReadValue<Vector2>()}");
-                    Vector2 axis = ctx.ReadValue<Vector2>();
-                    AxisControlsRigidity(axis);
-                };
-                rigidityController.action.canceled += ctx =>
-                {
-                    Vector2 axis = ctx.ReadValue<Vector2>();
-                    AxisControlsRigidity(axis);
-                };
-                rigidityController.action.Enable();
-            }
+            // if (rigidityController != null)
+            // {
+            //     rigidityController.action.performed += ctx =>
+            //     {
+            //         Debug.Log($"{ctx.ReadValue<Vector2>()}");
+            //         Vector2 axis = ctx.ReadValue<Vector2>();
+            //         AxisControlsRigidity(axis);
+            //     };
+            //     rigidityController.action.canceled += ctx =>
+            //     {
+            //         Vector2 axis = ctx.ReadValue<Vector2>();
+            //         AxisControlsRigidity(axis);
+            //     };
+            //     rigidityController.action.Enable();
+            // }
         }
 
         void FixedUpdate()
@@ -103,10 +103,11 @@ namespace Assets.SpringSim.V2
 
             debug.transform.LookAt(Camera.main.transform);
             debug.transform.rotation *= Quaternion.Euler(0f, 180f, 0f);
-            if (Grabbed)
-                debug.text = $"{Mathf.Round(Rigidity * 100) / 100}";
-            else
-                debug.text = "";
+            // if (Grabbed)
+            //     debug.text = $"{Mathf.Round(Rigidity * 100) / 100}";
+            // else
+            //     debug.text = "";
+            debug.text = "";
 
             Rigidity += RigidityGradient * Time.deltaTime;
         }
