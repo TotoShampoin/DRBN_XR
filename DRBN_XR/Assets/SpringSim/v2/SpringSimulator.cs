@@ -225,7 +225,7 @@ namespace Assets.SpringSim.V2
         }
         public void Ungrab()
         {
-            OnMassUngrabbed(selected);
+            ResetGrabbed();
         }
         public void ResetGrabbed()
         {
@@ -267,6 +267,7 @@ namespace Assets.SpringSim.V2
 
         public void Clear()
         {
+            ResetGrabbed();
             // Pool and deactivate mass objects
             foreach (var rb in massObjects)
             {
@@ -289,6 +290,7 @@ namespace Assets.SpringSim.V2
         {
             Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
             var positions = dmesh.vertices;
+            var normals = dmesh.normals;
             if (useBounds)
             {
                 MeshMod.RescaleToBounds(ref positions, dmesh.bounds, bounds);
@@ -301,17 +303,17 @@ namespace Assets.SpringSim.V2
                 Vector3 size = usedBounds.size;
                 Vector3 min = usedBounds.min;
                 Vector3 max = usedBounds.max;
-                if (size.x < extractionEpsilon)
+                if (size.x < extractionEpsilon * 2)
                 {
                     min.x -= 0.5f;
                     max.x += 0.5f;
                 }
-                if (size.y < extractionEpsilon)
+                if (size.y < extractionEpsilon * 2)
                 {
                     min.y -= 0.5f;
                     max.y += 0.5f;
                 }
-                if (size.z < extractionEpsilon)
+                if (size.z < extractionEpsilon * 2)
                 {
                     min.z -= 0.5f;
                     max.z += 0.5f;
@@ -348,23 +350,20 @@ namespace Assets.SpringSim.V2
                     length = Vector3.Distance(positions[i2], positions[i0])
                 });
             }
+            Vector3? selectPosition = selected ? selected.Position : null;
             Clear();
-            UnityEngine.Debug.Log($"bounds: {usedBounds.min} - {usedBounds.max}");
             massObjects.AddRange(
-                positions.Select(p =>
+                positions.Select((p, i) =>
                 {
                     MassObject mass;
                     if (massPool.Count > 0)
                     {
                         mass = massPool.Dequeue();
-                        // mass.transform.SetParent(transform);
-                        // mass.transform.position = transform.TransformPoint(p);
-                        // mass.transform.rotation = Quaternion.identity;
-                        mass.ResetStates(transform.TransformPoint(p), Quaternion.identity, transform);
+                        mass.ResetStates(transform.TransformPoint(p), Quaternion.LookRotation(normals[i]), transform);
                     }
                     else
                     {
-                        mass = Instantiate(massPrefab, transform.TransformPoint(p), Quaternion.identity, transform);
+                        mass = Instantiate(massPrefab, transform.TransformPoint(p), Quaternion.LookRotation(normals[i]), transform);
                     }
                     mass.gameObject.SetActive(true);
                     switch (returnType)
@@ -500,22 +499,45 @@ namespace Assets.SpringSim.V2
                 })
             );
             cache.AddRange(positions.Select(p => new CachedMass { position = p }));
+
+            MassObject closest = null;
+            foreach (var mass in massObjects)
+            {
+                if (
+                    selectPosition.HasValue && (
+                        closest == null ||
+                        Vector3.Distance(mass.Position, selectPosition.Value) < Vector3.Distance(closest.Position, selectPosition.Value)
+                    )
+                )
+                {
+                    closest = mass;
+                }
+            }
+            if (closest)
+            {
+                grabber.ResetOrigin();
+                closest.Position = selectPosition.Value;
+                OnMassGrabbed(closest);
+                UnityEngine.Debug.Log($"{closest}");
+            }
+        }
+        public void UseMeshPreserveGeneralStructure(Mesh mesh, float extractionEpsilon = 0.005f, float tolerance = 0.2f)
+        {
+            var oldPos = massObjects.Select(m => m.Position).ToList();
+            UseMesh(mesh, extractionEpsilon);
         }
 
         public Mesh ToMesh()
         {
-            Mesh mesh = new()
+            return new Mesh()
             {
                 vertices = massObjects.Select(m => transform.InverseTransformPoint(m.Position)).ToArray(),
-                triangles = this.triangles
+                normals = massObjects.Select(m => m.transform.TransformDirection(Vector3.forward)).ToArray(),
+                triangles = triangles
                     .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
                     .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
                     .ToArray(),
             };
-
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            return mesh;
         }
     }
 }

@@ -1,4 +1,3 @@
-using Assets.Voxelization;
 using UnityEngine;
 
 namespace Assets.SpringSim.V2
@@ -12,14 +11,22 @@ namespace Assets.SpringSim.V2
         public WeightGenerator weightGenerator;
         public WeightPainter weightPainter;
         public float meshExtractionEpsilon = 0.005f;
+        public float meshExtractionDistance = 0.2f;
         public MeshFromSprings meshFromSprings;
-        public float voxeliseInterval = 0.5f;
-        public float voxeliseTimer = 0f;
+        public float voxeliseRate = 15f;
+
+        float voxeliseInterval;
+        float voxeliseTimer = 0f;
 
         public float MeshExtractionEpsilon
         {
             get => meshExtractionEpsilon;
             set => meshExtractionEpsilon = value;
+        }
+        public float MeshExtractionDistance
+        {
+            get => meshExtractionDistance;
+            set => meshExtractionDistance = value;
         }
         public float MarchingCubeResolution // if this is not a float, Unity's slider won't accept it -_-
         {
@@ -36,6 +43,7 @@ namespace Assets.SpringSim.V2
         {
             GenerateMarchingCubes();
             weightPainter.enabled = true;
+            voxeliseInterval = 1f / voxeliseRate;
         }
 
         void Update()
@@ -47,11 +55,11 @@ namespace Assets.SpringSim.V2
             }
             Voxelize();
 
-            // if ((voxeliseTimer += Time.deltaTime) >= voxeliseInterval)
-            // {
-            //     GenerateSpringsWithVoxelizer();
-            //     voxeliseTimer = 0f;
-            // }
+            if (simulator.HasMasses && (voxeliseTimer += Time.deltaTime) >= voxeliseInterval)
+            {
+                GenerateSpringsWithVoxelizer();
+                voxeliseTimer = 0f;
+            }
         }
 
         public void RefreshMarchingCubes()
@@ -73,6 +81,7 @@ namespace Assets.SpringSim.V2
                 weightGenerator.Threshold);
             simulator.UseMesh(mesh, meshExtractionEpsilon);
             weightPainter.enabled = false;
+            voxeliseTimer = 0f;
         }
 
         public void ReturnToMarchingCubes()
@@ -97,8 +106,10 @@ namespace Assets.SpringSim.V2
             {
                 meshFromSprings.Resolution = marchingCubes.resolution;
                 var mesh = meshFromSprings.FetchMesh(simulator.ToMesh());
-                simulator.UseMesh(mesh, meshExtractionEpsilon);
+                // simulator.UseMesh(mesh, meshExtractionEpsilon);
+                simulator.UseMeshPreserveGeneralStructure(mesh, meshExtractionEpsilon, meshExtractionDistance);
                 weightPainter.enabled = false;
+                voxeliseTimer = 0f;
             }
         }
 

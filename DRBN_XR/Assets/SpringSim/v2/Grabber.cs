@@ -29,17 +29,22 @@ namespace Assets.SpringSim.V2
         void Update()
         {
             if (isHovered)
-                mr.material.color = transparent;
-            else if (IsGrabbed)
                 mr.material.color = Color.yellow;
-            else
+            else if (IsGrabbed)
                 mr.material.color = Color.red;
+            else
+                mr.material.color = transparent;
+        }
+
+        public void ResetOrigin()
+        {
+            origin = Position;
         }
 
         public void OnGrab()
         {
             if (simulator) simulator.Grab();
-            origin = Position;
+            ResetOrigin();
         }
         public void OnUngrab()
         {

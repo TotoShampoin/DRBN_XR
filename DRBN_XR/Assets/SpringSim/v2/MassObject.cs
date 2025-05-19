@@ -53,6 +53,8 @@ namespace Assets.SpringSim.V2
             Initial = Position;
             debug = GetComponentInChildren<TextMeshPro>();
 
+            mesh.material.color = transparent;
+
             var sim = transform.parent.gameObject.GetComponent<SpringSimulator>();
             if (sim) parentSimulator = sim;
 
@@ -90,14 +92,14 @@ namespace Assets.SpringSim.V2
         void Update()
         {
             // THIS ASSUMES A SPECIFIC SHADER!
-            if (Grabbed)
-                mesh.material.color = Color.red;
-            else if (PartiallyGrabbed)
-                mesh.material.color = Color.magenta;
-            else if (Hovered)
-                mesh.material.color = Color.yellow;
-            else
-                mesh.material.color = transparent;
+            // if (Grabbed)
+            //     mesh.material.color = Color.red;
+            // else if (PartiallyGrabbed)
+            //     mesh.material.color = Color.magenta;
+            // else if (Hovered)
+            //     mesh.material.color = Color.yellow;
+            // else
+            //     mesh.material.color = transparent;
 
             debug.transform.LookAt(Camera.main.transform);
             debug.transform.rotation *= Quaternion.Euler(0f, 180f, 0f);
