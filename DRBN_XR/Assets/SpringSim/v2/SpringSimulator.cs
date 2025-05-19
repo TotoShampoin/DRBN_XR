@@ -89,6 +89,7 @@ namespace Assets.SpringSim.V2
         private Stopwatch stopwatch;
 
         public Grabber grabber;
+        public Transform vrController;
 
         public float Stiffness { get => stiffness; set => stiffness = value; }
         public float Viscosity { get => viscosity; set => viscosity = value; }
@@ -115,6 +116,8 @@ namespace Assets.SpringSim.V2
         void Update()
         {
             profiler.text = $"Spring tickrate: {Mathf.Round(1f / (float)stopwatch.Elapsed.TotalSeconds)} tps\nFramerate: {Mathf.Round(1f / (float)Time.deltaTime)} fps";
+            if (!selected)
+                GrabberOnMesh(new Ray(vrController.position, vrController.forward));
         }
 
         void FixedUpdate()
@@ -207,6 +210,72 @@ namespace Assets.SpringSim.V2
         public IEnumerable<MassObject> GetSurroundingMasses(Vector3 position, float distance)
         {
             return massObjects.Where(o => Vector3.Distance(o.Position, position) <= distance);
+        }
+
+        public void GrabberOnMesh(Ray ray)
+        {
+            var rayOrigin = ray.origin;
+            var rayDirection = ray.direction;
+            float closestDist = float.MaxValue;
+            Vector3 hitPoint = Vector3.zero;
+            bool hit = false;
+
+            for (int i = 0; i < triangles.Count; i++)
+            {
+                var tri = triangles[i];
+                Vector3 v0 = massObjects[tri.p1].Position;
+                Vector3 v1 = massObjects[tri.p2].Position;
+                Vector3 v2 = massObjects[tri.p3].Position;
+
+                if (RayTriangleIntersection(rayOrigin, rayDirection, v0, v1, v2, out Vector3 tempHit, out float dist))
+                {
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        hitPoint = tempHit;
+                        hit = true;
+                    }
+                }
+            }
+
+            if (hit)
+            {
+                grabber.Position = hitPoint;
+            }
+        }
+
+        // Möller–Trumbore ray-triangle intersection
+        private static bool RayTriangleIntersection(Vector3 rayOrigin, Vector3 rayDir, Vector3 v0, Vector3 v1, Vector3 v2, out Vector3 hit, out float t)
+        {
+            hit = Vector3.zero;
+            t = 0f;
+            const float EPSILON = 1e-6f;
+            Vector3 edge1 = v1 - v0;
+            Vector3 edge2 = v2 - v0;
+            Vector3 h = Vector3.Cross(rayDir, edge2);
+            float a = Vector3.Dot(edge1, h);
+            if (a > -EPSILON && a < EPSILON)
+                return false; // Ray is parallel to triangle
+
+            float f = 1.0f / a;
+            Vector3 s = rayOrigin - v0;
+            float u = f * Vector3.Dot(s, h);
+            if (u < 0.0f || u > 1.0f)
+                return false;
+
+            Vector3 q = Vector3.Cross(s, edge1);
+            float v = f * Vector3.Dot(rayDir, q);
+            if (v < 0.0f || u + v > 1.0f)
+                return false;
+
+            t = f * Vector3.Dot(edge2, q);
+            if (t > EPSILON)
+            {
+                hit = rayOrigin + rayDir * t;
+                return true;
+            }
+            else
+                return false;
         }
 
         public void Grab()

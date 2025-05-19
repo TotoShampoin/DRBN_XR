@@ -5595,7 +5595,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 828791924}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -11809,6 +11809,12 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!4 &1655489453 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8393186890254128703, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
+    type: 3}
+  m_PrefabInstance: {fileID: 995501107}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1661139092
 GameObject:
   m_ObjectHideFlags: 0
@@ -26394,6 +26400,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1690623175523193289, guid: f0f0abdbb8ffa5245bdd86dca43ccffa,
         type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1690623175523193289, guid: f0f0abdbb8ffa5245bdd86dca43ccffa,
+        type: 3}
       propertyPath: m_InteractionLayers.m_Bits
       value: 1
       objectReference: {fileID: 0}
@@ -30205,6 +30216,11 @@ PrefabInstance:
       propertyPath: grabDistance
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6822968914096546241, guid: 2b7d2b53843df004282e4844ed06a1eb,
+        type: 3}
+      propertyPath: vrController
+      value: 
+      objectReference: {fileID: 1655489453}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
