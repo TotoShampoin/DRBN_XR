@@ -48,6 +48,13 @@ namespace Assets.SpringSim.V2
         OutCubic,
     }
 
+    public enum BoundType
+    {
+        OriginalBounds,
+        ManualBounds,
+        Rescale,
+    }
+
     public class SpringSimulator : MonoBehaviour
     {
         [Header("Properties")]
@@ -57,8 +64,10 @@ namespace Assets.SpringSim.V2
 
         public MassObject massPrefab;
         public LinkObject linkPrefab;
-        public bool useBounds = true;
+        // public bool useBounds = true;
+        public BoundType boundType = BoundType.OriginalBounds;
         public Bounds bounds = new(new(0, 0, 0), new(1, 1, 1));
+        public float rescale = 1f;
         public float forcedRate = 240f;
         public bool useGravity = false;
         public MassReturns returnType = MassReturns.None;
@@ -98,11 +107,13 @@ namespace Assets.SpringSim.V2
         public float GrabRadius { get => grabDistance; set => grabDistance = value; }
         public MassReturns Return { get => returnType; set => returnType = value; }
         public int ReturnAsInt { get => (int)returnType; set => returnType = (MassReturns)value; }
-        public bool UseBounds { get => useBounds; set => useBounds = value; }
+        // public bool UseBounds { get => useBounds; set => useBounds = value; }
         public float DampingForce { get => dampingForce; set => dampingForce = value; }
         public float GrabStregth { get => grabStregth; set => grabStregth = value; }
         public GrabInfluenceFunction InfluenceFunction { get => influenceFunction; set => influenceFunction = value; }
         public int InfluenceFunctionAsInt { get => (int)influenceFunction; set => influenceFunction = (GrabInfluenceFunction)value; }
+        public BoundType BoundType { get => boundType; set => boundType = value; }
+        public int BoundTypeAsInt { get => (int)boundType; set => boundType = (BoundType)value; }
 
         public bool HasMasses => massObjects.Count > 0;
 
@@ -361,34 +372,47 @@ namespace Assets.SpringSim.V2
             Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
             var positions = dmesh.vertices;
             var normals = dmesh.normals;
-            if (useBounds)
+            switch (boundType)
             {
-                MeshMod.RescaleToBounds(ref positions, dmesh.bounds, bounds);
-                usedBounds = bounds;
-            }
-            else
-            {
-                usedBounds = dmesh.bounds;
-                // If any axis of the bounds size is 0, extend it to 2 * extractionEpsilon
-                Vector3 size = usedBounds.size;
-                Vector3 min = usedBounds.min;
-                Vector3 max = usedBounds.max;
-                if (size.x < extractionEpsilon * 2)
-                {
-                    min.x -= 0.5f;
-                    max.x += 0.5f;
-                }
-                if (size.y < extractionEpsilon * 2)
-                {
-                    min.y -= 0.5f;
-                    max.y += 0.5f;
-                }
-                if (size.z < extractionEpsilon * 2)
-                {
-                    min.z -= 0.5f;
-                    max.z += 0.5f;
-                }
-                usedBounds.SetMinMax(min, max);
+                case BoundType.OriginalBounds:
+                    {
+                        usedBounds = dmesh.bounds;
+                        Vector3 size = usedBounds.size;
+                        Vector3 min = usedBounds.min;
+                        Vector3 max = usedBounds.max;
+                        if (size.x < extractionEpsilon * 2)
+                        {
+                            min.x -= 0.5f;
+                            max.x += 0.5f;
+                        }
+                        if (size.y < extractionEpsilon * 2)
+                        {
+                            min.y -= 0.5f;
+                            max.y += 0.5f;
+                        }
+                        if (size.z < extractionEpsilon * 2)
+                        {
+                            min.z -= 0.5f;
+                            max.z += 0.5f;
+                        }
+                        usedBounds.SetMinMax(min, max);
+                    }
+                    break;
+                case BoundType.ManualBounds:
+                    {
+                        MeshMod.RescaleToBounds(ref positions, dmesh.bounds, bounds);
+                        usedBounds = bounds;
+                    }
+                    break;
+                case BoundType.Rescale:
+                    {
+                        var originalBounds = dmesh.bounds;
+                        var center = originalBounds.center;
+                        var size = originalBounds.size * rescale;
+                        usedBounds = new Bounds(center, size);
+                        MeshMod.RescaleToBounds(ref positions, originalBounds, usedBounds);
+                    }
+                    break;
             }
             ConcurrentDictionary<uint, SpringLink> links = new();
             static uint HashKey(int a, int b)

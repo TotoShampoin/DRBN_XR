@@ -12,7 +12,7 @@ namespace Assets.SpringSim.V2
         SpringSimulator parentSimulator;
         TextMeshPro debug;
 
-        public Vector3 Position { get => rigidbody ? rigidbody.position : Vector3.zero; set { if (rigidbody) rigidbody.position = value; } }
+        public Vector3 Position { get => rigidbody ? rigidbody.position : Vector3.zero; set { if (rigidbody) rigidbody.MovePosition(value); } }
         public Vector3 Velocity { get => rigidbody.linearVelocity; set => rigidbody.linearVelocity = value; }
         public bool UseGravity { get => rigidbody.useGravity; set => rigidbody.useGravity = value; }
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force) => rigidbody.AddForce(force, mode);

@@ -14,6 +14,7 @@ namespace Assets.SpringSim.V2
         public float meshExtractionDistance = 0.2f;
         public MeshFromSprings meshFromSprings;
         public float voxeliseRate = 15f;
+        public bool constantRebuild = false;
 
         float voxeliseInterval;
         float voxeliseTimer = 0f;
@@ -38,6 +39,11 @@ namespace Assets.SpringSim.V2
             get => voxeliseInterval;
             set => voxeliseInterval = value;
         }
+        public bool ConstantRebuild
+        {
+            get => constantRebuild;
+            set => constantRebuild = value;
+        }
 
         void Start()
         {
@@ -55,7 +61,7 @@ namespace Assets.SpringSim.V2
             }
             Voxelize();
 
-            if (simulator.HasMasses && (voxeliseTimer += Time.deltaTime) >= voxeliseInterval)
+            if (constantRebuild && simulator.HasMasses && (voxeliseTimer += Time.deltaTime) >= voxeliseInterval)
             {
                 GenerateSpringsWithVoxelizer();
                 voxeliseTimer = 0f;
