@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Linq;
 
 public class MeshMod
 {
@@ -77,6 +79,11 @@ public class MeshMod
                 Mathf.Lerp(scaledMinBound.z, scaledMaxBound.z, normalizedPos.z)
             );
         }
+    }
+
+    static public float[] DistanceOfVertices(IEnumerable<Vector3> of, IEnumerable<Vector3> with)
+    {
+        return of.Select(o => with.Min(w => Vector3.Distance(w, o))).ToArray();
     }
 
     static private int FindOrAddVertex(List<Vector3> vertices, List<int> vertexCumul, Vector3 vertex, float epsilon = 0.0001f)

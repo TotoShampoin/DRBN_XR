@@ -17,6 +17,7 @@ namespace Assets.SpringSim.V2
         public bool UseGravity { get => rigidbody.useGravity; set => rigidbody.useGravity = value; }
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force) => rigidbody.AddForce(force, mode);
         public float Damping { get => rigidbody.linearDamping; set => rigidbody.linearDamping = value; }
+        public string DebugText { get => debug.text; set => debug.text = value; }
 
         public Vector3 Initial { get; set; }
         public bool ReturnToOrigin { get; set; }
@@ -32,6 +33,8 @@ namespace Assets.SpringSim.V2
         public Vector3 PartialDelta { get; set; }
         public float PartialInfluence { get; set; }
         public float PartialStrength { get; set; }
+
+        public bool Mark { get; set; } = false;
 
         // public InputActionReference rigidityController;
 
@@ -57,6 +60,8 @@ namespace Assets.SpringSim.V2
 
             var sim = transform.parent.gameObject.GetComponent<SpringSimulator>();
             if (sim) parentSimulator = sim;
+
+            debug.text = "";
 
             // if (rigidityController != null)
             // {
@@ -101,13 +106,16 @@ namespace Assets.SpringSim.V2
             // else
             //     mesh.material.color = transparent;
 
+            if (Mark) mesh.material.color = Color.red;
+            else mesh.material.color = transparent;
+
+            debug.transform.position = transform.position + Vector3.up * 0.075f;
             debug.transform.LookAt(Camera.main.transform);
             debug.transform.rotation *= Quaternion.Euler(0f, 180f, 0f);
             // if (Grabbed)
             //     debug.text = $"{Mathf.Round(Rigidity * 100) / 100}";
             // else
             //     debug.text = "";
-            debug.text = "";
 
             Rigidity += RigidityGradient * Time.deltaTime;
         }

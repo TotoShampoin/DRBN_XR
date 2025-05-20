@@ -111,9 +111,11 @@ namespace Assets.SpringSim.V2
             if (simulator.HasMasses)
             {
                 meshFromSprings.Resolution = marchingCubes.resolution;
-                var mesh = meshFromSprings.FetchMesh(simulator.ToMesh());
-                // simulator.UseMesh(mesh, meshExtractionEpsilon);
-                simulator.UseMeshPreserveGeneralStructure(mesh, meshExtractionEpsilon, meshExtractionDistance);
+                var oldMesh = simulator.ToMesh();
+                var newMesh = meshFromSprings.FetchMesh(oldMesh);
+                // MeshFromSprings.CleanupMesh(newMesh, oldMesh, meshExtractionDistance);
+                simulator.UseMesh(newMesh, meshExtractionEpsilon);
+                if (simulator.HasMarks) ConstantRebuild = false;
                 weightPainter.enabled = false;
                 voxeliseTimer = 0f;
             }

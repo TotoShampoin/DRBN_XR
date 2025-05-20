@@ -114,8 +114,10 @@ namespace Assets.SpringSim.V2
         public int InfluenceFunctionAsInt { get => (int)influenceFunction; set => influenceFunction = (GrabInfluenceFunction)value; }
         public BoundType BoundType { get => boundType; set => boundType = value; }
         public int BoundTypeAsInt { get => (int)boundType; set => boundType = (BoundType)value; }
+        public bool HasMarks { get; set; } = false;
 
         public bool HasMasses => massObjects.Count > 0;
+
 
         void Start()
         {
@@ -344,6 +346,25 @@ namespace Assets.SpringSim.V2
         {
             if (selected != ungrabbed) return;
             ResetGrabbed();
+        }
+
+        void Remove(MassObject mass)
+        {
+            if (massObjects.Contains(mass))
+            {
+                mass.gameObject.SetActive(false);
+                massPool.Enqueue(mass);
+                massObjects.Remove(mass);
+            }
+        }
+        void Remove(LinkObject link)
+        {
+            if (linkObjects.Contains(link))
+            {
+                link.gameObject.SetActive(false);
+                linkPool.Enqueue(link);
+                linkObjects.Remove(link);
+            }
         }
 
         public void Clear()
@@ -585,8 +606,8 @@ namespace Assets.SpringSim.V2
                     {
                         link = Instantiate(linkPrefab, transform);
                     }
-                    link.a = massObjects[lk.a].gameObject;
-                    link.b = massObjects[lk.b].gameObject;
+                    link.a = massObjects[lk.a];
+                    link.b = massObjects[lk.b];
                     link.length = lk.length;
                     link.gameObject.SetActive(true);
                     return link;
@@ -614,11 +635,6 @@ namespace Assets.SpringSim.V2
                 OnMassGrabbed(closest);
                 UnityEngine.Debug.Log($"{closest}");
             }
-        }
-        public void UseMeshPreserveGeneralStructure(Mesh mesh, float extractionEpsilon = 0.005f, float tolerance = 0.2f)
-        {
-            var oldPos = massObjects.Select(m => m.Position).ToList();
-            UseMesh(mesh, extractionEpsilon);
         }
 
         public Mesh ToMesh()
