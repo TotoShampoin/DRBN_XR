@@ -43,7 +43,7 @@ namespace Assets.SpringSim.V2
             return marchingCubes.GenerateMesh(renderTexture, 0);
         }
 
-        static public void CleanupMesh(Mesh toCleanUp, Mesh oldMesh, float tolerance = 0.2f)
+        static public Mesh CleanupMesh(Mesh toCleanUp, Mesh oldMesh, float tolerance = 0.2f)
         {
             // Why does this delete half of my vertices
 
@@ -90,10 +90,12 @@ namespace Assets.SpringSim.V2
                 }
             }
 
-            toCleanUp.Clear();
-            toCleanUp.vertices = vertexNormals.Select(vn => vn.v).ToArray();
-            toCleanUp.normals = vertexNormals.Select(vn => vn.n).ToArray();
-            toCleanUp.triangles = triangles.ToArray();
+            return new()
+            {
+                vertices = vertexNormals.Select(vn => vn.v).ToArray(),
+                normals = vertexNormals.Select(vn => vn.n).ToArray(),
+                triangles = triangles.ToArray(),
+            };
         }
     }
 
