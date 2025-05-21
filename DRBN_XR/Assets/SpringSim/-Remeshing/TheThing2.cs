@@ -41,3 +41,19 @@ public class TheThing2 : MonoBehaviour
         }
     }
 }
+#if UNITY_EDITOR
+[CustomEditor(typeof(TheThing2))]
+public class TheThing2Editor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        TheThing2 script = (TheThing2)target;
+        if (GUILayout.Button("Remesh"))
+        {
+            script.Remesh();
+        }
+    }
+}
+#endif
