@@ -3822,6 +3822,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3686976263380477743, guid: 86d4995f59764af4db7ca8fdcc829e1d,
         type: 3}
+      propertyPath: m_Constraints
+      value: 112
+      objectReference: {fileID: 0}
+    - target: {fileID: 3686976263380477743, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
       propertyPath: m_ExcludeLayers.m_Bits
       value: 1541
       objectReference: {fileID: 0}
@@ -4824,6 +4829,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Radius
       value: 0.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 7480589737975036636, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7480589737975036636, guid: 86d4995f59764af4db7ca8fdcc829e1d,
         type: 3}
