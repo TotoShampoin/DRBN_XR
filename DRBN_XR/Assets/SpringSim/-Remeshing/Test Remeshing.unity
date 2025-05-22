@@ -182,12 +182,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff324fea434603f4ea419564e728e569, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  test0: {fileID: 4300000, guid: f16949ff626386b4b9f43e1c40b9ba30, type: 2}
-  test1: {fileID: 4300000, guid: c7ef7aaea5fd4574483770d2cfc1c4e6, type: 2}
+  test0: {fileID: -462981019419857548, guid: 0e3c7737c7faccc419b39ed8eef2927a, type: 3}
+  test1: {fileID: -462981019419857548, guid: f434e0e775344ee49a50bf8c38f76f2f, type: 3}
   material0: {fileID: 2100000, guid: b5b0e034300f7ca47b08e354baa9ab5d, type: 2}
   material1: {fileID: 2100000, guid: c2fd7278e9689f34f8d8a289d3ee002e, type: 2}
   textbox: {fileID: 812180161}
   tolerance: 0.2
+  textOffset: 0.1
 --- !u!1 &792364155
 GameObject:
   m_ObjectHideFlags: 0

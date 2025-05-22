@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using Unity.Collections;
 
 public class MeshMod
 {
@@ -83,7 +84,74 @@ public class MeshMod
 
     static public float[] DistanceOfVertices(IEnumerable<Vector3> of, IEnumerable<Vector3> with)
     {
-        return of.Select(o => with.Min(w => Vector3.Distance(w, o))).ToArray();
+        // return of.Select(
+        //     o => with.Min(w => Vector3.Distance(w, o))
+        // ).ToArray();
+        var kd = new KDTree3(with);
+        return of.Select(o => kd.NearestDistance(o)).ToArray();
+    }
+
+    public struct Group
+    {
+        public Mesh mesh;
+        public int[][] groups;
+    }
+    static public Group GroupVertices(Mesh mesh)
+    {
+        var triangles = mesh.triangles;
+        int vertexCount = mesh.vertexCount;
+        int[] parent = Enumerable.Range(0, vertexCount).ToArray();
+
+        int Find(int x)
+        {
+            if (parent[x] != x)
+                parent[x] = Find(parent[x]);
+            return parent[x];
+        }
+
+        void Union(int x, int y)
+        {
+            int px = Find(x);
+            int py = Find(y);
+            if (px != py)
+                parent[py] = px;
+        }
+
+        for (int i = 0; i < triangles.Length; i += 3)
+        {
+            Union(triangles[i], triangles[i + 1]);
+            Union(triangles[i], triangles[i + 2]);
+        }
+
+        var groupsDict = new Dictionary<int, List<int>>();
+        for (int i = 0; i < vertexCount; i++)
+        {
+            int root = Find(i);
+            if (!groupsDict.ContainsKey(root))
+                groupsDict[root] = new List<int>();
+            groupsDict[root].Add(i);
+        }
+
+        return new()
+        {
+            mesh = mesh,
+            groups = groupsDict.Values.Select(g => g.ToArray()).ToArray(),
+        };
+    }
+    static public float[] DistanceOfGroups(Group of, Group with)
+    {
+        // return of.groups.Select(
+        //     group => DistanceOfVertices(
+        //         group.Select(idx => of.mesh.vertices[idx]),
+        //         with.mesh.vertices
+        //     ).Min()
+        // ).ToArray();
+        var kd = new KDTree3(with.mesh.vertices);
+        return of.groups.Select(
+            group => group
+                .Select(idx => kd.NearestDistance(of.mesh.vertices[idx]))
+                .Min()
+        ).ToArray();
     }
 
     static private int FindOrAddVertex(List<Vector3> vertices, List<int> vertexCumul, Vector3 vertex, float epsilon = 0.0001f)

@@ -113,7 +113,7 @@ namespace Assets.SpringSim.V2
                 meshFromSprings.Resolution = marchingCubes.resolution;
                 var oldMesh = simulator.ToMesh();
                 var newMesh = meshFromSprings.FetchMesh(oldMesh);
-                MeshFromSprings.CleanupMesh(newMesh, oldMesh, meshExtractionDistance);
+                newMesh = MeshFromSprings.CleanupMesh(newMesh, oldMesh, meshExtractionDistance);
                 simulator.UseMesh(newMesh, meshExtractionEpsilon);
                 if (simulator.HasMarks) ConstantRebuild = false;
                 weightPainter.enabled = false;

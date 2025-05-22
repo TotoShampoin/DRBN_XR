@@ -3650,6 +3650,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2132887050592375487, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
+      propertyPath: m_Value
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 2132887050592375487, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
+      propertyPath: m_MaxValue
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 2378380789421361321, guid: 86d4995f59764af4db7ca8fdcc829e1d,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -4248,7 +4258,7 @@ PrefabInstance:
     - target: {fileID: 5422023119205107617, guid: 86d4995f59764af4db7ca8fdcc829e1d,
         type: 3}
       propertyPath: meshExtractionDistance
-      value: 0.15
+      value: 0.05
       objectReference: {fileID: 0}
     - target: {fileID: 5431370222224862496, guid: 86d4995f59764af4db7ca8fdcc829e1d,
         type: 3}
