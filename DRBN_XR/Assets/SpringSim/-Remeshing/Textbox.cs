@@ -1,5 +1,4 @@
 using TMPro;
-using UnityEditor;
 using UnityEngine;
 
 [RequireComponent(typeof(TextMeshPro))]
