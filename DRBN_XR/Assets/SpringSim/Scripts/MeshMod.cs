@@ -84,11 +84,8 @@ public class MeshMod
 
     static public float[] DistanceOfVertices(IEnumerable<Vector3> of, IEnumerable<Vector3> with)
     {
-        // return of.Select(
-        //     o => with.Min(w => Vector3.Distance(w, o))
-        // ).ToArray();
         var kd = new KDTree3(with);
-        return of.Select(o => kd.NearestDistance(o)).ToArray();
+        return of.AsParallel().Select(o => kd.NearestDistance(o)).ToArray();
     }
 
     public struct Group
@@ -140,16 +137,12 @@ public class MeshMod
     }
     static public float[] DistanceOfGroups(Group of, Group with)
     {
-        // return of.groups.Select(
-        //     group => DistanceOfVertices(
-        //         group.Select(idx => of.mesh.vertices[idx]),
-        //         with.mesh.vertices
-        //     ).Min()
-        // ).ToArray();
+        var vertices = of.mesh.vertices;
         var kd = new KDTree3(with.mesh.vertices);
-        return of.groups.Select(
+        return of.groups.AsParallel().Select(
             group => group
-                .Select(idx => kd.NearestDistance(of.mesh.vertices[idx]))
+                .AsParallel()
+                .Select(idx => kd.NearestDistance(vertices[idx]))
                 .Min()
         ).ToArray();
     }
