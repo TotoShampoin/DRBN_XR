@@ -19,6 +19,7 @@ TagManager:
   - mol_nid_G3
   - mol_coll_coil
   - teleportation
+  - hydrophobic
   layers:
   - Default
   - TransparentFX

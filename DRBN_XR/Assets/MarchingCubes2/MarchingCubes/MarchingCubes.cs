@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Unity.Collections;
 using UnityEngine;
 
 public class MarchingCubes : MonoBehaviour
@@ -23,6 +21,7 @@ public class MarchingCubes : MonoBehaviour
     public int resolution = 32;
     // public float threshold = 0.0f;
     public bool smooth = true;
+    public Bounds bounds = new(Vector3.zero, Vector3.one);
 
     void OnEnable()
     {
@@ -40,7 +39,7 @@ public class MarchingCubes : MonoBehaviour
     {
         Gizmos.color = Color.white;
         Gizmos.matrix = transform.localToWorldMatrix;
-        Gizmos.DrawWireCube(Vector3.zero, new Vector3(1, 1, 1));
+        Gizmos.DrawWireCube(bounds.center, bounds.size);
     }
 
     public void ClearMesh()
@@ -68,6 +67,8 @@ public class MarchingCubes : MonoBehaviour
 
         marchingCubesShader.SetInt("_Resolution", resolution);
         marchingCubesShader.SetFloat("_Threshold", threshold);
+        marchingCubesShader.SetVector("_Min", bounds.min);
+        marchingCubesShader.SetVector("_Max", bounds.max);
 
         triangleBuffer.SetCounterValue(0);
 
@@ -78,7 +79,7 @@ public class MarchingCubes : MonoBehaviour
             Mathf.CeilToInt((float)resolution / 8));
 
         Triangle[] triangles = new Triangle[ReadTriangleCount()];
-        triangleBuffer.GetData(triangles);
+        triangleBuffer.GetData(triangles); // [MARKER] Bottleneck
 
         return smooth
             ? SmoothMeshFromTriangles(triangles)

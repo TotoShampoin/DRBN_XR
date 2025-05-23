@@ -12,11 +12,13 @@ namespace Assets.SpringSim.V2
         SpringSimulator parentSimulator;
         TextMeshPro debug;
 
-        public Vector3 Position { get => rigidbody?.position ?? Vector3.zero; set { if (rigidbody) rigidbody.position = value; } }
+        public Vector3 Position { get => rigidbody ? rigidbody.position : Vector3.zero; set { if (rigidbody) rigidbody.MovePosition(value); } }
         public Vector3 Velocity { get => rigidbody.linearVelocity; set => rigidbody.linearVelocity = value; }
         public bool UseGravity { get => rigidbody.useGravity; set => rigidbody.useGravity = value; }
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force) => rigidbody.AddForce(force, mode);
         public float Damping { get => rigidbody.linearDamping; set => rigidbody.linearDamping = value; }
+        public string DebugText { get => debug.text; set => debug.text = value; }
+        public float Mass { get => rigidbody ? rigidbody.mass : 1f; set { if (rigidbody) rigidbody.mass = value; } }
 
         public Vector3 Initial { get; set; }
         public bool ReturnToOrigin { get; set; }
@@ -33,7 +35,9 @@ namespace Assets.SpringSim.V2
         public float PartialInfluence { get; set; }
         public float PartialStrength { get; set; }
 
-        public InputActionReference rigidityController;
+        public bool Mark { get; set; } = false;
+
+        // public InputActionReference rigidityController;
 
         const double k = 1.380649e-23; // J K−1
 
@@ -53,24 +57,28 @@ namespace Assets.SpringSim.V2
             Initial = Position;
             debug = GetComponentInChildren<TextMeshPro>();
 
+            mesh.material.color = transparent;
+
             var sim = transform.parent.gameObject.GetComponent<SpringSimulator>();
             if (sim) parentSimulator = sim;
 
-            if (rigidityController != null)
-            {
-                rigidityController.action.performed += ctx =>
-                {
-                    Debug.Log($"{ctx.ReadValue<Vector2>()}");
-                    Vector2 axis = ctx.ReadValue<Vector2>();
-                    AxisControlsRigidity(axis);
-                };
-                rigidityController.action.canceled += ctx =>
-                {
-                    Vector2 axis = ctx.ReadValue<Vector2>();
-                    AxisControlsRigidity(axis);
-                };
-                rigidityController.action.Enable();
-            }
+            debug.text = "";
+
+            // if (rigidityController != null)
+            // {
+            //     rigidityController.action.performed += ctx =>
+            //     {
+            //         Debug.Log($"{ctx.ReadValue<Vector2>()}");
+            //         Vector2 axis = ctx.ReadValue<Vector2>();
+            //         AxisControlsRigidity(axis);
+            //     };
+            //     rigidityController.action.canceled += ctx =>
+            //     {
+            //         Vector2 axis = ctx.ReadValue<Vector2>();
+            //         AxisControlsRigidity(axis);
+            //     };
+            //     rigidityController.action.Enable();
+            // }
         }
 
         void FixedUpdate()
@@ -90,21 +98,25 @@ namespace Assets.SpringSim.V2
         void Update()
         {
             // THIS ASSUMES A SPECIFIC SHADER!
-            if (Grabbed)
-                mesh.material.color = Color.red;
-            else if (PartiallyGrabbed)
-                mesh.material.color = Color.magenta;
-            else if (Hovered)
-                mesh.material.color = Color.yellow;
-            else
-                mesh.material.color = transparent;
+            // if (Grabbed)
+            //     mesh.material.color = Color.red;
+            // else if (PartiallyGrabbed)
+            //     mesh.material.color = Color.magenta;
+            // else if (Hovered)
+            //     mesh.material.color = Color.yellow;
+            // else
+            //     mesh.material.color = transparent;
 
+            if (Mark) mesh.material.color = Color.red;
+            else mesh.material.color = transparent;
+
+            debug.transform.position = transform.position + Vector3.up * 0.075f;
             debug.transform.LookAt(Camera.main.transform);
             debug.transform.rotation *= Quaternion.Euler(0f, 180f, 0f);
-            if (Grabbed)
-                debug.text = $"{Mathf.Round(Rigidity * 100) / 100}";
-            else
-                debug.text = "";
+            // if (Grabbed)
+            //     debug.text = $"{Mathf.Round(Rigidity * 100) / 100}";
+            // else
+            //     debug.text = "";
 
             Rigidity += RigidityGradient * Time.deltaTime;
         }
@@ -146,18 +158,25 @@ namespace Assets.SpringSim.V2
                 RigidityGradient = axis.y;
         }
 
-        public void OnHovered() => Hovered = true;
-        public void OnUnhovered() => Hovered = false;
+        public void OnHovered()
+        {
+            if (parentSimulator) parentSimulator.OnMassHovered(this);
+            Hovered = true;
+        }
+        public void OnUnhovered()
+        {
+            Hovered = false;
+        }
         public void OnGrabbed()
         {
             Grabbed = true;
             GrabOrigin = Position;
-            parentSimulator?.OnMassGrabbed(this);
+            if (parentSimulator) parentSimulator.OnMassGrabbed(this);
         }
         public void OnUngrabbed()
         {
             Grabbed = false;
-            parentSimulator?.OnMassUngrabbed(this);
+            if (parentSimulator) parentSimulator.OnMassUngrabbed(this);
         }
 
         public void PartialGrab(float influence)
@@ -171,4 +190,12 @@ namespace Assets.SpringSim.V2
             PartiallyGrabbed = false;
         }
     }
+
+    struct MassObjectInitData
+    {
+        public Vector3 position;
+        // public Quaternion rotation;
+        public Vector3 normal;
+        public bool returnToOrigin;
+    };
 }

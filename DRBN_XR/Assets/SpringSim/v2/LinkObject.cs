@@ -7,7 +7,8 @@ namespace Assets.SpringSim.V2
     [RequireComponent(typeof(LineRenderer))]
     public class LinkObject : MonoBehaviour
     {
-        public GameObject a, b;
+        // public GameObject a, b;
+        [NonSerialized] public MassObject a, b;
         [NonSerialized] public float length;
         LineRenderer line;
 
@@ -16,7 +17,11 @@ namespace Assets.SpringSim.V2
             line = GetComponent<LineRenderer>();
         }
 
-        void Update()
+        void OnEnable() => Place();
+
+        void Update() => Place();
+
+        void Place()
         {
             if (a == null || b == null)
             {

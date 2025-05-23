@@ -5,7 +5,7 @@ public class WeightPainter : MonoBehaviour
 {
     [SerializeField] ComputeShader weightPainterShader;
     [SerializeField] RenderTexture renderTexture;
-    [SerializeField] Transform marchingCubes;
+    [SerializeField] MarchingCubes marchingCubes;
 
     [SerializeField] Transform brushTransform;
     [SerializeField] InputActionReference paintTrigger;
@@ -72,8 +72,8 @@ public class WeightPainter : MonoBehaviour
         weightPainterShader.SetFloat("_Radius", radius);
         weightPainterShader.SetFloat("_Weight", weight);
         weightPainterShader.SetInt("_Mode", (int)mode);
-        weightPainterShader.SetVector("_MinBounds", new(-0.5f, -0.5f, -0.5f));
-        weightPainterShader.SetVector("_MaxBounds", new(0.5f, 0.5f, 0.5f));
+        weightPainterShader.SetVector("_MinBounds", marchingCubes.bounds.min);
+        weightPainterShader.SetVector("_MaxBounds", marchingCubes.bounds.max);
 
         weightPainterShader.SetFloat("_MinClamp", -1.0f);
         weightPainterShader.SetFloat("_MaxClamp", 1.0f);
