@@ -18,6 +18,7 @@ namespace Assets.SpringSim.V2
         public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force) => rigidbody.AddForce(force, mode);
         public float Damping { get => rigidbody.linearDamping; set => rigidbody.linearDamping = value; }
         public string DebugText { get => debug.text; set => debug.text = value; }
+        public float Mass { get => rigidbody ? rigidbody.mass : 1f; set { if (rigidbody) rigidbody.mass = value; } }
 
         public Vector3 Initial { get; set; }
         public bool ReturnToOrigin { get; set; }
@@ -189,4 +190,12 @@ namespace Assets.SpringSim.V2
             PartiallyGrabbed = false;
         }
     }
+
+    struct MassObjectInitData
+    {
+        public Vector3 position;
+        // public Quaternion rotation;
+        public Vector3 normal;
+        public bool returnToOrigin;
+    };
 }

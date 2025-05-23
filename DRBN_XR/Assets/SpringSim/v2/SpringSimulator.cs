@@ -75,11 +75,10 @@ namespace Assets.SpringSim.V2
         public float dampingForce = 1f;
         public float grabStregth = 3000f;
         public GrabInfluenceFunction influenceFunction = GrabInfluenceFunction.OutCubic;
+        public float globalMass = 0.5f;
 
         MassObject selected = null;
         readonly List<MassObject> surrounding = new();
-
-        public TextMeshProUGUI profiler;
 
         private readonly List<MassObject> massObjects = new();
         private readonly List<SpringLink> links = new();
@@ -94,8 +93,6 @@ namespace Assets.SpringSim.V2
         // --------------------
 
         private Bounds usedBounds;
-
-        private Stopwatch stopwatch;
 
         public Grabber grabber;
         public Transform vrController;
@@ -115,6 +112,17 @@ namespace Assets.SpringSim.V2
         public BoundType BoundType { get => boundType; set => boundType = value; }
         public int BoundTypeAsInt { get => (int)boundType; set => boundType = (BoundType)value; }
         public bool HasMarks { get; set; } = false;
+        public float GlobalMass { get => globalMass; set => globalMass = value; }
+
+        public float Rate
+        {
+            get => forcedRate;
+            set
+            {
+                forcedRate = value;
+                Time.fixedDeltaTime = 1f / forcedRate;
+            }
+        }
 
         public bool HasMasses => massObjects.Count > 0;
 
@@ -128,14 +136,12 @@ namespace Assets.SpringSim.V2
 
         void Update()
         {
-            profiler.text = $"Spring tickrate: {Mathf.Round(1f / (float)stopwatch.Elapsed.TotalSeconds)} tps\nFramerate: {Mathf.Round(1f / (float)Time.deltaTime)} fps";
             if (!selected)
                 GrabberOnMesh(new Ray(vrController.position, vrController.forward));
         }
 
         void FixedUpdate()
         {
-            stopwatch = Stopwatch.StartNew();
             for (int i = 0; i < massObjects.Count; i++)
             {
                 cache[i].position = massObjects[i].Position;
@@ -143,35 +149,41 @@ namespace Assets.SpringSim.V2
                 cache[i].rigidity = massObjects[i].Rigidity;
                 cache[i].force = Vector3.zero;
             }
-            Parallel.For(0, links.Count, i =>
-            {
-                var link = links[i];
-                var force = SpringForce(link);
-                // var force = EllasticForce(link);
-                lock (cache)
+            Parallel.For(0, links.Count,
+                () => new Vector3[massObjects.Count],
+                (i, state, local) =>
                 {
-                    cache[link.a].force += force;
-                    cache[link.b].force -= force;
+                    var link = links[i];
+                    var force = SpringForce(link);
+                    local[link.a] += force;
+                    local[link.b] -= force;
+                    return local;
+                },
+                (local) =>
+                {
+                    lock (cache)
+                    {
+                        for (int j = 0; j < local.Length; j++)
+                            cache[j].force += local[j];
+                    }
                 }
-            });
+            );
 
             Vector3? partialDelta = null;
             if (selected)
             {
-                // partialDelta = selected.Position - selected.GrabOrigin;
-                // partialDelta = grabber.Position - grabber.origin;
                 partialDelta = grabber.Position - selected.Position;
             }
             for (int i = 0; i < massObjects.Count; i++)
             {
                 massObjects[i].AddForce(cache[i].force);
                 massObjects[i].UseGravity = useGravity;
+                massObjects[i].Mass = globalMass;
                 massObjects[i].ComebackStiffness = comebackStiffness;
                 massObjects[i].Damping = dampingForce;
                 massObjects[i].PartialDelta = partialDelta ?? Vector3.zero;
                 massObjects[i].PartialStrength = grabStregth;
             }
-            stopwatch.Stop();
         }
 
         void OnDrawGizmos()
@@ -348,25 +360,6 @@ namespace Assets.SpringSim.V2
             ResetGrabbed();
         }
 
-        void Remove(MassObject mass)
-        {
-            if (massObjects.Contains(mass))
-            {
-                mass.gameObject.SetActive(false);
-                massPool.Enqueue(mass);
-                massObjects.Remove(mass);
-            }
-        }
-        void Remove(LinkObject link)
-        {
-            if (linkObjects.Contains(link))
-            {
-                link.gameObject.SetActive(false);
-                linkPool.Enqueue(link);
-                linkObjects.Remove(link);
-            }
-        }
-
         public void Clear()
         {
             ResetGrabbed();
@@ -441,85 +434,76 @@ namespace Assets.SpringSim.V2
                 if (a > b) { (a, b) = (b, a); }
                 return (uint)((a + b) * (a + b + 1) / 2 + b);
             }
-            for (int i = 0; i < dmesh.triangles.Length; i += 3)
+            var dtriangles = dmesh.triangles;
+            Parallel.For(0, dtriangles.Length / 3, i =>
             {
-                var i0 = dmesh.triangles[i + 0];
-                var i1 = dmesh.triangles[i + 1];
-                var i2 = dmesh.triangles[i + 2];
-                links.TryAdd(HashKey(i0, i1), new()
-                {
-                    a = i0,
-                    b = i1,
-                    length = Vector3.Distance(positions[i0], positions[i1])
-                });
-                links.TryAdd(HashKey(i1, i2), new()
-                {
-                    a = i1,
-                    b = i2,
-                    length = Vector3.Distance(positions[i1], positions[i2])
-                });
-                links.TryAdd(HashKey(i2, i0), new()
-                {
-                    a = i2,
-                    b = i0,
-                    length = Vector3.Distance(positions[i2], positions[i0])
-                });
-            }
+                var i0 = dtriangles[i * 3 + 0];
+                var i1 = dtriangles[i * 3 + 1];
+                var i2 = dtriangles[i * 3 + 2];
+                links.TryAdd(HashKey(i0, i1), new() { a = i0, b = i1, length = Vector3.Distance(positions[i0], positions[i1]) });
+                links.TryAdd(HashKey(i1, i2), new() { a = i1, b = i2, length = Vector3.Distance(positions[i1], positions[i2]) });
+                links.TryAdd(HashKey(i2, i0), new() { a = i2, b = i0, length = Vector3.Distance(positions[i2], positions[i0]) });
+            });
             Vector3? selectPosition = selected ? selected.Position : null;
-            Clear();
-            massObjects.AddRange(
-                positions.Select((p, i) =>
+            var massInitData = new MassObjectInitData[positions.Length];
+            Parallel.For(0, positions.Length, i =>
+            {
+                var p = positions[i];
+                var n = normals[i];
+                var data = new MassObjectInitData
                 {
-                    MassObject mass;
-                    if (massPool.Count > 0)
-                    {
-                        mass = massPool.Dequeue();
-                        mass.ResetStates(transform.TransformPoint(p), Quaternion.LookRotation(normals[i]), transform);
-                    }
-                    else
-                    {
-                        mass = Instantiate(massPrefab, transform.TransformPoint(p), Quaternion.LookRotation(normals[i]), transform);
-                    }
-                    mass.gameObject.SetActive(true);
-                    switch (returnType)
-                    {
-                        case MassReturns.None: default: break;
-                        case MassReturns.Corners:
-                            {
-                                int axesOnBounds = 0;
-                                Vector3 min = usedBounds.min;
-                                Vector3 max = usedBounds.max;
-                                if (Mathf.Abs(p.x - min.x) < extractionEpsilon || Mathf.Abs(p.x - max.x) < extractionEpsilon) axesOnBounds++;
-                                if (Mathf.Abs(p.y - min.y) < extractionEpsilon || Mathf.Abs(p.y - max.y) < extractionEpsilon) axesOnBounds++;
-                                if (Mathf.Abs(p.z - min.z) < extractionEpsilon || Mathf.Abs(p.z - max.z) < extractionEpsilon) axesOnBounds++;
-                                if (axesOnBounds >= 2)
-                                {
-                                    mass.ReturnToOrigin = true;
-                                }
-                            }
-                            break;
-                        case MassReturns.Edges:
-                            {
-                                Vector3 min = usedBounds.min;
-                                Vector3 max = usedBounds.max;
-                                if (
-                                    Mathf.Abs(p.x - min.x) < extractionEpsilon || Mathf.Abs(p.x - max.x) < extractionEpsilon ||
-                                    Mathf.Abs(p.y - min.y) < extractionEpsilon || Mathf.Abs(p.y - max.y) < extractionEpsilon ||
-                                    Mathf.Abs(p.z - min.z) < extractionEpsilon || Mathf.Abs(p.z - max.z) < extractionEpsilon
-                                )
-                                {
-                                    mass.ReturnToOrigin = true;
-                                }
-                            }
-                            break;
-                        case MassReturns.All:
-                            {
-                                mass.ReturnToOrigin = true;
-                            }
-                            break;
-                    }
-                    return mass;
-                }));
+                    position = p,
+                    normal = n,
+                    returnToOrigin = false
+                };
+
+                switch (returnType)
+                {
+                    case MassReturns.Corners:
+                        int axesOnBounds = 0;
+                        Vector3 min = usedBounds.min;
+                        Vector3 max = usedBounds.max;
+                        if (Mathf.Abs(p.x - min.x) < extractionEpsilon || Mathf.Abs(p.x - max.x) < extractionEpsilon) axesOnBounds++;
+                        if (Mathf.Abs(p.y - min.y) < extractionEpsilon || Mathf.Abs(p.y - max.y) < extractionEpsilon) axesOnBounds++;
+                        if (Mathf.Abs(p.z - min.z) < extractionEpsilon || Mathf.Abs(p.z - max.z) < extractionEpsilon) axesOnBounds++;
+                        if (axesOnBounds >= 2)
+                            data.returnToOrigin = true;
+                        break;
+                    case MassReturns.Edges:
+                        Vector3 minE = usedBounds.min;
+                        Vector3 maxE = usedBounds.max;
+                        if (
+                            Mathf.Abs(p.x - minE.x) < extractionEpsilon || Mathf.Abs(p.x - maxE.x) < extractionEpsilon ||
+                            Mathf.Abs(p.y - minE.y) < extractionEpsilon || Mathf.Abs(p.y - maxE.y) < extractionEpsilon ||
+                            Mathf.Abs(p.z - minE.z) < extractionEpsilon || Mathf.Abs(p.z - maxE.z) < extractionEpsilon
+                        )
+                            data.returnToOrigin = true;
+                        break;
+                    case MassReturns.All:
+                        data.returnToOrigin = true;
+                        break;
+                }
+
+                massInitData[i] = data;
+            });
+            Clear(); // [MARKER] Bottleneck
+            for (int i = 0; i < massInitData.Length; i++)  // [MARKER] Bottleneck
+            {
+                MassObject mass;
+                var data = massInitData[i];
+                if (massPool.Count > 0)
+                {
+                    mass = massPool.Dequeue();
+                    mass.ResetStates(transform.TransformPoint(data.position), Quaternion.LookRotation(data.normal), transform);
+                }
+                else
+                {
+                    mass = Instantiate(massPrefab, transform.TransformPoint(data.position), Quaternion.LookRotation(data.normal), transform);
+                }
+                mass.gameObject.SetActive(true);
+                mass.ReturnToOrigin = data.returnToOrigin;
+                massObjects.Add(mass);
+            }
             this.links.AddRange(links.Values);
 
             // Build triangles using link indices
@@ -533,11 +517,11 @@ namespace Assets.SpringSim.V2
                 indexToLink[(a, b)] = linkIdx++;
             }
 
-            for (int i = 0; i < dmesh.triangles.Length; i += 3)
+            for (int i = 0; i < dtriangles.Length; i += 3)
             {
-                int i0 = dmesh.triangles[i + 0];
-                int i1 = dmesh.triangles[i + 1];
-                int i2 = dmesh.triangles[i + 2];
+                int i0 = dtriangles[i + 0];
+                int i1 = dtriangles[i + 1];
+                int i2 = dtriangles[i + 2];
 
                 int l1 = indexToLink[(Mathf.Min(i0, i1), Mathf.Max(i0, i1))];
                 int l2 = indexToLink[(Mathf.Min(i1, i2), Mathf.Max(i1, i2))];
@@ -613,7 +597,7 @@ namespace Assets.SpringSim.V2
                     return link;
                 })
             );
-            cache.AddRange(positions.Select(p => new CachedMass { position = p }));
+            cache.AddRange(positions.AsParallel().Select(p => new CachedMass { position = p }));
 
             MassObject closest = null;
             foreach (var mass in massObjects)

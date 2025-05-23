@@ -79,7 +79,7 @@ public class MarchingCubes : MonoBehaviour
             Mathf.CeilToInt((float)resolution / 8));
 
         Triangle[] triangles = new Triangle[ReadTriangleCount()];
-        triangleBuffer.GetData(triangles);
+        triangleBuffer.GetData(triangles); // [MARKER] Bottleneck
 
         return smooth
             ? SmoothMeshFromTriangles(triangles)
