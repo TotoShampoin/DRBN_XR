@@ -55,6 +55,7 @@ namespace Assets.SpringSim.V3
 
         void FixedUpdate()
         {
+            float deltaTime = Time.fixedDeltaTime;
             Mass.mass = particleMass;
             Parallel.For(0, links.Count, i =>
             {
@@ -80,7 +81,6 @@ namespace Assets.SpringSim.V3
                     lock (sel) { sel.AddForce(selectionForce * weight * delta); }
                 });
             }
-            float deltaTime = Time.deltaTime;
             Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
         }
 
