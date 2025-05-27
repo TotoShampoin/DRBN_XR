@@ -11457,12 +11457,12 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 7310555088915408889}
-  - {fileID: 4131221049738242921}
-  - {fileID: 6632768739625123534}
   - {fileID: 3836129035194656011}
   - {fileID: 3119838930049467264}
   - {fileID: 5008968181893834552}
+  - {fileID: 7310555088915408889}
+  - {fileID: 4131221049738242921}
+  - {fileID: 6632768739625123534}
   - {fileID: 8959138180996352077}
   - {fileID: 6847640908946935385}
   - {fileID: 2624902921495287769}
@@ -17665,8 +17665,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8673429524472276709}
   m_HandleRect: {fileID: 9142096096401277365}
   m_Direction: 2
-  m_Value: 1.0000001
-  m_Size: 0.3641189
+  m_Value: 1
+  m_Size: 0.32666665
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
