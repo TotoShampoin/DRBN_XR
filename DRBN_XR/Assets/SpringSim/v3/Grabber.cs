@@ -13,6 +13,7 @@ namespace Assets.SpringSim.V3
 
         public Vector3 origin;
         public Vector3 Position { get => transform.position; set => transform.position = value; }
+        public Vector3 Delta => Position - origin;
 
         MeshRenderer mr;
         XRGrabInteractable xrgi;

@@ -31,7 +31,7 @@ namespace Assets.SpringSim.V3
         readonly List<Mass> masses = new();
         readonly List<SpringLink> links = new();
         readonly List<(int p1, int p2, int p3)> triangles = new();
-        readonly List<(int i, float w)> selected = new();
+        readonly List<(int i, float w, Vector3 o)> selected = new();
         int closestSelectedIdx = -1;
 
         public float ParticleMass { get => particleMass; set => particleMass = value; }
@@ -74,11 +74,15 @@ namespace Assets.SpringSim.V3
                 var grabberPosLocal = transform.InverseTransformPoint(grabber.Position);
                 var delta = grabberPosLocal - closestMass.position;
 
+                // var delta = transform.InverseTransformDirection(grabber.Delta);
+
                 Parallel.ForEach(selected, s =>
                 {
-                    var (idx, weight) = s;
+                    var (idx, weight, origin) = s;
                     var sel = masses[idx];
                     lock (sel) { sel.AddForce(selectionForce * weight * delta); }
+                    // var selDelta = sel.position - origin;
+                    // lock (sel) { sel.AddForce(selectionForce * weight * (delta - selDelta)); }
                 });
             }
             Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
@@ -87,7 +91,11 @@ namespace Assets.SpringSim.V3
         public void Render()
         {
             Matrix4x4 localToWorld = transform.localToWorldMatrix;
-            Graphics.DrawMeshInstanced(
+            if (showMesh)
+                Graphics.DrawMesh(ToMesh(), localToWorld, triangleMaterial, 0);
+            else
+            {
+                Graphics.DrawMeshInstanced(
                 massMesh, 0,
                 massMaterial,
                 masses
@@ -98,15 +106,14 @@ namespace Assets.SpringSim.V3
                             m.position, Quaternion.LookRotation(m.normal), thickness * Vector3.one)
                     ).ToArray()
             );
-            // Draw spring links as lines
-            foreach (var link in links)
-            {
-                Vector3 start = localToWorld.MultiplyPoint(masses[link.a].position);
-                Vector3 end = localToWorld.MultiplyPoint(masses[link.b].position);
-                Debug.DrawLine(start, end, Color.yellow, 0, false);
+                // Draw spring links as lines
+                foreach (var link in links)
+                {
+                    Vector3 start = localToWorld.MultiplyPoint(masses[link.a].position);
+                    Vector3 end = localToWorld.MultiplyPoint(masses[link.b].position);
+                    Debug.DrawLine(start, end, Color.yellow, 0, false);
+                }
             }
-            if (showMesh)
-                Graphics.DrawMesh(ToMesh(), transform.localToWorldMatrix, triangleMaterial, 0);
         }
 
         public Vector3 SpringForce(SpringLink link)
@@ -139,8 +146,7 @@ namespace Assets.SpringSim.V3
         }
         public void UseMesh(Mesh mesh, float extractionEpsilon = 0.005f)
         {
-            Vector3? selectedPosition = null;
-            if (selected.Count > 0) selectedPosition = masses[closestSelectedIdx].position;
+            Vector3? selectedPosition = selected.Count > 0 ? masses[closestSelectedIdx].position : null;
 
             Clear();
             Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
@@ -215,9 +221,11 @@ namespace Assets.SpringSim.V3
             });
             triangles.AddRange(newTriangles.Where(t => t != default));
 
-            if (selected.Count > 0)
+            if (selectedPosition.HasValue)
             {
+                grabber.ResetOrigin();
                 GrabAt(selectedPosition.Value);
+                masses[closestSelectedIdx].position = selectedPosition.Value;
             }
         }
         public Mesh ToMesh()
@@ -245,13 +253,15 @@ namespace Assets.SpringSim.V3
 
         public void Grab()
         {
-            GrabAt(transform.InverseTransformPoint(grabber.Position));
+            var grabberPosition = transform.InverseTransformPoint(grabber.Position);
+            var closestMass = masses.OrderBy(m => Vector3.Distance(m.position, grabberPosition)).First();
+            GrabAt(closestMass.position);
         }
         public void GrabAt(Vector3 localGrabberPos)
         {
             selected.Clear();
             var nearby = NearbyMasses(localGrabberPos, selectionRadius).ToArray();
-            selected.AddRange(nearby.Select(m => (m.i, 1f - m.d / selectionRadius)));
+            selected.AddRange(nearby.Select(m => (m.i, 1f - m.d / selectionRadius, m.m.position)));
 
             if (selected.Count > 0)
             {
@@ -264,18 +274,18 @@ namespace Assets.SpringSim.V3
                 closestSelectedIdx = -1;
             }
 
-            // Ensure the closest selected mass has weight 1
-            if (closestSelectedIdx != -1)
-            {
-                for (int i = 0; i < selected.Count; i++)
-                {
-                    if (selected[i].i == closestSelectedIdx)
-                    {
-                        selected[i] = (selected[i].i, 1f);
-                        break;
-                    }
-                }
-            }
+            // // Ensure the closest selected mass has weight 1
+            // if (closestSelectedIdx != -1)
+            // {
+            //     for (int i = 0; i < selected.Count; i++)
+            //     {
+            //         if (selected[i].i == closestSelectedIdx)
+            //         {
+            //             selected[i] = (selected[i].i, 1f, selected[i].o);
+            //             break;
+            //         }
+            //     }
+            // }
 
             Debug.Log($"Grabber at {localGrabberPos} grabbed {nearby.Length} masses");
         }
