@@ -72,14 +72,13 @@ namespace Assets.SpringSim.V3
             {
                 var closestMass = masses[closestSelectedIdx];
                 var grabberPosLocal = transform.InverseTransformPoint(grabber.Position);
-                var delta = grabberPosLocal - closestMass.position;
-
+                // var delta = grabberPosLocal - closestMass.position;
                 // var delta = transform.InverseTransformDirection(grabber.Delta);
-
                 Parallel.ForEach(selected, s =>
                 {
                     var (idx, weight, origin) = s;
                     var sel = masses[idx];
+                    var delta = grabberPosLocal - sel.position;
                     lock (sel) { sel.AddForce(selectionForce * weight * delta); }
                     // var selDelta = sel.position - origin;
                     // lock (sel) { sel.AddForce(selectionForce * weight * (delta - selDelta)); }
