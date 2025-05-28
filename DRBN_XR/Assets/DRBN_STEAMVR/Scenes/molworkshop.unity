@@ -174,6 +174,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &53236171 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6566807026084524210, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+    type: 3}
+  m_PrefabInstance: {fileID: 310204560}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07a5c727abfda6548a85de222e7604ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &54275580
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1423,6 +1435,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 136644159985521908, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 53236171}
+    - target: {fileID: 136644159985521908, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: Quit
+      objectReference: {fileID: 0}
+    - target: {fileID: 136644159985521908, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: Assets.SpringSim.V3.SpringController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 153685471703666397, guid: 86d4995f59764af4db7ca8fdcc829e1d,
         type: 3}
@@ -2933,6 +2960,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchorMin.x
       value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4806837113553564260, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 53236171}
+    - target: {fileID: 4806837113553564260, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: RefreshMarchingCubes
+      objectReference: {fileID: 0}
+    - target: {fileID: 4806837113553564260, guid: 86d4995f59764af4db7ca8fdcc829e1d,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: Assets.SpringSim.V3.SpringController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 4882691257943362671, guid: 86d4995f59764af4db7ca8fdcc829e1d,
         type: 3}
