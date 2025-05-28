@@ -2989,7 +2989,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 6566807026084524210}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Assets.SpringSim.V3.SpringController, Assembly-CSharp
         m_MethodName: set_MeshExtractionDistance
         m_Mode: 0
@@ -3353,7 +3353,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 7328321578589054995}
   m_Father: {fileID: 6332712422122239687}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4561880138049373558
@@ -3378,7 +3379,9 @@ MonoBehaviour:
   vrController: {fileID: 0}
   massMesh: {fileID: 4602442571968631390, guid: 0932754df08ef5149b4e005c20de889e,
     type: 3}
-  massMaterial: {fileID: 2100000, guid: 93d13fb1d3a4e7b4390442ca9d34cfee, type: 2}
+  linkMesh: {fileID: 2534964839176971238, guid: 4447ec9c500e5d647aad7619c167a3b1,
+    type: 3}
+  material: {fileID: 2100000, guid: 93d13fb1d3a4e7b4390442ca9d34cfee, type: 2}
   triangleMaterial: {fileID: 2100000, guid: 08a64ac00a929664991ca1dddbec9d59, type: 2}
   showMesh: 0
 --- !u!1 &2121737405975555642
@@ -3696,7 +3699,7 @@ Transform:
   m_LocalScale: {x: 0.075, y: 0.075, z: 0.075}
   m_ConstrainProportionsScale: 1
   m_Children: []
-  m_Father: {fileID: 6332712422122239687}
+  m_Father: {fileID: 5656533758656610823}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &240347488977016770
 MonoBehaviour:
@@ -4329,7 +4332,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 6566807026084524210}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Assets.SpringSim.V3.SpringController, Assembly-CSharp
         m_MethodName: ReturnToMarchingCubes
         m_Mode: 1
@@ -4784,7 +4787,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 6566807026084524210}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Assets.SpringSim.V3.SpringController, Assembly-CSharp
         m_MethodName: GenerateSprings
         m_Mode: 1
@@ -4886,7 +4889,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 6566807026084524210}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Assets.SpringSim.V3.SpringController, Assembly-CSharp
         m_MethodName: set_MarchingCubeResolution
         m_Mode: 0
@@ -4910,85 +4913,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!1 &2804650830154660149
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4119285329309168657}
-  - component: {fileID: 6566807026084524210}
-  - component: {fileID: 5632168056592321833}
-  m_Layer: 0
-  m_Name: ControllerV3
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4119285329309168657
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2804650830154660149}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 6332712422122239687}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6566807026084524210
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2804650830154660149}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 07a5c727abfda6548a85de222e7604ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  simulator: {fileID: 4561880138049373558}
-  renderTexture: {fileID: 8400000, guid: 5e1333c2aa8237640ab06b207787065b, type: 2}
-  marchingCubes: {fileID: 1514784536613522624}
-  weightGenerator: {fileID: 8883144275020386021}
-  weightPainter: {fileID: 5632168056592321833}
-  meshExtractionEpsilon: 0.005
-  meshExtractionDistance: 0.2
-  meshFromSprings: {fileID: 872800026014410742}
-  voxeliseRate: 5
-  constantRebuild: 1
---- !u!114 &5632168056592321833
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2804650830154660149}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 044fe6aa06dde154bb47c34c7cd12644, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  weightPainterShader: {fileID: 7200000, guid: 0c4e4b1e7e029e44786c6b5f27be4708, type: 3}
-  renderTexture: {fileID: 8400000, guid: 5e1333c2aa8237640ab06b207787065b, type: 2}
-  marchingCubes: {fileID: 1514784536613522624}
-  brushTransform: {fileID: 0}
-  paintTrigger: {fileID: 3279264004350380116, guid: c348712bda248c246b8c49b3db54643f,
-    type: 3}
-  eraseTrigger: {fileID: -8979920020589327954, guid: c348712bda248c246b8c49b3db54643f,
-    type: 3}
-  radius: 0.1
-  weight: 0.5
-  needsRegenerate: 0
-  clearAtStart: 0
 --- !u!1 &2898910845691034227
 GameObject:
   m_ObjectHideFlags: 0
@@ -5179,7 +5103,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 6566807026084524210}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Assets.SpringSim.V3.SpringController, Assembly-CSharp
         m_MethodName: set_MeshExtractionEpsilon
         m_Mode: 0
@@ -6452,7 +6376,7 @@ MonoBehaviour:
   onValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 6566807026084524210}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Assets.SpringSim.V3.SpringController, Assembly-CSharp
         m_MethodName: set_ConstantRebuild
         m_Mode: 0
@@ -6808,7 +6732,7 @@ GameObject:
   - component: {fileID: 865136014522086437}
   - component: {fileID: 100538076728927908}
   m_Layer: 5
-  m_Name: CanvasV3
+  m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8959,7 +8883,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 6566807026084524210}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Assets.SpringSim.V3.SpringController, Assembly-CSharp
         m_MethodName: GenerateSpringsWithVoxelizer
         m_Mode: 1
@@ -9477,6 +9401,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6332712422122239687}
+  - component: {fileID: 4877135048750250019}
   m_Layer: 0
   m_Name: SpringSimMolview2
   m_TagString: Untagged
@@ -9497,15 +9422,35 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 3836129035194656011}
-  - {fileID: 3119838930049467264}
-  - {fileID: 5008968181893834552}
   - {fileID: 1828482811066724583}
-  - {fileID: 4119285329309168657}
+  - {fileID: 5008968181893834552}
+  - {fileID: 3119838930049467264}
   - {fileID: 5656533758656610823}
-  - {fileID: 7328321578589054995}
+  - {fileID: 3836129035194656011}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4877135048750250019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6237536967775778296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07a5c727abfda6548a85de222e7604ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  simulator: {fileID: 4561880138049373558}
+  renderTexture: {fileID: 8400000, guid: 5e1333c2aa8237640ab06b207787065b, type: 2}
+  marchingCubes: {fileID: 1514784536613522624}
+  weightGenerator: {fileID: 8883144275020386021}
+  weightPainter: {fileID: 0}
+  meshExtractionEpsilon: 0.005
+  meshExtractionDistance: 0.2
+  meshFromSprings: {fileID: 872800026014410742}
+  voxeliseRate: 5
+  constantRebuild: 1
 --- !u!1 &6251522315856168842
 GameObject:
   m_ObjectHideFlags: 0
@@ -12470,7 +12415,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 6566807026084524210}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Assets.SpringSim.V3.SpringController, Assembly-CSharp
         m_MethodName: set_VoxeliseRate
         m_Mode: 0
@@ -12882,15 +12827,49 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 54131612912731129, guid: 687d26cb7ceeb754c857f5dd034d115f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5654378863060233378}
   m_SourcePrefab: {fileID: 100100000, guid: 687d26cb7ceeb754c857f5dd034d115f, type: 3}
+--- !u!1 &1025033825874210313 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 54131612912731129, guid: 687d26cb7ceeb754c857f5dd034d115f,
+    type: 3}
+  m_PrefabInstance: {fileID: 1079164886857395696}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5654378863060233378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1025033825874210313}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 044fe6aa06dde154bb47c34c7cd12644, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  weightPainterShader: {fileID: 7200000, guid: 0c4e4b1e7e029e44786c6b5f27be4708, type: 3}
+  renderTexture: {fileID: 8400000, guid: 5e1333c2aa8237640ab06b207787065b, type: 2}
+  marchingCubes: {fileID: 1514784536613522624}
+  brushTransform: {fileID: 0}
+  paintTrigger: {fileID: 3279264004350380116, guid: c348712bda248c246b8c49b3db54643f,
+    type: 3}
+  eraseTrigger: {fileID: -8979920020589327954, guid: c348712bda248c246b8c49b3db54643f,
+    type: 3}
+  radius: 0.1
+  weight: 0.5
+  needsRegenerate: 0
+  clearAtStart: 0
 --- !u!114 &1514784536613522624 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2016607944097866032, guid: 687d26cb7ceeb754c857f5dd034d115f,
     type: 3}
   m_PrefabInstance: {fileID: 1079164886857395696}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1025033825874210313}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c74f279fdb97e6b49974c403558f0a46, type: 3}

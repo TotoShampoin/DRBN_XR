@@ -22,7 +22,8 @@ namespace Assets.SpringSim.V3
 
         [Header("Rendering")]
         public Mesh massMesh;
-        public Material massMaterial;
+        public Mesh linkMesh;
+        public Material material;
         public Material triangleMaterial;
 
         [Header("Debug")]
@@ -72,13 +73,13 @@ namespace Assets.SpringSim.V3
             {
                 var closestMass = masses[closestSelectedIdx];
                 var grabberPosLocal = transform.InverseTransformPoint(grabber.Position);
-                // var delta = grabberPosLocal - closestMass.position;
+                var delta = grabberPosLocal - closestMass.position;
                 // var delta = transform.InverseTransformDirection(grabber.Delta);
                 Parallel.ForEach(selected, s =>
                 {
                     var (idx, weight, origin) = s;
                     var sel = masses[idx];
-                    var delta = grabberPosLocal - sel.position;
+                    // var delta = grabberPosLocal - sel.position;
                     lock (sel) { sel.AddForce(selectionForce * weight * delta); }
                     // var selDelta = sel.position - origin;
                     // lock (sel) { sel.AddForce(selectionForce * weight * (delta - selDelta)); }
@@ -95,23 +96,35 @@ namespace Assets.SpringSim.V3
             else
             {
                 Graphics.DrawMeshInstanced(
-                massMesh, 0,
-                massMaterial,
-                masses
-                    .AsParallel()
-                    .Select(m =>
-                        localToWorld *
-                        Matrix4x4.TRS(
-                            m.position, Quaternion.LookRotation(m.normal), thickness * Vector3.one)
-                    ).ToArray()
-            );
-                // Draw spring links as lines
-                foreach (var link in links)
-                {
-                    Vector3 start = localToWorld.MultiplyPoint(masses[link.a].position);
-                    Vector3 end = localToWorld.MultiplyPoint(masses[link.b].position);
-                    Debug.DrawLine(start, end, Color.yellow, 0, false);
-                }
+                    massMesh, 0,
+                    material,
+                    masses
+                        .AsParallel()
+                        .Select(m =>
+                            localToWorld *
+                            Matrix4x4.TRS(
+                                m.position, Quaternion.LookRotation(m.normal), thickness * Vector3.one
+                            ))
+                        .ToArray()
+                );
+                Graphics.DrawMeshInstanced(
+                    linkMesh, 0,
+                    material,
+                    links
+                        .AsParallel()
+                        .Select(link =>
+                        {
+                            Vector3 start = masses[link.a].position;
+                            Vector3 end = masses[link.b].position;
+                            Vector3 mid = (start + end) / 2;
+                            float length = Vector3.Distance(start, end);
+                            return localToWorld *
+                                Matrix4x4.TRS(
+                                    mid, Quaternion.LookRotation(end - start), new Vector3(thickness / 4f, thickness / 4f, length) / 2f
+                                );
+                        })
+                        .ToArray()
+                );
             }
         }
 
