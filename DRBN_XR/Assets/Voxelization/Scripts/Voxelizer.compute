@@ -1,4 +1,5 @@
 #pragma kernel Voxelize
+#pragma kernel Clear
 
 RWStructuredBuffer<float3> _Vertices;
 RWStructuredBuffer<float3> _Normals;
@@ -95,6 +96,18 @@ float3 TriangleNormal(in float3 positions[3], in float3 normals[3], in float3 mV
     return normal;
 }
 
+float3 ProjectionOnTriangle(in float3 vertices[3], in float3 position)
+{
+    float3 v0 = vertices[0];
+    float3 v1 = vertices[1];
+    float3 v2 = vertices[2];
+    float3 triNormal = normalize(cross(v1 - v0, v2 - v0));
+    float d = dot(triNormal, v0);
+    float t = (d - dot(triNormal, position)) / dot(triNormal, triNormal);
+    float3 proj = position + triNormal * t;
+    return proj;
+}
+
 [numthreads(8, 8, 8)]
 void Voxelize(uint3 id : SV_DispatchThreadID) {
     if (id.x >= (uint)_OutputSize.x || id.y >= (uint)_OutputSize.y || id.z >= (uint)_OutputSize.z)
@@ -106,31 +119,42 @@ void Voxelize(uint3 id : SV_DispatchThreadID) {
 
     float3 position = remap(uvw, _MeshMinBound, _MeshMaxBound, _VoxelMinBound, _VoxelMaxBound);
 
-    float distance = 0.0;
-    float3 usedNormal;
+    float minUDist = 1000000.0;
+    float minSDist = 0.0;
+    float3 usedNormal = float3(0,0,1);
 
-    float minDist = 1000000.0;
     for (int i = 0; i < _TriangleCount; i++)
     {
         float3 vertices[3];
         float3 normals[3];
         GetTriangle(i, vertices, normals);
 
-        float current = TriangleDistance(position, vertices);
+        float uDist = TriangleDistance(position, vertices);
 
-        float3 mVertex = (vertices[0] + vertices[1] + vertices[2]) / 3.0;
-        float3 mNormal = TriangleNormal(vertices, normals, position);
-        float signVal = sign(dot(mNormal, position - mVertex));
-        current *= -signVal;
-
-        if (abs(current) < abs(minDist))
+        // float3 mVertex = (vertices[0] + vertices[1] + vertices[2]) / 3.0;
+        // float3 mNormal = TriangleNormal(vertices, normals, position);
+        
+        if (uDist < minUDist)
         {
-            minDist = current;
+            minUDist = uDist;
+            float3 mVertex = ProjectionOnTriangle(vertices, position);
+            float3 mNormal = TriangleNormal(vertices, normals, mVertex);
+            float signVal = sign(dot(mNormal, position - mVertex));
+            if (signVal == 0) signVal = 1;
+            minSDist = uDist * -signVal;
             usedNormal = mNormal;
         }
     }
-    distance += minDist;
-
-    _Output[id] = distance * _Multiplier;
+    
+    _Output[id] = minSDist * _Multiplier;
     _DebugNormals[id] = float4(usedNormal, 1);
+}
+
+[numthreads(8, 8, 8)]
+void Clear (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_OutputSize.x || id.y >= (uint)_OutputSize.y || id.z >= (uint)_OutputSize.z)
+        return;
+    _Output[id] = 0.0;
+    _DebugNormals[id] = float4(0,0,0,1);
 }

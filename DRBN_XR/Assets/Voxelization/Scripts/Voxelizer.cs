@@ -35,6 +35,20 @@ namespace Assets.Voxelization
                 normals.Create();
             }
 
+            if (mesh.vertexCount == 0 || mesh.triangles.Length == 0)
+            {
+                var clearKernel = voxelizer.FindKernel("Clear");
+                voxelizer.SetVector("_OutputSize", new(output.width, output.height, output.volumeDepth));
+                voxelizer.SetTexture(clearKernel, "_Output", output);
+                voxelizer.SetTexture(clearKernel, "_DebugNormals", normals);
+                voxelizer.Dispatch(clearKernel,
+                    Mathf.CeilToInt((float)output.width / threadGroups.x),
+                    Mathf.CeilToInt((float)output.height / threadGroups.y),
+                    Mathf.CeilToInt((float)output.volumeDepth / threadGroups.z)
+                );
+                return;
+            }
+
             AllocateBuffers(mesh);
             var kernel = voxelizer.FindKernel("Voxelize");
 
