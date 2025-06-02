@@ -6,7 +6,6 @@ namespace Assets.Voxelization
     public class Voxelizer : MonoBehaviour
     {
         public ComputeShader voxelizer;
-        public Vector3Int threadGroups = new(8, 8, 8);
         [Range(0, 10)] public float multiplier = 1;
 
         public Bounds voxelBounds = new(Vector3.zero, Vector3.one);
@@ -15,6 +14,7 @@ namespace Assets.Voxelization
         ComputeBuffer normalsBuffer;
         ComputeBuffer trianglesBuffer;
 
+        static Vector3Int threadGroups = new(8, 8, 8);
         public void Voxelize(Mesh mesh, RenderTexture output, RenderTexture normals = null)
         {
             bool useNormals = normals != null;
