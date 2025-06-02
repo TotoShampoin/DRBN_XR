@@ -15,6 +15,8 @@ namespace Assets.SpringSim.V3
         public float stiffness = 1500f;
         public float viscosity = 2f;
         public float thickness = 0.05f;
+        public float comeback = 1500f;
+        public bool useAchors = false;
 
         [Header("Interaction")]
         public Grabber grabber;
@@ -32,6 +34,7 @@ namespace Assets.SpringSim.V3
         readonly List<Mass> masses = new();
         readonly List<SpringLink> links = new();
         readonly List<(int p1, int p2, int p3)> triangles = new();
+        readonly List<(int i, Vector3 o)> anchors = new();
         readonly List<(int i, float w, Vector3 o)> selected = new();
         int closestSelectedIdx = -1;
 
@@ -41,7 +44,9 @@ namespace Assets.SpringSim.V3
         public float Stiffness { get => stiffness; set => stiffness = value; }
         public float Viscosity { get => viscosity; set => viscosity = value; }
         public float Thickness { get => thickness; set => thickness = value; }
+        public float Comeback { get => comeback; set => comeback = value; }
         public bool ShowMesh { get => showMesh; set => showMesh = value; }
+        public bool UseAchors { get => useAchors; set => useAchors = value; }
         public bool HasMasses => masses.Count > 0;
 
         void Start()
@@ -85,6 +90,7 @@ namespace Assets.SpringSim.V3
                     // lock (sel) { sel.AddForce(selectionForce * weight * (delta - selDelta)); }
                 });
             }
+            Parallel.ForEach(anchors, a => masses[a.i].AddForce(comeback * (a.o - masses[a.i].position)));
             Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
         }
 
@@ -155,6 +161,7 @@ namespace Assets.SpringSim.V3
             masses.Clear();
             links.Clear();
             triangles.Clear();
+            anchors.Clear();
         }
         public void UseMesh(Mesh mesh, float extractionEpsilon = 0.005f)
         {
@@ -232,6 +239,23 @@ namespace Assets.SpringSim.V3
                 newTriangles[i] = (v0, v1, v2);
             });
             triangles.AddRange(newTriangles.Where(t => t != default));
+
+            if (useAchors)
+            {
+                var bmin = bounds.min;
+                var bmax = bounds.max;
+                for (int i = 0; i < masses.Count; i++)
+                {
+                    var mass = masses[i];
+                    var p = mass.position;
+                    int nbCommon = 0;
+                    if (Mathf.Abs(p.x - bmin.x) < extractionEpsilon || Mathf.Abs(p.x - bmax.x) < extractionEpsilon) nbCommon++;
+                    if (Mathf.Abs(p.y - bmin.y) < extractionEpsilon || Mathf.Abs(p.y - bmax.y) < extractionEpsilon) nbCommon++;
+                    if (Mathf.Abs(p.z - bmin.z) < extractionEpsilon || Mathf.Abs(p.z - bmax.z) < extractionEpsilon) nbCommon++;
+                    if (nbCommon >= 2)
+                        anchors.Add((i, p));
+                }
+            }
 
             if (selectedPosition.HasValue)
             {

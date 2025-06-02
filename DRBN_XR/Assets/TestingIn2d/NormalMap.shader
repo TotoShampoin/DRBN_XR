@@ -45,14 +45,8 @@ Shader "Unlit/TextureRender"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed val = tex3D(_MainTex, i.uvw).r;
-                fixed c = abs(val) * abs(val);
-                fixed4 col = fixed4(val > 0 ? c : 0, c * 0.5, val < 0 ? c : 0, 1);
-
-                if(abs(val - _Threshold) < _ThresholdThickness)
-                    col.g = 1;
-
-                return col;
+                fixed4 val = tex3D(_MainTex, i.uvw);
+                return val;
             }
             ENDCG
         }

@@ -349,24 +349,6 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
-                },
-                {
-                    "name": "HoldLeft",
-                    "type": "Button",
-                    "id": "9356b1f4-816b-4e42-8f03-13691f00388b",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "HoldRight",
-                    "type": "Button",
-                    "id": "91c01941-920d-46b1-a5e1-a6a1995048da",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
                 }
             ],
             "bindings": [
@@ -787,10 +769,56 @@
                     "action": "TrackedDeviceOrientation",
                     "isComposite": false,
                     "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "Interaction",
+            "id": "a95fedbb-d8c6-4125-8912-159a6e057347",
+            "actions": [
+                {
+                    "name": "HoldMiddle",
+                    "type": "Button",
+                    "id": "fa121ac2-47ef-4061-b714-dc47e8ca4684",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "HoldLeft",
+                    "type": "Button",
+                    "id": "117bb6cb-8846-444e-b3bb-14bfa59508d3",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "HoldRight",
+                    "type": "Button",
+                    "id": "7b39d975-8436-4694-928f-ee9214322402",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "3f79821c-87ee-4fab-ac81-d3c84abb816e",
+                    "path": "<Mouse>/middleButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "HoldMiddle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 },
                 {
                     "name": "",
-                    "id": "42a73d1c-fdfa-4cbf-90c5-2b3bd577a70e",
+                    "id": "5c87ab16-9047-4083-92bd-d305e2762685",
                     "path": "<Mouse>/leftButton",
                     "interactions": "",
                     "processors": "",
@@ -801,7 +829,7 @@
                 },
                 {
                     "name": "",
-                    "id": "6dca4b8a-4dca-43ea-9420-918e73c0d06a",
+                    "id": "410ee456-5448-44bd-a543-ac23fc53e965",
                     "path": "<Mouse>/rightButton",
                     "interactions": "",
                     "processors": "",
