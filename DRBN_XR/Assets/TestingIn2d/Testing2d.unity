@@ -210,7 +210,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &44648525
 Transform:
   m_ObjectHideFlags: 0
@@ -683,7 +683,6 @@ MonoBehaviour:
   modified: 0
   cursorLine: {fileID: 1611675010}
   normalLine: {fileID: 1994272852}
-  distanceLine: {fileID: 44648526}
 --- !u!23 &470772145
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1286,7 +1285,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 420913efd718f524583c868044946a95, type: 2}
+  - {fileID: 2100000, guid: 93ecbbd93e2a4204e9e186acb6bd783c, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
