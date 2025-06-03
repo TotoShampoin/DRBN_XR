@@ -1,8 +1,7 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Assets.Voxelization;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Assets.Voxelization;
 
 public class Test_Voxelizer : MonoBehaviour
 {
@@ -13,8 +12,14 @@ public class Test_Voxelizer : MonoBehaviour
     public InputActionReference newStripEvent;
     public InputActionReference resetEvent;
     public bool showNormalMap;
+    public float arrowSize;
+    public bool modified;
 
     readonly List<(Vector2 a, Vector2 b)> lines = new();
+    VoxelizerCPU voxelizerDebug = new();
+
+    public LineRenderer cursorLine;
+    public LineRenderer normalLine;
 
     Vector2? lastClick;
     Vector2 mousePos;
@@ -38,8 +43,13 @@ public class Test_Voxelizer : MonoBehaviour
     void Update()
     {
         mousePos = Mouse.current.position.ReadValue();
-        meshFilter.mesh = ToMesh();
-        voxelizer.Voxelize(meshFilter.mesh, texture, normalTexture);
+        if (modified)
+        {
+            meshFilter.mesh = ToMesh();
+            voxelizer.Voxelize(meshFilter.mesh, texture, normalTexture);
+            modified = false;
+        }
+        DebugVoxelizer();
     }
 
     void OnDraw(InputAction.CallbackContext evt, bool isRight)
@@ -47,50 +57,33 @@ public class Test_Voxelizer : MonoBehaviour
         if (!isRight && lastClick.HasValue)
             lines.Add((lastClick.Value, mousePos));
         lastClick = mousePos;
+        modified = true;
     }
     void OnReset()
     {
         lines.Clear();
         lastClick = null;
+        modified = true;
     }
 
     Mesh ToMesh()
     {
-        // Lines span in a square of size screen-height centered at screen-center.
-        // Voxelizer.Voxelize() expects a mesh in bounds from -0.5 to 0.5 centered at 0.
-        // This function should convert the screen space lines into a world space mesh, where 
-        //  each line maps to a quad aligned to look like a line on the XY plane, and has a Z-width of 1.
-        // There shall be no concept of thickness, as this is meant to be a line to surface mesh conversion.
-
-        // Key properties:
-        //  1. Screen space is in canvas pixels, as the line is to be drawn by the user by clicking on screen
-        //  2. Proportion must be retained (which is a given, as we're spanning from a square to a square)
-        //  3. If some points are outside of the screen square, they shall be outside of the world square. *Do not make edge cases out of them*
-        //  4. Screen-space size *is* screen height. It is written like that.
-
         if (lines.Count == 0)
             return new();
 
-        // Get screen height in pixels
         float screenHeight = Screen.height;
         float screenWidth = Screen.width;
         float squareSize = screenHeight;
 
-        // Center of the screen in pixel coordinates
         Vector2 screenCenter = new(screenWidth / 2f, screenHeight / 2f);
 
-        // Prepare mesh data
         List<Vector3> vertices = new();
         List<int> indices = new();
-
         foreach (var (a, b) in lines)
         {
-            // Convert screen space to normalized [-0.5, 0.5] world space
             Vector2 aNorm = (a - screenCenter) / (squareSize * 2);
             Vector2 bNorm = (b - screenCenter) / (squareSize * 2);
 
-            // Each line becomes a quad (two triangles) with Z from -0.5 to 0.5
-            // Four vertices per line
             Vector3 v0 = new(aNorm.x, aNorm.y, -0.5f);
             Vector3 v1 = new(aNorm.x, aNorm.y, 0.5f);
             Vector3 v2 = new(bNorm.x, bNorm.y, 0.5f);
@@ -101,7 +94,6 @@ public class Test_Voxelizer : MonoBehaviour
             vertices.Add(v1);
             vertices.Add(v2);
             vertices.Add(v3);
-            // Two triangles per quad
             indices.Add(baseIndex + 0);
             indices.Add(baseIndex + 1);
             indices.Add(baseIndex + 2);
@@ -116,7 +108,32 @@ public class Test_Voxelizer : MonoBehaviour
         mesh.SetTriangles(indices, 0);
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
-        // mesh = MeshMod.DeduplicateVertices(mesh);
+        mesh = MeshMod.DeduplicateVertices(mesh);
         return mesh;
+    }
+
+    void DebugVoxelizer()
+    {
+        voxelizerDebug.mesh = meshFilter.mesh;
+        voxelizerDebug.voxelBound = voxelizer.voxelBounds;
+        voxelizerDebug.meshBound = new(Vector3.zero, 2 * Vector3.one);
+
+        var mouse = (mousePos - new Vector2(Screen.width / 2f, Screen.height / 2f)) / (Screen.height * 2);
+        var mouseForMesh = new Vector3(mouse.x, mouse.y, 0.5f);
+
+        var debugData = voxelizerDebug.VoxelizeAtPositionDebug(mouseForMesh);
+
+        var point = mouseForMesh;
+        var direction = (debugData.projectedPoint - mouseForMesh).normalized;
+
+        cursorLine.startWidth = arrowSize;
+        cursorLine.endWidth = arrowSize;
+        normalLine.startWidth = arrowSize;
+        normalLine.endWidth = arrowSize;
+
+        cursorLine.SetPosition(0, point);
+        cursorLine.SetPosition(1, point + arrowSize * direction);
+        normalLine.SetPosition(0, debugData.projectedPoint);
+        normalLine.SetPosition(1, debugData.projectedPoint + arrowSize * debugData.projectedNormal);
     }
 }

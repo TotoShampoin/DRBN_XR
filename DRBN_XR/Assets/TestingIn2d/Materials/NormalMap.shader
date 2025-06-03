@@ -3,6 +3,7 @@ Shader "Unlit/TextureRender"
     Properties
     {
         _MainTex ("Texture", 3D) = "white" {}
+        _ValueTex ("Texture", 3D) = "white" {}
         _Z ("Z", Range(0, 1)) = 0.5
     }
     SubShader
@@ -31,6 +32,7 @@ Shader "Unlit/TextureRender"
             };
 
             sampler3D _MainTex;
+            sampler3D _ValueTex;
             float _Z;
             float _Threshold;
             float _ThresholdThickness;
@@ -45,8 +47,9 @@ Shader "Unlit/TextureRender"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 val = tex3D(_MainTex, i.uvw);
-                return val;
+                fixed val = tex3D(_ValueTex, i.uvw).r;
+                fixed3 normal = tex3D(_MainTex, i.uvw).rgb * 0.5 + 0.5;
+                return fixed4(abs(val) * normal, 1);
             }
             ENDCG
         }

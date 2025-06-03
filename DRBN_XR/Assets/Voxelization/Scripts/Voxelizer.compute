@@ -73,8 +73,6 @@ float TriangleDistance(float3 position, float3 vertices[3])
 
 float3 TriangleNormal(in float3 positions[3], in float3 normals[3], in float3 mVertex)
 {
-    // return normalize(normals[0] + normals[1] + normals[2]);
-    
     float3 v0 = positions[1] - positions[0];
     float3 v1 = positions[2] - positions[0];
     float3 v2 = mVertex - positions[0];
@@ -108,6 +106,61 @@ float3 ProjectionOnTriangle(in float3 vertices[3], in float3 position)
     return proj;
 }
 
+float3 ClosestOnTriangle(in float3 vertices[3], in float3 position)
+{
+    float3 a = vertices[0];
+    float3 b = vertices[1];
+    float3 c = vertices[2];
+
+    float3 ab = b - a;
+    float3 ac = c - a;
+    float3 ap = position - a;
+
+    float d1 = dot(ab, ap);
+    float d2 = dot(ac, ap);
+
+    if (d1 <= 0.0 && d2 <= 0.0)
+        return a;
+
+    float3 bp = position - b;
+    float d3 = dot(ab, bp);
+    float d4 = dot(ac, bp);
+    if (d3 >= 0.0 && d4 <= d3)
+        return b;
+
+    float vc = d1 * d4 - d3 * d2;
+    if (vc <= 0.0 && d1 >= 0.0 && d3 <= 0.0)
+    {
+        float v = d1 / (d1 - d3);
+        return a + v * ab;
+    }
+
+    float3 cp = position - c;
+    float d5 = dot(ab, cp);
+    float d6 = dot(ac, cp);
+    if (d6 >= 0.0 && d5 <= d6)
+        return c;
+
+    float vb = d5 * d2 - d1 * d6;
+    if (vb <= 0.0 && d2 >= 0.0 && d6 <= 0.0)
+    {
+        float w = d2 / (d2 - d6);
+        return a + w * ac;
+    }
+
+    float va = d3 * d6 - d5 * d4;
+    if (va <= 0.0 && (d4 - d3) >= 0.0 && (d5 - d6) >= 0.0)
+    {
+        float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+        return b + w * (c - b);
+    }
+
+    float denom = 1.0 / (va + vb + vc);
+    float vFinal = vb * denom;
+    float wFinal = vc * denom;
+    return a + ab * vFinal + ac * wFinal;
+}
+
 [numthreads(8, 8, 8)]
 void Voxelize(uint3 id : SV_DispatchThreadID) {
     if (id.x >= (uint)_OutputSize.x || id.y >= (uint)_OutputSize.y || id.z >= (uint)_OutputSize.z)
@@ -119,7 +172,7 @@ void Voxelize(uint3 id : SV_DispatchThreadID) {
 
     float3 position = remap(uvw, _MeshMinBound, _MeshMaxBound, _VoxelMinBound, _VoxelMaxBound);
 
-    float minUDist = 1000000.0;
+    float minUDist = 1e20;
     float minSDist = 0.0;
     float3 usedNormal = float3(0,0,1);
 
@@ -131,13 +184,10 @@ void Voxelize(uint3 id : SV_DispatchThreadID) {
 
         float uDist = TriangleDistance(position, vertices);
 
-        // float3 mVertex = (vertices[0] + vertices[1] + vertices[2]) / 3.0;
-        // float3 mNormal = TriangleNormal(vertices, normals, position);
-        
         if (uDist < minUDist)
         {
             minUDist = uDist;
-            float3 mVertex = ProjectionOnTriangle(vertices, position);
+            float3 mVertex = ClosestOnTriangle(vertices, position);
             float3 mNormal = TriangleNormal(vertices, normals, mVertex);
             float signVal = sign(dot(mNormal, position - mVertex));
             if (signVal == 0) signVal = 1;

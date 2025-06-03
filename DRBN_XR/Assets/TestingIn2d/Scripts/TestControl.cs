@@ -1,4 +1,6 @@
+using System.Collections;
 using UnityEngine;
+using UnityEngine.XR.Management;
 
 public enum TestControlMode
 {
@@ -33,6 +35,8 @@ public class TestControl : MonoBehaviour
         test_Generator.gameObject.SetActive(false);
         test_WeightPaint.gameObject.SetActive(false);
         test_Voxelizer.gameObject.SetActive(false);
+
+        DisableXR();
     }
 
     // Update is called once per frame
@@ -67,5 +71,32 @@ public class TestControl : MonoBehaviour
             testThing.gameObject.SetActive(true);
             current = testThing;
         }
+    }
+
+
+    // Call this when entering the non-XR scene
+    public void DisableXR()
+    {
+        StartCoroutine(StopXR());
+    }
+
+    // Call this when leaving the non-XR scene (to re-enable XR)
+    public void EnableXR()
+    {
+        StartCoroutine(StartXR());
+    }
+
+    IEnumerator StopXR()
+    {
+        XRGeneralSettings.Instance.Manager.StopSubsystems();
+        XRGeneralSettings.Instance.Manager.DeinitializeLoader();
+        yield return null;
+    }
+
+    IEnumerator StartXR()
+    {
+        XRGeneralSettings.Instance.Manager.InitializeLoaderSync();
+        XRGeneralSettings.Instance.Manager.StartSubsystems();
+        yield return null;
     }
 }
