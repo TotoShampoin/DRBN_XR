@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace Particles3D
 {
+    /// <summary>
+    /// Renderer for Particle Simulator, using mesh instancing.
+    /// </summary>
     [RequireComponent(typeof(ParticleSimulator))]
     public class ParticleRenderer : MonoBehaviour
     {

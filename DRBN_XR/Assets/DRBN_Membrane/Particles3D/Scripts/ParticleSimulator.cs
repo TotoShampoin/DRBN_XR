@@ -11,6 +11,9 @@ namespace Particles3D
         public static int Size => sizeof(float) * 6;
     }
 
+    /// <summary>
+    /// Smoothed Particles Hydrodynamics
+    /// </summary>
     public class ParticleSimulator : MonoBehaviour
     {
         [Header("Shaders")]
@@ -217,6 +220,9 @@ namespace Particles3D
             }
         }
 
+        /// <summary>
+        /// Prepare the particles for spatial hashing (unused, might be broken)
+        /// </summary>
         void PartitionParticles()
         {
             var clear = partitioningComputeShader.FindKernel("Clear");

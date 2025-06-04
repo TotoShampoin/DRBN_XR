@@ -2,6 +2,10 @@ using UnityEngine;
 
 namespace Particles3D
 {
+    /// <summary>
+    /// Particle Density Function for particle simulator; It is supposed to show a 2D slice of the PDF. 
+    /// Obsolete, use marching cube with PDF weight generator.
+    /// </summary>
     [ExecuteInEditMode]
     public class ParticleDensityFunction : MonoBehaviour
     {
