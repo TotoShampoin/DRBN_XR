@@ -4,7 +4,7 @@
             <ui:Slider label="Brush Size" value="0.5" high-value="1" name="brush_size" fill="false" />
             <ui:Slider label="Brush Strength" value="0.1" high-value="1" name="brush_strength" fill="false" />
             <ui:SliderInt label="Grid Size" value="12" high-value="24" low-value="4" name="grid_size" />
-            <ui:EnumField label="Masses to bind" value="Center" type="Assets.SpringSim.V2.MassReturns, Assembly-CSharp" name="binds" />
+            <ui:EnumField label="Masses to bind" value="Center" type="SpringSim.V2.MassReturns, Assembly-CSharp" name="binds" />
             <ui:Button text="Reset Volumetric Data" name="reset_cubes" />
             <ui:Button text="Generate Springs" name="generate_springs" />
         </ui:Tab>
