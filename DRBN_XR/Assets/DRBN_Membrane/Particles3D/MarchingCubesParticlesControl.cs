@@ -1,25 +1,29 @@
 using UnityEngine;
 
-public class MarchingCubesParticlesControl : MonoBehaviour
+
+namespace Particles3D
 {
-    [SerializeField] WeightGenerator weightGenerator;
-    [SerializeField] RenderTexture renderTexture;
-    [SerializeField] MarchingCubesRef marchingCubes;
-
-    void OnEnable()
+    public class MarchingCubesParticlesControl : MonoBehaviour
     {
-        Regenerate();
-    }
+        [SerializeField] WeightGenerator weightGenerator;
+        [SerializeField] RenderTexture renderTexture;
+        [SerializeField] MarchingCubesRef marchingCubes;
 
-    void Update()
-    {
-        if (!renderTexture) return;
-        weightGenerator.Generate(renderTexture);
-        marchingCubes
-            .GenerateAndApplyMesh(renderTexture, weightGenerator.Threshold);
-    }
+        void OnEnable()
+        {
+            Regenerate();
+        }
 
-    void Regenerate()
-    {
+        void Update()
+        {
+            if (!renderTexture) return;
+            weightGenerator.Generate(renderTexture);
+            marchingCubes
+                .GenerateAndApplyMesh(renderTexture, weightGenerator.Threshold);
+        }
+
+        void Regenerate()
+        {
+        }
     }
 }

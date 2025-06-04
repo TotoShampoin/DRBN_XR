@@ -1,4 +1,5 @@
 using UnityEngine;
+using Particles3D;
 
 class ParticleDensity : WeightGenerator
 {
