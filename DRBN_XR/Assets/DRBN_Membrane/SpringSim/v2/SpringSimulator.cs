@@ -250,7 +250,7 @@ namespace SpringSim.V2
                 Vector3 v1 = massObjects[tri.p2].Position;
                 Vector3 v2 = massObjects[tri.p3].Position;
 
-                if (MeshMod.RayTriangleIntersection(rayOrigin, rayDirection, v0, v1, v2, out Vector3 tempHit, out float dist))
+                if (MeshMod.RayTriangleIntersection(rayOrigin, rayDirection, (v0, v1, v2), out Vector3 tempHit, out float dist))
                 {
                     if (dist < closestDist)
                     {
@@ -376,7 +376,7 @@ namespace SpringSim.V2
                     break;
                 case BoundType.ManualBounds:
                     {
-                        MeshMod.RescaleToBounds(ref positions, dmesh.bounds, bounds);
+                        MeshMod.RescaleToBounds(positions, dmesh.bounds, bounds);
                         usedBounds = bounds;
                     }
                     break;
@@ -386,7 +386,7 @@ namespace SpringSim.V2
                         var center = originalBounds.center;
                         var size = originalBounds.size * rescale;
                         usedBounds = new Bounds(center, size);
-                        MeshMod.RescaleToBounds(ref positions, originalBounds, usedBounds);
+                        MeshMod.RescaleToBounds(positions, originalBounds, usedBounds);
                     }
                     break;
             }

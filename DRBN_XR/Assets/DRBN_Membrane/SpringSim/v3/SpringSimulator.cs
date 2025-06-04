@@ -358,7 +358,7 @@ namespace SpringSim.V3
                 Vector3 v1 = localToWorld.MultiplyPoint(masses[p2].position);
                 Vector3 v2 = localToWorld.MultiplyPoint(masses[p3].position);
 
-                if (MeshMod.RayTriangleIntersection(rayOrigin, rayDirection, v0, v1, v2, out Vector3 tempHit, out float dist))
+                if (MeshMod.RayTriangleIntersection(rayOrigin, rayDirection, (v0, v1, v2), out Vector3 tempHit, out float dist))
                 {
                     if (dist < closestDist)
                     {

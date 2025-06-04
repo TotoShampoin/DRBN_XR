@@ -251,7 +251,7 @@ namespace SpringSim.V1
             Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
             var positions = dmesh.vertices;
             if (rescaleToBounds)
-                MeshMod.RescaleToBounds(ref positions, dmesh.bounds, bounds);
+                MeshMod.RescaleToBounds(positions, dmesh.bounds, bounds);
 
             ConcurrentDictionary<uint, SpringLink> links = new();
             static uint HashKey(int a, int b)
