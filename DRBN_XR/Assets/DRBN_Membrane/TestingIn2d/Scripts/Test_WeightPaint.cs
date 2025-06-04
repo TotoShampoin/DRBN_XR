@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using MarchingCubeSystem.V2;
 
 public class Test_WeightPaint : MonoBehaviour
 {

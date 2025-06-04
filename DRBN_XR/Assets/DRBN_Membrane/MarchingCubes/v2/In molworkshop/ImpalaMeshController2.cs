@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using MarchingCubeSystem.V2;
 
 public class ImpalaMeshController2 : MonoBehaviour
 {

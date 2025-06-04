@@ -1,11 +1,14 @@
 using UnityEngine;
 
-public abstract class Generator : MonoBehaviour
+namespace MarchingCubeSystem.V1
 {
-    public abstract float[] Generate();
-}
+    public abstract class Generator : MonoBehaviour
+    {
+        public abstract float[] Generate();
+    }
 
-public abstract class Smoothen : MonoBehaviour
-{
-    public abstract float[] Smooth(float[] weights);
+    public abstract class Smoothen : MonoBehaviour
+    {
+        public abstract float[] Smooth(float[] weights);
+    }
 }

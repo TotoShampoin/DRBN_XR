@@ -1,40 +1,43 @@
 using UnityEngine;
 using Particles3D;
 
-class ParticleDensity : WeightGenerator
+namespace MarchingCubeSystem.V2
 {
-    public override bool ConstantlyRegenerate => true;
-    public float threshold = 3.0f;
-    public override float Threshold
+    class ParticleDensity : WeightGenerator
     {
-        get => threshold;
-        set => threshold = value;
-    }
+        public override bool ConstantlyRegenerate => true;
+        public float threshold = 3.0f;
+        public override float Threshold
+        {
+            get => threshold;
+            set => threshold = value;
+        }
 
-    [SerializeField] ParticleSimulator particleSimulator;
-    [SerializeField] ComputeShader particleDensityShader;
+        [SerializeField] ParticleSimulator particleSimulator;
+        [SerializeField] ComputeShader particleDensityShader;
 
-    public override void Generate(RenderTexture renderTexture)
-    {
-        var kernel = particleDensityShader.FindKernel("ParticleDensity");
+        public override void Generate(RenderTexture renderTexture)
+        {
+            var kernel = particleDensityShader.FindKernel("ParticleDensity");
 
-        particleDensityShader
-            .SetBuffer(kernel,
-                "_Positions", particleSimulator.positionsBuffer);
-        particleDensityShader
-            .SetTexture(kernel, "_Output", renderTexture);
+            particleDensityShader
+                .SetBuffer(kernel,
+                    "_Positions", particleSimulator.positionsBuffer);
+            particleDensityShader
+                .SetTexture(kernel, "_Output", renderTexture);
 
-        particleDensityShader
-            .SetFloat("_DensityRadius", particleSimulator.DensityRadius);
-        particleDensityShader
-            .SetVector("_MinBounds", particleSimulator.MinBounds);
-        particleDensityShader
-            .SetVector("_MaxBounds", particleSimulator.MaxBounds);
+            particleDensityShader
+                .SetFloat("_DensityRadius", particleSimulator.DensityRadius);
+            particleDensityShader
+                .SetVector("_MinBounds", particleSimulator.MinBounds);
+            particleDensityShader
+                .SetVector("_MaxBounds", particleSimulator.MaxBounds);
 
-        particleDensityShader.Dispatch(
-            kernel,
-            Mathf.CeilToInt((float)renderTexture.width / 8),
-            Mathf.CeilToInt((float)renderTexture.height / 8),
-            Mathf.CeilToInt((float)renderTexture.volumeDepth / 8));
+            particleDensityShader.Dispatch(
+                kernel,
+                Mathf.CeilToInt((float)renderTexture.width / 8),
+                Mathf.CeilToInt((float)renderTexture.height / 8),
+                Mathf.CeilToInt((float)renderTexture.volumeDepth / 8));
+        }
     }
 }

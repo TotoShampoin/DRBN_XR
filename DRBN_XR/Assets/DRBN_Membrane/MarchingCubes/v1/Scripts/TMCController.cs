@@ -2,85 +2,89 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class TMCController : MonoBehaviour
+
+namespace MarchingCubeSystem.V1
 {
-    public MeshGenerator MeshGenerator;
-    public MeshBrush3D Brush;
-    public SphereColliderPopulateV2 SphereColliderPopulateV2;
-
-    public InputActionReference PaintAction;
-    public InputActionReference EraserAction;
-
-    public Transform PaintAnchor;
-
-    public bool useBlur = true;
-
-    public int GeneratorIndex = 0;
-    public List<Generator> Generators;
-
-    public int SmoothenIndex = 0;
-    public List<Smoothen> Smoothens;
-
-    public bool RegenerateNextFrame = false;
-
-    void Start()
+    public class TMCController : MonoBehaviour
     {
-        MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
-        RefreshSpheres();
+        public MeshGenerator MeshGenerator;
+        public MeshBrush3D Brush;
+        public SphereColliderPopulateV2 SphereColliderPopulateV2;
 
-        PaintAction.action.performed += _ => Brush.IsPainting = true;
-        PaintAction.action.canceled += _ => Brush.IsPainting = false;
+        public InputActionReference PaintAction;
+        public InputActionReference EraserAction;
 
-        EraserAction.action.performed += _ => Brush.PaintOrErase = false;
-        EraserAction.action.canceled += _ => Brush.PaintOrErase = true;
-    }
+        public Transform PaintAnchor;
 
-    void FixedUpdate()
-    {
-        bool isUpdated = false;
-        if (RegenerateNextFrame)
+        public bool useBlur = true;
+
+        public int GeneratorIndex = 0;
+        public List<Generator> Generators;
+
+        public int SmoothenIndex = 0;
+        public List<Smoothen> Smoothens;
+
+        public bool RegenerateNextFrame = false;
+
+        void Start()
         {
-            MeshGenerator.Recreate(
-                Generators[GeneratorIndex]
-                    .Generate());
-            RegenerateNextFrame = false;
-            isUpdated = true;
-        }
-
-        Brush.transform.position = PaintAnchor.position;
-        if (Brush.IsPainting)
-        {
-            MeshGenerator.EditWeights(
-                Brush.transform.position,
-                Brush.BrushSize, Brush.BrushStrength,
-                Brush.PaintOrErase);
-            isUpdated = true;
-        }
-
-        if (useBlur)
-        {
-            MeshGenerator.Recreate(
-                Smoothens[SmoothenIndex]
-                    .Smooth(MeshGenerator.Weights));
-            isUpdated = true;
-        }
-
-        if (isUpdated)
-        {
+            MeshGenerator.Recreate(Generators[GeneratorIndex].Generate());
             RefreshSpheres();
+
+            PaintAction.action.performed += _ => Brush.IsPainting = true;
+            PaintAction.action.canceled += _ => Brush.IsPainting = false;
+
+            EraserAction.action.performed += _ => Brush.PaintOrErase = false;
+            EraserAction.action.canceled += _ => Brush.PaintOrErase = true;
         }
-    }
 
-    public void RefreshSpheres()
-    {
-        SphereColliderPopulateV2.ExtractAndPopulate(
-            MeshGenerator.GetComponent<MeshFilter>(),
-            MeshGenerator.transform);
-    }
+        void FixedUpdate()
+        {
+            bool isUpdated = false;
+            if (RegenerateNextFrame)
+            {
+                MeshGenerator.Recreate(
+                    Generators[GeneratorIndex]
+                        .Generate());
+                RegenerateNextFrame = false;
+                isUpdated = true;
+            }
 
-    public void Regenerate()
-    {
-        RegenerateNextFrame = true;
-    }
+            Brush.transform.position = PaintAnchor.position;
+            if (Brush.IsPainting)
+            {
+                MeshGenerator.EditWeights(
+                    Brush.transform.position,
+                    Brush.BrushSize, Brush.BrushStrength,
+                    Brush.PaintOrErase);
+                isUpdated = true;
+            }
 
+            if (useBlur)
+            {
+                MeshGenerator.Recreate(
+                    Smoothens[SmoothenIndex]
+                        .Smooth(MeshGenerator.Weights));
+                isUpdated = true;
+            }
+
+            if (isUpdated)
+            {
+                RefreshSpheres();
+            }
+        }
+
+        public void RefreshSpheres()
+        {
+            SphereColliderPopulateV2.ExtractAndPopulate(
+                MeshGenerator.GetComponent<MeshFilter>(),
+                MeshGenerator.transform);
+        }
+
+        public void Regenerate()
+        {
+            RegenerateNextFrame = true;
+        }
+
+    }
 }

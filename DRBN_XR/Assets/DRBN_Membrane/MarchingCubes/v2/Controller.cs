@@ -1,40 +1,43 @@
 using UnityEngine;
 
-public class Controller : MonoBehaviour
+namespace MarchingCubeSystem.V2
 {
-    [SerializeField] WeightGenerator weightGenerator;
-    [SerializeField] RenderTexture renderTexture;
-    [SerializeField] MarchingCubes marchingCubes;
-    [SerializeField] WeightPainter weightPainter;
-
-    public bool regenerate = false;
-    public bool constantlyRegenerate = false;
-
-    void OnEnable()
+    public class Controller : MonoBehaviour
     {
-        Regenerate();
-    }
+        [SerializeField] WeightGenerator weightGenerator;
+        [SerializeField] RenderTexture renderTexture;
+        [SerializeField] MarchingCubes marchingCubes;
+        [SerializeField] WeightPainter weightPainter;
 
-    void Update()
-    {
-        if (weightPainter.needsRegenerate)
-        {
-            marchingCubes.GenerateAndApplyMesh(renderTexture,
-                weightGenerator.Threshold);
-            weightPainter.needsRegenerate = false;
-        }
-        if (regenerate || constantlyRegenerate)
+        public bool regenerate = false;
+        public bool constantlyRegenerate = false;
+
+        void OnEnable()
         {
             Regenerate();
-            regenerate = false;
         }
-    }
 
-    void Regenerate()
-    {
-        if (!renderTexture) return;
-        weightGenerator.Generate(renderTexture);
-        marchingCubes.GenerateAndApplyMesh(renderTexture,
-                weightGenerator.Threshold);
+        void Update()
+        {
+            if (weightPainter.needsRegenerate)
+            {
+                marchingCubes.GenerateAndApplyMesh(renderTexture,
+                    weightGenerator.Threshold);
+                weightPainter.needsRegenerate = false;
+            }
+            if (regenerate || constantlyRegenerate)
+            {
+                Regenerate();
+                regenerate = false;
+            }
+        }
+
+        void Regenerate()
+        {
+            if (!renderTexture) return;
+            weightGenerator.Generate(renderTexture);
+            marchingCubes.GenerateAndApplyMesh(renderTexture,
+                    weightGenerator.Threshold);
+        }
     }
 }
