@@ -7,7 +7,6 @@ namespace SpringSim.V2
     [RequireComponent(typeof(LineRenderer))]
     public class LinkObject : MonoBehaviour
     {
-        // public GameObject a, b;
         [NonSerialized] public MassObject a, b;
         [NonSerialized] public float length;
         LineRenderer line;

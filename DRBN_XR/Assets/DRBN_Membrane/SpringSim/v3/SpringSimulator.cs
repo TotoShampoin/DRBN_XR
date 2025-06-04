@@ -310,7 +310,6 @@ namespace SpringSim.V3
                 closestSelectedIdx = -1;
             }
 
-            // // Ensure the closest selected mass has weight 1
             // if (closestSelectedIdx != -1)
             // {
             //     for (int i = 0; i < selected.Count; i++)

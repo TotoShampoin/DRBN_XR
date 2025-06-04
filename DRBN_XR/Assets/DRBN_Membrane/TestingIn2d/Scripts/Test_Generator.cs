@@ -7,13 +7,6 @@ public class Test_Generator : MonoBehaviour
     public RenderTexture texture;
     public Material textureRenderer;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
     void Update()
     {
         generator.Generate(texture);

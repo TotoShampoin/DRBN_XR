@@ -107,7 +107,6 @@ namespace SpringSim.V2
                 .Select(pair => pair.idx)
                 .ToHashSet();
 
-            // Collect all vertex indices to keep
             var toKeepIndices = new HashSet<int>();
             foreach (var groupIdx in toKeepGroups)
                 foreach (var idx in toCleanupGroup.groups[groupIdx])

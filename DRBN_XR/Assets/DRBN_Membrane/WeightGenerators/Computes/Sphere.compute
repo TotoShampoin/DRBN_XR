@@ -19,13 +19,9 @@ void QuadraticCurve3D (uint3 id : SV_DispatchThreadID)
         / float3(width, height, depth);
     float3 pos = lerp(_MinBounds, _MaxBounds, uvw);
     
-    // float x = length(pos.xyz);
-    
     float x = 0;
-    // Allow for other types of distance (nroots)
-    // For n = 2, this is Euclidean; for n = 1, Manhattan; for n = inf, Chebyshev
-    float n = _N; // You can set this as a parameter if needed
-    float3 center = float3(0, 0, 0); // Sphere center, can be parameterized
+    float n = _N;
+    float3 center = float3(0, 0, 0);
     float3 d = abs(pos - center);
     if (n == 1.0f)
         x = d.x + d.y + d.z;

@@ -5,10 +5,7 @@ namespace Particles3D
     [ExecuteInEditMode]
     public class ParticleDensityFunction : MonoBehaviour
     {
-        // [SerializeField] Vector3 minBounds = new(-10, -10, -10);
-        // [SerializeField] Vector3 maxBounds = new(10, 10, 10);
         [SerializeField, Range(0, 1)] float slice = 0.5f;
-        // [SerializeField, Range(0, 20)] float radius = 0.5f;
 
         [SerializeField] ParticleSimulator particleSimulator;
         [SerializeField] ComputeShader pdfSliceShader;

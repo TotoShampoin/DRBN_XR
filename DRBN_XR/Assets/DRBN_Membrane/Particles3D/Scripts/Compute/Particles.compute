@@ -127,7 +127,7 @@ float PressureKernelGradient(float radius, float dist)
     
     float scale = -45.0f / (PI * pow(radius, 6));
     float v = radius - dist;
-    return scale * v * v / dist; // Note the division by dist for direction
+    return scale * v * v / dist;
 }
 
 float ViscosityKernel(float radius, float dist)
@@ -146,27 +146,21 @@ void Collisions(inout float3 p, inout float3 v)
 
     if(p.x < minBound.x) {
         v.x += (minBound.x - p.x);
-        // p.x = minBound.x;
     }
     if(p.x > maxBound.x) {
         v.x += (maxBound.x - p.x);
-        // p.x = maxBound.x;
     }
     if(p.y < minBound.y) {
         v.y += (minBound.y - p.y);
-        // p.y = minBound.y;
     }
     if(p.y > maxBound.y) {
         v.y += (maxBound.y - p.y);
-        // p.y = maxBound.y;
     }
     if(p.z < minBound.z) {
         v.z += (minBound.z - p.z);
-        // p.z = minBound.z;
     }
     if(p.z > maxBound.z) {
         v.z += (maxBound.z - p.z);
-        // p.z = maxBound.z;
     }
 }
 
@@ -209,8 +203,6 @@ void MoveParticles (uint3 id : SV_DispatchThreadID)
             Random(id.x + 1),
             Random(id.x + 2),
             Random(id.x + 3)) * 2 - 1;
-        // p *= 10;
-        // Scale and center random position within the bounds
         p = p * SizeBound * 0.5f + CenterBound;
         v = float3(0, 0, 0);
     }
@@ -233,33 +225,16 @@ void NearbySubgrids(
     uint3 id,
     float radius
 ) {
-    // // use radius and SizeBound to calculate the min and max subgrid indices
-    // // that are within the radius of the particle at id.x
-    // float3 subgridSize = SizeBound / (PartitionResolution - 1);
-    // float3 positionInBound = PredictedPositions[id.x] - CenterBound + SizeBound / 2.0f;
-    // uint3 subgridIndex = (uint3)(positionInBound / subgridSize);
-
-    // _min = subgridIndex - (int3)(radius / subgridSize);
-    // _max = subgridIndex + (int3)(radius / subgridSize);
-    // _min = max(_min, int3(0, 0, 0));
-    // _max = min(_max, int3(PartitionResolution - 1, PartitionResolution - 1, PartitionResolution - 1));
-
-    
-    // Correct grid cell size calculation
     float3 subgridSize = SizeBound / PartitionResolution;
     
-    // Map particle position to grid space
     float3 positionInBound = PredictedPositions[id.x] - (CenterBound - SizeBound / 2.0f);
     int3 subgridIndex = (int3)(positionInBound / subgridSize);
     
-    // Calculate how many cells the radius spans
     int cellRadius = (int)ceil(radius / length(subgridSize)) + 1;
     
-    // Find min/max grid cells that need checking
     _min = subgridIndex - cellRadius;
     _max = subgridIndex + cellRadius;
     
-    // Clamp to valid grid range
     _min = max(_min, int3(0, 0, 0));
     _max = min(_max, int3(PartitionResolution - 1, PartitionResolution - 1, PartitionResolution - 1));
 }
@@ -321,7 +296,7 @@ void CalcPressure(
     float3 delta = PredictedPositions[id.x] - PredictedPositions[i];
     float dist = length(delta);
     
-    if (dist < 0.0001f) return; // Skip extremely close particles
+    if (dist < 0.0001f) return;
     float3 dir = delta / dist;
 
     float influence = DensityKernelGradient(DensityRadius, dist);
@@ -336,12 +311,6 @@ void CalcPressure(
     
     force += sharedPressure * dir * influence / Densities[i];
     force += sharedNearbyPressure * dir * nearbyInfluence / Densities[i];
-
-    // float density_i = Densities[id.x];
-    // float density_j = Densities[i];
-    // float density = (density_i*density_j);
-    // force += sharedPressure * dir * influence / density;
-    // force += sharedNearbyPressure * dir * nearbyInfluence / density;
 }
 
 [numthreads(256,1,1)]
@@ -377,7 +346,7 @@ void CalculatePressures (uint3 id : SV_DispatchThreadID)
         CalcPressure(force, id, i, pressure, nearbyPressure);
     }
 
-    if(density < 0.0001f) return; // Avoid division by zero
+    if(density < 0.0001f) return;
     Velocities[id.x] += force / density * DeltaTime;
 }
 

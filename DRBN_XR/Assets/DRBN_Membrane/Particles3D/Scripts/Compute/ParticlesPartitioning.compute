@@ -29,7 +29,6 @@ uint GetSubgridIndex(float3 position) {
     float3 positionInBound = position - CenterBound + SizeBound / 2.0f;
     int3 subgridIndexInt = (int3)(positionInBound / subgridSize);
     
-    // Clamp to valid range before converting to uint
     uint3 subgridIndex = uint3(
         clamp(subgridIndexInt.x, 0, PartitionResolution-1),
         clamp(subgridIndexInt.y, 0, PartitionResolution-1),
@@ -61,7 +60,6 @@ void FetchSubgrids(uint3 id : SV_DispatchThreadID) {
     float3 position = Positions[id.x];
     uint subgridIndex = GetSubgridIndex(position);
 
-    // Store the particle index in the subgrid
     ParticlesIndices[id.x] = id.x;
     SubgridIndices[id.x] = subgridIndex;
 
@@ -75,7 +73,6 @@ void FetchStarts(uint3 id : SV_DispatchThreadID) {
     if (id.x >= SubgridCount)
         return;
 
-    // Store the starting index of each subgrid
     uint count = SubgridCounts[id.x];
     for (uint i = 0; i < id.x; i++) {
         count += SubgridCounts[i];
@@ -96,13 +93,11 @@ void Swap(uint a, uint b) {
 
 void CompareAndSwapPerSubgrid(uint a, uint b) {
     if (a == b) return;
-    // Sort by subgrid index (ascending)
     if (SubgridIndices[a] > SubgridIndices[b]) {
         Swap(a, b);
     } else if (SubgridIndices[a] < SubgridIndices[b]) {
         return;
     } else {
-        // Within same subgrid, sort by particle index (ascending)
         if (ParticlesIndices[a] > ParticlesIndices[b]) {
             Swap(a, b);
         }
@@ -113,8 +108,6 @@ uint _k;
 uint _j;
 [numthreads(256, 1, 1)]
 void SortSubgridsGlobal(uint3 id : SV_DispatchThreadID) {
-    // Bitonic parallel sort on ParticlesIndices and SubgridIndices together
-    // But multiple dispatches instead of group sync
     uint ParticleCount, ParticleStride;
     ParticlesIndices.GetDimensions(ParticleCount, ParticleStride);
     if (id.x >= ParticleCount) 

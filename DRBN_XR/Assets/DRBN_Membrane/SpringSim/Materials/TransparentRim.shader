@@ -17,7 +17,6 @@ Shader "Unlit/TransparentRim"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            // make fog work
             #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
@@ -56,7 +55,6 @@ Shader "Unlit/TransparentRim"
 
                 float rim = 1.0 - saturate(dotNV);
                 fixed4 col = _Color * fixed4(1,1,1,pow(rim, _RimGamma));
-                // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
             }

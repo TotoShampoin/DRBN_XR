@@ -20,7 +20,6 @@ namespace MarchingCubing.V2
         MeshFilter meshFilter;
 
         public int resolution = 32;
-        // public float threshold = 0.0f;
         public bool smooth = true;
 
         readonly List<Vector3> cachedVerts = new();

@@ -15,10 +15,8 @@ Shader "Custom/StandardWithRim"
         LOD 200
 
         CGPROGRAM
-        // Physically based Standard lighting model, and enable shadows on all light types
         #pragma surface surf Standard fullforwardshadows
 
-        // Use shader model 3.0 target, to get nicer looking lighting
         #pragma target 3.0
 
         sampler2D _MainTex;
@@ -50,9 +48,7 @@ Shader "Custom/StandardWithRim"
             float rim = 1.0 - saturate(dot(normal, normalize(IN.viewDir)));
             fixed4 r = _Color * fixed4(1,1,1,pow(rim, _RimGamma));
 
-            // Albedo comes from a texture tinted by color
             fixed4 c = _StdColor;
-            // o.Albedo = c.rgb * (1 - r.a);
             o.Albedo = lerp(c, r, r.a);
             o.Emission = r.rgb * r.a;
             o.Metallic = _StdMetallic;

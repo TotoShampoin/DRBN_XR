@@ -37,8 +37,6 @@ namespace SpringSim.V2
 
         public bool Mark { get; set; } = false;
 
-        // public InputActionReference rigidityController;
-
         const double k = 1.380649e-23; // J K−1
 
         // p[i].r = a + b
@@ -97,7 +95,6 @@ namespace SpringSim.V2
         Color transparent = new(0, 0, 0, 0);
         void Update()
         {
-            // THIS ASSUMES A SPECIFIC SHADER!
             // if (Grabbed)
             //     mesh.material.color = Color.red;
             // else if (PartiallyGrabbed)
@@ -107,16 +104,17 @@ namespace SpringSim.V2
             // else
             //     mesh.material.color = transparent;
 
+            // if (Grabbed)
+            //     debug.text = $"{Mathf.Round(Rigidity * 100) / 100}";
+            // else
+            //     debug.text = "";
+
             if (Mark) mesh.material.color = Color.red;
             else mesh.material.color = transparent;
 
             debug.transform.position = transform.position + Vector3.up * 0.075f;
             debug.transform.LookAt(Camera.main.transform);
             debug.transform.rotation *= Quaternion.Euler(0f, 180f, 0f);
-            // if (Grabbed)
-            //     debug.text = $"{Mathf.Round(Rigidity * 100) / 100}";
-            // else
-            //     debug.text = "";
 
             Rigidity += RigidityGradient * Time.deltaTime;
         }
@@ -194,7 +192,6 @@ namespace SpringSim.V2
     struct MassObjectInitData
     {
         public Vector3 position;
-        // public Quaternion rotation;
         public Vector3 normal;
         public bool returnToOrigin;
     };

@@ -76,7 +76,6 @@ namespace Particles3D
             material.SetInt("_PartitionResolution", simulator.PartitionResolution);
             material.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);
 
-            // Draw all particles in a single draw call
             Graphics.DrawMeshInstancedIndirect(
                 mesh, 0,
                 material,

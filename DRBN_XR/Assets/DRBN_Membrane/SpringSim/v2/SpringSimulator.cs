@@ -64,7 +64,6 @@ namespace SpringSim.V2
 
         public MassObject massPrefab;
         public LinkObject linkPrefab;
-        // public bool useBounds = true;
         public BoundType boundType = BoundType.OriginalBounds;
         public Bounds bounds = new(new(0, 0, 0), new(1, 1, 1));
         public float rescale = 1f;
@@ -104,7 +103,6 @@ namespace SpringSim.V2
         public float GrabRadius { get => grabDistance; set => grabDistance = value; }
         public MassReturns Return { get => returnType; set => returnType = value; }
         public int ReturnAsInt { get => (int)returnType; set => returnType = (MassReturns)value; }
-        // public bool UseBounds { get => useBounds; set => useBounds = value; }
         public float DampingForce { get => dampingForce; set => dampingForce = value; }
         public float GrabStregth { get => grabStregth; set => grabStregth = value; }
         public GrabInfluenceFunction InfluenceFunction { get => influenceFunction; set => influenceFunction = value; }
@@ -329,14 +327,12 @@ namespace SpringSim.V2
         public void Clear()
         {
             ResetGrabbed();
-            // Pool and deactivate mass objects
             foreach (var rb in massObjects)
             {
                 rb.gameObject.SetActive(false);
                 massPool.Enqueue(rb);
             }
             massObjects.Clear();
-            // Pool and deactivate link objects
             foreach (var lk in linkObjects)
             {
                 lk.gameObject.SetActive(false);
@@ -472,7 +468,6 @@ namespace SpringSim.V2
             }
             this.links.AddRange(links.Values);
 
-            // Build triangles using link indices
             var indexToLink = new Dictionary<(int, int), int>();
             int linkIdx = 0;
             foreach (var link in links.Values)
@@ -501,7 +496,6 @@ namespace SpringSim.V2
                 });
             }
 
-            // Update triangles to store p1, p2, p3 as the three unique vertex indices for each triangle
             for (int i = 0; i < triangles.Count; i++)
             {
                 var tri = triangles[i];
@@ -515,20 +509,18 @@ namespace SpringSim.V2
                 var verts = counts.Keys.ToArray();
 
                 if (verts.Length != 3)
-                    continue; // skip degenerate triangles
+                    continue;
 
                 int v0 = linkA.a;
                 int v1 = linkA.b;
                 int v2 = verts.First(x => x != v0 && x != v1);
 
-                // Check winding order
                 Vector3 p0 = positions[v0];
                 Vector3 p1 = positions[v1];
                 Vector3 p2 = positions[v2];
                 Vector3 normal = Vector3.Cross(p1 - p0, p2 - p0);
                 if (Vector3.Dot(normal, Vector3.up) < 0)
                 {
-                    // Flip winding
                     (v1, v2) = (v2, v1);
                 }
 

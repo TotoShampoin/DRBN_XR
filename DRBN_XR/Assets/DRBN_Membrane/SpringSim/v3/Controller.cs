@@ -36,7 +36,7 @@ namespace SpringSim.V3
             get => marchingCubes.resolution;
             set => marchingCubes.resolution = (int)value;
         }
-        public float VoxeliseRate // if this is not a float, Unity's slider won't accept it -_-
+        public float VoxeliseRate
         {
             get => 1f / voxeliseInterval;
             set => voxeliseInterval = 1f / value;

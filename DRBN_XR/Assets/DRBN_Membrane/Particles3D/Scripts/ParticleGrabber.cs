@@ -59,7 +59,6 @@ namespace Particles3D
                     }
                 case ParticleDisplayType.Remap:
                     {
-                        // Map cursor position from display local space [-0.5,0.5] to simulator bounds
                         Vector3 localPos = display.InverseTransformPoint(cursor.position);
                         Bounds bounds = simulator.Bounds;
                         Vector3 min = bounds.min;

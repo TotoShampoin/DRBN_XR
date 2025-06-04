@@ -48,7 +48,6 @@ Shader "Instanced/ParticleMesh"
             float4 _VelocitColorRamp_ST;
             float _MaxVelocity;
             
-            // This is the GPU buffer containing particle positions
             StructuredBuffer<float3> _Positions;
             StructuredBuffer<float3> _Velocities;
 

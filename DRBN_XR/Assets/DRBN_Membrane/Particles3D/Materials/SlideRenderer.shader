@@ -23,7 +23,6 @@ Shader "Unlit/SlideRenderer"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            // make fog work
             #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
@@ -56,10 +55,7 @@ Shader "Unlit/SlideRenderer"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                // sample the 3D texture
                 fixed col = tex3D(_PDF, float3(i.uv.x, _Slice, i.uv.y)).r;
-
-                // return fixed4(1.0f, 1.0f, 1.0f, col);
 
                 if(col > 0.0f) {
                     return fixed4(0.0f, 0.5f, 1.0f, col);

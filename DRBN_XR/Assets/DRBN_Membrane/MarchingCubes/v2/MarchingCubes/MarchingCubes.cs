@@ -21,7 +21,6 @@ namespace MarchingCubing.V2
         MeshFilter meshFilter;
 
         public int resolution = 32;
-        // public float threshold = 0.0f;
         public bool smooth = true;
         public Bounds bounds = new(Vector3.zero, Vector3.one);
 

@@ -58,7 +58,6 @@ Shader "Instanced/ParticleBillboard"
             float4 _VelocitColorRamp_ST;
             float _MaxVelocity;
             
-            // This is the GPU buffer containing particle positions
             StructuredBuffer<float3> _Positions;
             StructuredBuffer<float3> _Velocities;
             StructuredBuffer<uint> _Indices;
@@ -66,8 +65,7 @@ Shader "Instanced/ParticleBillboard"
 
             float3x3 lookAt(float3 origin, float3 target) {
                 float3 ww = normalize(target - origin);
-                // float3 rr = float3(0, 0, 1);
-                float3 rr = abs(ww.y) > 0.75 ? float3(0, 0, 1) : float3(0, 1, 0); // Switch up vector if too vertical
+                float3 rr = abs(ww.y) > 0.75 ? float3(0, 0, 1) : float3(0, 1, 0);
                 float3 uu = normalize(cross(ww, rr));
                 float3 vv = normalize(cross(uu, ww));
               
@@ -78,26 +76,13 @@ Shader "Instanced/ParticleBillboard"
             {
                 v2f o;
                 
-                // Get position from the buffer
-                // float3 instancePosition = _Positions[_Indices[v.instanceID]];
                 float3 instancePosition = _Positions[v.instanceID];
-                // instancePosition = mul(_LocalToWorld, float4(instancePosition, 1)).xyz;
-                
-                // Calculate billboard vertices based on particle size
-                // float3 cameraRight = normalize(UNITY_MATRIX_IT_MV[0].xyz);
-                // float3 cameraUp = normalize(UNITY_MATRIX_IT_MV[1].xyz);
-                
                 float3 vertex = v.vertex.xyz * _ParticleSize;
                 float4 worldPos = mul(_LocalToWorld, float4(instancePosition, 1));
-                // float4 worldPos = mul(_LocalToWorld, float4(worldPosition, 1))
-                //                + float4(cameraRight, 0) * localPos.x 
-                //                + float4(cameraUp, 0) * localPos.y;
 
-                // Calculate look-at matrix to orient the particle
                 float3 cameraPos = _WorldSpaceCameraPos;
                 float3x3 view = lookAt(worldPos.xyz, cameraPos);
 
-                // Apply lookAt matrix to orient the quad vertices to face the camera
                 float3 billboarded = mul(view, vertex);
                 worldPos.xyz += billboarded;
                 
@@ -110,31 +95,12 @@ Shader "Instanced/ParticleBillboard"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                // uint index1 = _SubgridIndices[i.instanceID] % _PartitionResolution;
-                // uint index2 = (_SubgridIndices[i.instanceID] / _PartitionResolution) % _PartitionResolution;
-                // uint index3 = _SubgridIndices[i.instanceID] / (_PartitionResolution * _PartitionResolution);
-                // float3 normalizedIndex = float3(
-                //     float(index1) / float(_PartitionResolution - 1),
-                //     float(index2) / float(_PartitionResolution - 1),
-                //     float(index3) / float(_PartitionResolution - 1)
-                // );
-
-                // // fixed4 c = lerp(_ColorA, _ColorB, normalizedIndex);
-                // fixed4 c = fixed4(pow(normalizedIndex, 2.2), 1);
-                // if(_Indices[i.instanceID] >= _ParticleCount)
-                //     c = fixed4(1,0,1,1);
-                // // c.rgb = normalize(c.rgb);
-
                 float3 velocity = _Velocities[i.instanceID];
-                // Calculate velocity magnitude
                 float velocityMag = length(velocity);
-                // Normalize velocity to [0,1] range based on max velocity
                 float normalizedVelocity = saturate(velocityMag / _MaxVelocity);
-                // Sample the velocity color ramp
                 fixed4 c = tex2D(_VelocityColorRamp, float2(normalizedVelocity, 0.5));
 
                 fixed4 col = tex2D(_MainTex, i.uv) * c;
-                // fixed4 col = tex2D(_MainTex, i.uv) ;
                 if(length(i.uv * 2 - 1) > 1) {
                     col.a = 0;
                     discard;

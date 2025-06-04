@@ -21,7 +21,6 @@ public class TestControl : MonoBehaviour
     Test_WeightPaint test_WeightPaint;
     Test_Voxelizer test_Voxelizer;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         test_Generator = GetComponentInChildren<Test_Generator>();
@@ -39,7 +38,6 @@ public class TestControl : MonoBehaviour
         DisableXR();
     }
 
-    // Update is called once per frame
     void Update()
     {
         switch (testControlMode)
@@ -74,13 +72,11 @@ public class TestControl : MonoBehaviour
     }
 
 
-    // Call this when entering the non-XR scene
     public void DisableXR()
     {
         StartCoroutine(StopXR());
     }
 
-    // Call this when leaving the non-XR scene (to re-enable XR)
     public void EnableXR()
     {
         StartCoroutine(StartXR());

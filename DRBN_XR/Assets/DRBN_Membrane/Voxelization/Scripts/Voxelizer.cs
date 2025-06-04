@@ -25,7 +25,6 @@ namespace Voxelization
             }
             else
             {
-                // Create a dummy RenderTexture with the same dimensions and format as output
                 normals = new RenderTexture(output.width, output.height, 0, output.format)
                 {
                     dimension = output.dimension,
