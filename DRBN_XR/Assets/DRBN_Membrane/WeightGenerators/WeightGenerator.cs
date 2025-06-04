@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace MarchingCubeSystem.V2
+namespace WeightGeneration
 {
     public abstract class WeightGenerator : MonoBehaviour
     {

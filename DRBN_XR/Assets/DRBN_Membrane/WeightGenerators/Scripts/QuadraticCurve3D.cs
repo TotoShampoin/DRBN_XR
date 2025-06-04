@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace MarchingCubeSystem.V2
+namespace WeightGeneration
 {
     class QuadraticCurve3D : WeightGenerator
     {

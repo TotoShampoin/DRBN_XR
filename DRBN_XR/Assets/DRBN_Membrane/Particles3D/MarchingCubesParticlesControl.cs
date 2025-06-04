@@ -1,5 +1,6 @@
 using UnityEngine;
 using MarchingCubeSystem.V2;
+using WeightGeneration;
 
 namespace Particles3D
 {

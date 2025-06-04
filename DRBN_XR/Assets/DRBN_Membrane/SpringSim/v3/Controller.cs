@@ -1,5 +1,7 @@
 using UnityEngine;
 using MarchingCubeSystem.V2;
+using WeightPainting;
+using WeightGeneration;
 
 namespace SpringSim.V3
 {

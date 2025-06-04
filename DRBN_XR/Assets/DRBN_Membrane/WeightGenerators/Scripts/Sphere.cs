@@ -1,31 +1,35 @@
 using UnityEngine;
 
-namespace MarchingCubeSystem.V2
+namespace WeightGeneration
 {
-    class Noise : WeightGenerator
+    class Sphere : WeightGenerator
     {
         public override bool ConstantlyRegenerate => false;
-        public float threshold = 0.5f;
+        public float threshold = 0.0f;
         public override float Threshold
         {
             get => threshold;
             set => threshold = value;
         }
-        [SerializeField] ComputeShader noiseShader;
+        [SerializeField] ComputeShader sphereShader;
+        [SerializeField] float radius = 1f;
+        [SerializeField] float n = 2f;
 
         [SerializeField] Vector3 minBounds = new(-1, -1, -1);
         [SerializeField] Vector3 maxBounds = new(1, 1, 1);
 
         public override void Generate(RenderTexture renderTexture)
         {
-            var kernel = noiseShader.FindKernel("Noise");
+            var kernel = sphereShader.FindKernel("QuadraticCurve3D");
 
-            noiseShader.SetTexture(kernel, "_Output", renderTexture);
+            sphereShader.SetTexture(kernel, "_Output", renderTexture);
 
-            noiseShader.SetVector("_MinBounds", minBounds);
-            noiseShader.SetVector("_MaxBounds", maxBounds);
+            sphereShader.SetFloat("_Radius", radius);
+            sphereShader.SetFloat("_N", n);
+            sphereShader.SetVector("_MinBounds", minBounds);
+            sphereShader.SetVector("_MaxBounds", maxBounds);
 
-            noiseShader.Dispatch(
+            sphereShader.Dispatch(
                 kernel,
                 Mathf.CeilToInt((float)renderTexture.width / 8),
                 Mathf.CeilToInt((float)renderTexture.height / 8),

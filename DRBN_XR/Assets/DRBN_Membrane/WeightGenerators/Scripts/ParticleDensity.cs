@@ -1,7 +1,7 @@
 using UnityEngine;
 using Particles3D;
 
-namespace MarchingCubeSystem.V2
+namespace WeightGeneration
 {
     class ParticleDensity : WeightGenerator
     {

@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using MarchingCubeSystem.V2;
 
-namespace MarchingCubeSystem.V2
+namespace WeightPainting
 {
     public class WeightPainter : MonoBehaviour
     {

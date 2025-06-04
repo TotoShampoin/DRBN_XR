@@ -1,5 +1,5 @@
 using UnityEngine;
-using MarchingCubeSystem.V2;
+using WeightGeneration;
 
 public class Test_Generator : MonoBehaviour
 {

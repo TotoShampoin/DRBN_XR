@@ -1,4 +1,6 @@
 using UnityEngine;
+using WeightPainting;
+using WeightGeneration;
 
 namespace MarchingCubeSystem.V2
 {
