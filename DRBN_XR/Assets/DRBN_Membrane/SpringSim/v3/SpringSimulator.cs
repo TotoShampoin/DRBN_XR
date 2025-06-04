@@ -125,11 +125,14 @@ namespace SpringSim.V3
                         {
                             Vector3 start = masses[link.a].position;
                             Vector3 end = masses[link.b].position;
+                            var delta = end - start;
                             Vector3 mid = (start + end) / 2;
                             float length = Vector3.Distance(start, end);
                             return localToWorld *
                                 Matrix4x4.TRS(
-                                    mid, Quaternion.LookRotation(end - start), new Vector3(thickness / 4f, thickness / 4f, length) / 2f
+                                    mid,
+                                    delta == Vector3.zero ? Quaternion.identity : Quaternion.LookRotation(delta),
+                                    new Vector3(thickness / 4f, thickness / 4f, length) / 2f
                                 );
                         })
                         .ToArray()
@@ -334,8 +337,6 @@ namespace SpringSim.V3
             //         }
             //     }
             // }
-
-            Debug.Log($"Grabber at {localGrabberPos} grabbed {nearby.Length} masses");
         }
         public void Ungrab()
         {
