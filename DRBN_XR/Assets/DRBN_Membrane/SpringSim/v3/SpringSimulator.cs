@@ -6,6 +6,9 @@ using UnityEngine;
 
 namespace SpringSim.V3
 {
+    /// <summary>
+    /// Mass-spring physics simulation, with interop with Unity meshes. Also supports the ability for the user to drag the particles around, by means of the Grabber.
+    /// </summary>
     public class SpringSimulator : MonoBehaviour
     {
         [Header("Parameters")]
@@ -163,6 +166,12 @@ namespace SpringSim.V3
             triangles.Clear();
             anchors.Clear();
         }
+
+        /// <summary>
+        /// Converts a Unity3D mesh into a structure of mass-spring particles, with vertex merging.
+        /// </summary>
+        /// <param name="mesh"></param>
+        /// <param name="extractionEpsilon">The minimum distance between two masses, below which they will be merged</param>
         public void UseMesh(Mesh mesh, float extractionEpsilon = 0.005f)
         {
             Vector3? selectedPosition = selected.Count > 0 ? masses[closestSelectedIdx].position : null;
@@ -264,6 +273,10 @@ namespace SpringSim.V3
                 masses[closestSelectedIdx].position = selectedPosition.Value;
             }
         }
+        /// <summary>
+        /// Converts the current state of the simulation into a mesh
+        /// </summary>
+        /// <returns></returns>
         public Mesh ToMesh()
         {
             return new Mesh()

@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace Voxelization
 {
+    /// <summary>
+    /// Does exactly the same maths as Voxelizer, but on CPU side for debugging purpose
+    /// </summary>
     class VoxelizerCPU
     {
         public Mesh mesh;

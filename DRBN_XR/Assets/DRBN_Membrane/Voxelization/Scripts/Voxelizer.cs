@@ -2,7 +2,9 @@ using UnityEngine;
 
 namespace Voxelization
 {
-
+    /// <summary>
+    /// Transforms a 3D mesh into a Signed Distance Function
+    /// </summary>
     public class Voxelizer : MonoBehaviour
     {
         public ComputeShader voxelizer;

@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace MarchingCubing.V2
 {
+    /// <summary>
+    /// Transforms a 3D volume into a 3D mesh, which's surface is at a given threshold. The same as MarchingCubes, except it does zero memory reallocation.
+    /// </summary>
     public class MarchingCubesRef : MonoBehaviour
     {
         struct Triangle
