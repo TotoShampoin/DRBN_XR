@@ -467,7 +467,7 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 0
+  orthographic: 1
   orthographic size: 1
   m_Depth: -1
   m_CullingMask:
@@ -1285,7 +1285,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 93ecbbd93e2a4204e9e186acb6bd783c, type: 2}
+  - {fileID: 2100000, guid: 420913efd718f524583c868044946a95, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
