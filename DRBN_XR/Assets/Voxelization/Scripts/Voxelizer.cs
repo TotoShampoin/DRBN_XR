@@ -6,7 +6,6 @@ namespace Assets.Voxelization
     public class Voxelizer : MonoBehaviour
     {
         public ComputeShader voxelizer;
-        public Vector3Int threadGroups = new(8, 8, 8);
         [Range(0, 10)] public float multiplier = 1;
 
         public Bounds voxelBounds = new(Vector3.zero, Vector3.one);
@@ -15,6 +14,7 @@ namespace Assets.Voxelization
         ComputeBuffer normalsBuffer;
         ComputeBuffer trianglesBuffer;
 
+        static Vector3Int threadGroups = new(8, 8, 8);
         public void Voxelize(Mesh mesh, RenderTexture output, RenderTexture normals = null)
         {
             bool useNormals = normals != null;
@@ -33,6 +33,20 @@ namespace Assets.Voxelization
                     enableRandomWrite = true
                 };
                 normals.Create();
+            }
+
+            if (mesh.vertexCount == 0 || mesh.triangles.Length == 0)
+            {
+                var clearKernel = voxelizer.FindKernel("Clear");
+                voxelizer.SetVector("_OutputSize", new(output.width, output.height, output.volumeDepth));
+                voxelizer.SetTexture(clearKernel, "_Output", output);
+                voxelizer.SetTexture(clearKernel, "_DebugNormals", normals);
+                voxelizer.Dispatch(clearKernel,
+                    Mathf.CeilToInt((float)output.width / threadGroups.x),
+                    Mathf.CeilToInt((float)output.height / threadGroups.y),
+                    Mathf.CeilToInt((float)output.volumeDepth / threadGroups.z)
+                );
+                return;
             }
 
             AllocateBuffers(mesh);

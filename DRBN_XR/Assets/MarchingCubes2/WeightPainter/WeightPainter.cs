@@ -22,6 +22,9 @@ public class WeightPainter : MonoBehaviour
 
     void Start()
     {
+        paintTrigger.action.Enable();
+        eraseTrigger.action.Enable();
+
         paintTrigger.action.performed += _ => isUsingBrush = true;
         paintTrigger.action.canceled += _ => isUsingBrush = false;
         eraseTrigger.action.performed += _ => isErasing = true;

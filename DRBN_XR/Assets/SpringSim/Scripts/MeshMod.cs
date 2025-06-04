@@ -145,6 +145,30 @@ public class MeshMod
         ).ToArray();
     }
 
+    static public void PreventFlatBounds(ref Bounds bounds, float epsilon = 0.005f)
+    {
+
+        Vector3 size = bounds.size;
+        Vector3 min = bounds.min;
+        Vector3 max = bounds.max;
+        if (size.x < epsilon)
+        {
+            min.x -= 0.5f;
+            max.x += 0.5f;
+        }
+        if (size.y < epsilon)
+        {
+            min.y -= 0.5f;
+            max.y += 0.5f;
+        }
+        if (size.z < epsilon)
+        {
+            min.z -= 0.5f;
+            max.z += 0.5f;
+        }
+        bounds.SetMinMax(min, max);
+    }
+
     static private int FindOrAddVertex(List<Vector3> vertices, List<int> vertexCumul, Vector3 vertex, float epsilon = 0.0001f)
     {
         for (int i = 0; i < vertices.Count; i++)
@@ -162,4 +186,39 @@ public class MeshMod
         vertexCumul.Add(1);
         return vertices.Count - 1;
     }
+
+    // Möller–Trumbore ray-triangle intersection
+    static public bool RayTriangleIntersection(Vector3 rayOrigin, Vector3 rayDir, Vector3 v0, Vector3 v1, Vector3 v2, out Vector3 hit, out float t)
+    {
+        hit = Vector3.zero;
+        t = 0f;
+        const float EPSILON = 1e-6f;
+        Vector3 edge1 = v1 - v0;
+        Vector3 edge2 = v2 - v0;
+        Vector3 h = Vector3.Cross(rayDir, edge2);
+        float a = Vector3.Dot(edge1, h);
+        if (a > -EPSILON && a < EPSILON)
+            return false; // Ray is parallel to triangle
+
+        float f = 1.0f / a;
+        Vector3 s = rayOrigin - v0;
+        float u = f * Vector3.Dot(s, h);
+        if (u < 0.0f || u > 1.0f)
+            return false;
+
+        Vector3 q = Vector3.Cross(s, edge1);
+        float v = f * Vector3.Dot(rayDir, q);
+        if (v < 0.0f || u + v > 1.0f)
+            return false;
+
+        t = f * Vector3.Dot(edge2, q);
+        if (t > EPSILON)
+        {
+            hit = rayOrigin + rayDir * t;
+            return true;
+        }
+        else
+            return false;
+    }
+
 }

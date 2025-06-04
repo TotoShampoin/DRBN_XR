@@ -109,16 +109,16 @@ Shader "Instanced/VoxelMesh"
                 // Sample the 3D texture at this position
                 float value = tex3D(_Texture, normalizedPos).r;
 
-                // // COLOR MODE
-                // float t = saturate((value - _MinValue) / (_MaxValue - _MinValue));
-                // // Sample color ramp using t
-                // fixed4 rampColor = tex2D(_ColorRamp, float2(t, 0.5));
-                // fixed4 col = rampColor;
-                // col.a *= _Opacity;
-                // if(length(i.uv * 2 - 1) > 1) {
-                //     col.a = 0;
-                //     discard;
-                // }
+                // COLOR MODE
+                float t = saturate((value - _MinValue) / (_MaxValue - _MinValue));
+                // Sample color ramp using t
+                fixed4 rampColor = tex2D(_ColorRamp, float2(t, 0.5));
+                fixed4 col = rampColor;
+                col.a *= _Opacity;
+                if(length(i.uv * 2 - 1) > 1) {
+                    col.a = 0;
+                    discard;
+                }
 
                 // // SIZE MODE
                 // fixed4 col = lerp(fixed4(0,0,0,1), fixed4(1,1,1,1), (value - _MinValue) / (_MaxValue - _MinValue));
@@ -128,14 +128,14 @@ Shader "Instanced/VoxelMesh"
                 //     discard;
                 // }
 
-                // NORMAL MODE
-                fixed3 norm = normalize(tex3D(_Normals, normalizedPos).rgb);
-                // norm = norm * 0.5 + 0.5;
-                if(length(i.uv * 2 - 1) > abs(value)) {
-                    discard;
-                }
+                // // NORMAL MODE
+                // fixed3 norm = normalize(tex3D(_Normals, normalizedPos).rgb);
+                // // norm = norm * 0.5 + 0.5;
+                // if(length(i.uv * 2 - 1) > abs(value)) {
+                //     discard;
+                // }
 
-                fixed4 col = fixed4(norm, 1);
+                // fixed4 col = fixed4(norm, 1);
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
             }

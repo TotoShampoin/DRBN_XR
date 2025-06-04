@@ -252,7 +252,7 @@ namespace Assets.SpringSim.V2
                 Vector3 v1 = massObjects[tri.p2].Position;
                 Vector3 v2 = massObjects[tri.p3].Position;
 
-                if (RayTriangleIntersection(rayOrigin, rayDirection, v0, v1, v2, out Vector3 tempHit, out float dist))
+                if (MeshMod.RayTriangleIntersection(rayOrigin, rayDirection, v0, v1, v2, out Vector3 tempHit, out float dist))
                 {
                     if (dist < closestDist)
                     {
@@ -267,40 +267,6 @@ namespace Assets.SpringSim.V2
             {
                 grabber.Position = hitPoint;
             }
-        }
-
-        // Möller–Trumbore ray-triangle intersection
-        private static bool RayTriangleIntersection(Vector3 rayOrigin, Vector3 rayDir, Vector3 v0, Vector3 v1, Vector3 v2, out Vector3 hit, out float t)
-        {
-            hit = Vector3.zero;
-            t = 0f;
-            const float EPSILON = 1e-6f;
-            Vector3 edge1 = v1 - v0;
-            Vector3 edge2 = v2 - v0;
-            Vector3 h = Vector3.Cross(rayDir, edge2);
-            float a = Vector3.Dot(edge1, h);
-            if (a > -EPSILON && a < EPSILON)
-                return false; // Ray is parallel to triangle
-
-            float f = 1.0f / a;
-            Vector3 s = rayOrigin - v0;
-            float u = f * Vector3.Dot(s, h);
-            if (u < 0.0f || u > 1.0f)
-                return false;
-
-            Vector3 q = Vector3.Cross(s, edge1);
-            float v = f * Vector3.Dot(rayDir, q);
-            if (v < 0.0f || u + v > 1.0f)
-                return false;
-
-            t = f * Vector3.Dot(edge2, q);
-            if (t > EPSILON)
-            {
-                hit = rayOrigin + rayDir * t;
-                return true;
-            }
-            else
-                return false;
         }
 
         public void Grab()

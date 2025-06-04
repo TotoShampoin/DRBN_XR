@@ -1,9 +1,8 @@
 using UnityEngine;
 
-namespace Assets.SpringSim.V2
+namespace Assets.SpringSim.V3
 {
-
-    public class SpringControllerWithMeshGen : MonoBehaviour
+    public class SpringController : MonoBehaviour
     {
         public SpringSimulator simulator;
         public RenderTexture renderTexture;
@@ -12,7 +11,7 @@ namespace Assets.SpringSim.V2
         public WeightPainter weightPainter;
         public float meshExtractionEpsilon = 0.005f;
         public float meshExtractionDistance = 0.2f;
-        public MeshFromSprings meshFromSprings;
+        public V2.MeshFromSprings meshFromSprings;
         public float voxeliseRate = 15f;
         public bool constantRebuild = false;
 
@@ -113,9 +112,8 @@ namespace Assets.SpringSim.V2
                 meshFromSprings.Resolution = marchingCubes.resolution;
                 var oldMesh = simulator.ToMesh();
                 var newMesh = meshFromSprings.FetchMesh(oldMesh);
-                // newMesh = MeshFromSprings.CleanupMesh(newMesh, oldMesh, meshExtractionDistance);
+                newMesh = V2.MeshFromSprings.CleanupMesh(newMesh, oldMesh, meshExtractionDistance);
                 simulator.UseMesh(newMesh, meshExtractionEpsilon);
-                if (simulator.HasMarks) ConstantRebuild = false;
                 weightPainter.enabled = false;
                 voxeliseTimer = 0f;
             }
@@ -131,12 +129,12 @@ namespace Assets.SpringSim.V2
     }
 
 #if UNITY_EDITOR
-    [UnityEditor.CustomEditor(typeof(SpringControllerWithMeshGen))]
+    [UnityEditor.CustomEditor(typeof(SpringController))]
     public class SpringSimWithMeshGenControlEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
-            SpringControllerWithMeshGen control = (SpringControllerWithMeshGen)target;
+            SpringController control = (SpringController)target;
 
             DrawDefaultInspector();
 

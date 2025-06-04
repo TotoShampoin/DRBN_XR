@@ -1774,7 +1774,7 @@ MonoBehaviour:
   radius: 0.1
   weight: 1
   needsRegenerate: 0
-  clearAtStart: 1
+  clearAtStart: 0
 --- !u!1001 &4346094725728792469
 PrefabInstance:
   m_ObjectHideFlags: 0
