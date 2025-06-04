@@ -1,6 +1,6 @@
 using TMPro;
 using UnityEngine;
-using MarchingCubeSystem.V2;
+using MarchingCubing.V2;
 using WeightPainting;
 using WeightGeneration;
 

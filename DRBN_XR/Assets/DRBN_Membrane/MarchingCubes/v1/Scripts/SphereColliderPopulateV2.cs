@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace MarchingCubeSystem.V1
+namespace MarchingCubing.V1
 {
     public class SphereColliderPopulateV2 : MonoBehaviour
     {

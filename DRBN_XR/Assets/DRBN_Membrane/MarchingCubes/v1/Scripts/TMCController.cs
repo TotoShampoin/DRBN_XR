@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 
-namespace MarchingCubeSystem.V1
+namespace MarchingCubing.V1
 {
     public class TMCController : MonoBehaviour
     {

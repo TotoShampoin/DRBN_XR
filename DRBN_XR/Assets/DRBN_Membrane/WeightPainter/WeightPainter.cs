@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using MarchingCubeSystem.V2;
+using MarchingCubing.V2;
 
 namespace WeightPainting
 {

@@ -2,7 +2,7 @@ using UnityEngine;
 using WeightPainting;
 using WeightGeneration;
 
-namespace MarchingCubeSystem.V2
+namespace MarchingCubing.V2
 {
     public class Controller : MonoBehaviour
     {

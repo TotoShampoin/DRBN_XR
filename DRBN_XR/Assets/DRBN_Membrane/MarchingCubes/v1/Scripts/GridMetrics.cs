@@ -1,5 +1,5 @@
 ﻿
-namespace MarchingCubeSystem.V1
+namespace MarchingCubing.V1
 {
     public static class GridMetrics
     {

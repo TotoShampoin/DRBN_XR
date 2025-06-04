@@ -1,7 +1,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace MarchingCubeSystem.V1
+namespace MarchingCubing.V1
 {
     public class Gaussian : Smoothen
     {

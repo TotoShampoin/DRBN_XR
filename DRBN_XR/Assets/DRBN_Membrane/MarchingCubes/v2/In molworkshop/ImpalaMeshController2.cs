@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-using MarchingCubeSystem.V2;
+using MarchingCubing.V2;
 using WeightPainting;
 using WeightGeneration;
 

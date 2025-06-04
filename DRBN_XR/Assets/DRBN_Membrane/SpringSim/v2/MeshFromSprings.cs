@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Voxelization;
 using UnityEngine;
-using MarchingCubeSystem.V2;
+using MarchingCubing.V2;
 
 namespace SpringSim.V2
 {

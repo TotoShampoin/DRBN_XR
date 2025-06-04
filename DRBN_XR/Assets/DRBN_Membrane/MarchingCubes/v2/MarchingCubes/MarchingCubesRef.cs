@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MarchingCubeSystem.V2
+namespace MarchingCubing.V2
 {
     public class MarchingCubesRef : MonoBehaviour
     {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace MarchingCubeSystem.V2
+namespace MarchingCubing.V2
 {
     public class MarchingCubes : MonoBehaviour
     {
