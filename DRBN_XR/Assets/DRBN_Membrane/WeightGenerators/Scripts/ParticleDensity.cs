@@ -3,6 +3,9 @@ using Particles3D;
 
 namespace WeightGeneration
 {
+    /// <summary>
+    /// Takes a ParticleSimulator and returns its Density Function.
+    /// </summary>
     class ParticleDensity : WeightGenerator
     {
         public override bool ConstantlyRegenerate => true;

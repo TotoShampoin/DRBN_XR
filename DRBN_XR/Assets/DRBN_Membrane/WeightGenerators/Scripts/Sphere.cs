@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace WeightGeneration
 {
+    /// <summary>
+    /// f(x,y,z) = nroot[n](|x|^n + |y|^n + |z|^n)
+    /// </summary>
     class Sphere : WeightGenerator
     {
         public override bool ConstantlyRegenerate => false;

@@ -4,6 +4,9 @@ using MarchingCubing.V2;
 
 namespace WeightPainting
 {
+    /// <summary>
+    /// An object that observes another object, listens to user inputs, and paints in a volume (a 1-channel 3D texture) accordingly.
+    /// </summary>
     public class WeightPainter : MonoBehaviour
     {
         [SerializeField] ComputeShader weightPainterShader;
@@ -58,6 +61,10 @@ namespace WeightPainting
             }
         }
 
+        /// <summary>
+        /// Empties the volume
+        /// </summary>
+        /// <param name="renderTexture"></param>
         public void Clear(RenderTexture renderTexture)
         {
             var kernel = weightPainterShader.FindKernel("ClearWeightMap");
@@ -69,6 +76,11 @@ namespace WeightPainting
                 Mathf.CeilToInt((float)renderTexture.volumeDepth / 8));
         }
 
+        /// <summary>
+        /// Applies the weight painting. This is automatically called accordingly to the user's inputs.
+        /// </summary>
+        /// <param name="renderTexture"></param>
+        /// <param name="position"></param>
         public void Paint(RenderTexture renderTexture, Vector3 position)
         {
             var kernel = weightPainterShader.FindKernel("WeightPainter");

@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace WeightGeneration
 {
+    /// <summary>
+    /// Fast Improved 3D Perlin Noise, from https://www.shadertoy.com/view/slB3z3
+    /// </summary>
     class Noise : WeightGenerator
     {
         public override bool ConstantlyRegenerate => false;
