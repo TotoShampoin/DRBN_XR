@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Assets.Voxelization;
+using Voxelization;
 using UnityEngine;
 
-namespace Assets.SpringSim.V2
+namespace SpringSim.V2
 {
 
     public class MeshFromSprings : MonoBehaviour

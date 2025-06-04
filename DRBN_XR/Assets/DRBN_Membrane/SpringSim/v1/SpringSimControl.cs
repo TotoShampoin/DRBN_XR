@@ -1,7 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-namespace Assets.SpringSim.V1
+namespace SpringSim.V1
 {
 
     public class SpringSimControl : MonoBehaviour

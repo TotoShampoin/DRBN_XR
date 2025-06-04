@@ -1,4 +1,4 @@
-using Assets.SpringSim.V2;
+using SpringSim.V2;
 using UnityEditor;
 using UnityEngine;
 

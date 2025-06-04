@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Assets.SpringSim.V3
+namespace SpringSim.V3
 {
     public class SpringSimulator : MonoBehaviour
     {

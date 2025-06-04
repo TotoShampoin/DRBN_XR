@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Assets.SpringSim.V1
+namespace SpringSim.V1
 {
 
     [RequireComponent(

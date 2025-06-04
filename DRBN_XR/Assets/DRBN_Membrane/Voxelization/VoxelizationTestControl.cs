@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Assets.Voxelization
+namespace Voxelization
 {
 
     public class VoxelizationTestControl : MonoBehaviour

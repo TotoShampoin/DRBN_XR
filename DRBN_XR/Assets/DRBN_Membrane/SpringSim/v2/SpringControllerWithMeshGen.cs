@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Assets.SpringSim.V2
+namespace SpringSim.V2
 {
 
     public class SpringControllerWithMeshGen : MonoBehaviour

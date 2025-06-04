@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Assets.Voxelization;
+using Voxelization;
 
 public class Test_Voxelizer : MonoBehaviour
 {

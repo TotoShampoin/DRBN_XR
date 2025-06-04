@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
-namespace Assets.SpringSim.V2
+namespace SpringSim.V2
 {
     [RequireComponent(typeof(XRGrabInteractable), typeof(MeshRenderer))]
     public class Grabber : MonoBehaviour

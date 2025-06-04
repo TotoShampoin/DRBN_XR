@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace Assets.SpringSim.V2
+namespace SpringSim.V2
 {
     [RequireComponent(typeof(MeshRenderer), typeof(Rigidbody))]
     public class MassObject : MonoBehaviour

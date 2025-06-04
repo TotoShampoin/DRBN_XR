@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Assets.SpringSim.V2
+namespace SpringSim.V2
 {
 
     [RequireComponent(typeof(LineRenderer))]

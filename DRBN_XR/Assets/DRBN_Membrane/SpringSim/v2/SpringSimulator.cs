@@ -7,7 +7,7 @@ using System.Diagnostics;
 using TMPro;
 using UnityEngine.XR;
 
-namespace Assets.SpringSim.V2
+namespace SpringSim.V2
 {
     public struct SpringLink
     {
