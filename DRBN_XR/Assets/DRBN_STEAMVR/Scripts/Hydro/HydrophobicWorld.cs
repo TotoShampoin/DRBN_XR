@@ -105,6 +105,7 @@ public class HydrophobicWorld : MonoBehaviour
 
 	void OnDrawGizmos()
 	{
+	#if UnityEditor
 		var hydros = FindObjectsOfType<Hydrophobic>();
 		var hydroCount = hydros.Length;
 		var randPts = new List<Vector3>();
@@ -168,5 +169,6 @@ public class HydrophobicWorld : MonoBehaviour
 				Gizmos.DrawLine(h1.transform.position, h1.transform.position + f);
 			}
 		}
+	#endif
 	}
 }

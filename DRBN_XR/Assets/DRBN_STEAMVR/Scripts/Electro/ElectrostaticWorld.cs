@@ -97,6 +97,8 @@ public class ElectrostaticWorld : MonoBehaviour
 
 	void OnDrawGizmos()
 	{
+	#if UnityEditor
+
 		var electros = FindObjectsOfType<Electrostatic>();
 		var electroCount = electros.Length;
 		var randPts = new List<Vector3>();
@@ -159,5 +161,6 @@ public class ElectrostaticWorld : MonoBehaviour
 				Gizmos.DrawLine(c1.transform.position, c1.transform.position + f);
 			}
 		}
+	#endif
 	}
 }
