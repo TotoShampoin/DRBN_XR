@@ -26,9 +26,9 @@ namespace Voxelization
             ));
         }
 
-        public float Dot2(Vector3 v) => Vector3.Dot(v, v);
+        public static float Dot2(Vector3 v) => Vector3.Dot(v, v);
 
-        public float TriangleDistance(Vector3 position, (Vector3, Vector3, Vector3) triangle)
+        public static float TriangleDistance(Vector3 position, (Vector3, Vector3, Vector3) triangle)
         {
             Vector3 a = triangle.Item1;
             Vector3 b = triangle.Item2;
@@ -63,7 +63,7 @@ namespace Voxelization
             return Mathf.Sqrt(d);
         }
 
-        public Vector3 TriangleNormal(
+        public static Vector3 TriangleNormal(
             (Vector3, Vector3, Vector3) positions,
             (Vector3, Vector3, Vector3) normals,
             Vector3 mVertex)
@@ -90,7 +90,7 @@ namespace Voxelization
             return normal;
         }
 
-        public Vector3 ProjectionOnTriangle((Vector3, Vector3, Vector3) vertices, Vector3 position)
+        public static Vector3 ProjectionOnTriangle((Vector3, Vector3, Vector3) vertices, Vector3 position)
         {
             Vector3 v0 = vertices.Item1;
             Vector3 v1 = vertices.Item2;
@@ -102,7 +102,7 @@ namespace Voxelization
             return proj;
         }
 
-        public Vector3 ClosestOnTriangle((Vector3, Vector3, Vector3) triangle, Vector3 position)
+        public static Vector3 ClosestOnTriangle((Vector3, Vector3, Vector3) triangle, Vector3 position)
         {
             Vector3 a = triangle.Item1;
             Vector3 b = triangle.Item2;

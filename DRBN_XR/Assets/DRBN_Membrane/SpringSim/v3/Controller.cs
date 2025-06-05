@@ -157,6 +157,10 @@ namespace SpringSim.V3
                 {
                     control.GenerateMarchingCubes();
                 }
+                if (GUILayout.Button("External force test"))
+                {
+                    control.simulator.ApplyForce(Vector3.down * 500f, Vector3.up * 0.01f, 0.5f);
+                }
             }
         }
     }

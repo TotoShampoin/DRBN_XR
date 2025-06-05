@@ -39,6 +39,7 @@ namespace SpringSim.V3
         readonly List<(int p1, int p2, int p3)> triangles = new();
         readonly List<(int i, Vector3 o)> anchors = new();
         readonly List<(int i, float w, Vector3 o)> selected = new();
+        readonly List<(Vector3 f, Vector3 o, float r)> externalForces = new();
         int closestSelectedIdx = -1;
 
         public float ParticleMass { get => particleMass; set => particleMass = value; }
@@ -94,6 +95,19 @@ namespace SpringSim.V3
                 });
             }
             Parallel.ForEach(anchors, a => masses[a.i].AddForce(comeback * (a.o - masses[a.i].position)));
+            Parallel.ForEach(externalForces, ef =>
+            {
+                var (force, origin, radius) = ef;
+                var nearby = NearbyMasses(origin, radius).ToArray();
+                Debug.Log(origin);
+                Debug.Log(nearby.Count());
+                Parallel.ForEach(nearby, n =>
+                {
+                    var (m, d, i) = n;
+                    m.AddForce(force * (1 - d / radius));
+                });
+            });
+            externalForces.Clear();
             Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
         }
 
@@ -112,7 +126,7 @@ namespace SpringSim.V3
                         .Select(m =>
                             localToWorld *
                             Matrix4x4.TRS(
-                                m.position, Quaternion.LookRotation(m.normal), thickness * Vector3.one
+                                m.position, m.normal == Vector3.zero ? Quaternion.identity : Quaternion.LookRotation(m.normal), thickness * Vector3.one
                             ))
                         .ToArray()
                 );
@@ -160,6 +174,11 @@ namespace SpringSim.V3
             var springForce = k * (d - l0) * dir;
             var dampingForce = viscosity * (v2 - v1);
             return springForce + dampingForce;
+        }
+
+        public void ApplyForce(Vector3 force, Vector3 origin, float? radius = null)
+        {
+            externalForces.Add((force, origin, radius ?? selectionRadius));
         }
 
         public void Clear()
@@ -264,7 +283,7 @@ namespace SpringSim.V3
                     if (Mathf.Abs(p.x - bmin.x) < extractionEpsilon || Mathf.Abs(p.x - bmax.x) < extractionEpsilon) nbCommon++;
                     if (Mathf.Abs(p.y - bmin.y) < extractionEpsilon || Mathf.Abs(p.y - bmax.y) < extractionEpsilon) nbCommon++;
                     if (Mathf.Abs(p.z - bmin.z) < extractionEpsilon || Mathf.Abs(p.z - bmax.z) < extractionEpsilon) nbCommon++;
-                    if (nbCommon >= 2)
+                    if (nbCommon >= 1)
                         anchors.Add((i, p));
                 }
             }
@@ -343,6 +362,45 @@ namespace SpringSim.V3
             selected.Clear();
         }
 
+        public void Impact()
+        {
+            var grabberPosition = transform.TransformPoint(Vector3.Lerp(grabber.Position, vrController.position, 0.2f));
+            Vector3? closestPoint = ClosestToMesh(grabberPosition);
+            if (closestPoint.HasValue)
+            {
+                Vector3 direction = closestPoint.Value - grabberPosition;
+                if (direction != Vector3.zero)
+                {
+                    ApplyForce(selectionForce * direction.normalized, grabberPosition, selectionRadius);
+                }
+            }
+        }
+
+        public Vector3? ClosestToMesh(Vector3 at)
+        {
+            try
+            {
+                return triangles
+                    .AsParallel()
+                    .AsOrdered()
+                    .Select(t =>
+                    {
+                        var (p1, p2, p3) = t;
+                        Vector3 v0 = masses[p1].position;
+                        Vector3 v1 = masses[p2].position;
+                        Vector3 v2 = masses[p3].position;
+
+                        return Voxelization.VoxelizerCPU.ClosestOnTriangle((v0, v1, v2), at);
+                    })
+                    .AsSequential()
+                    .OrderBy(p => Vector3.Distance(p, at))
+                    .First();
+            }
+            catch
+            {
+                return null;
+            }
+        }
         public void GrabberOnMesh(Ray ray)
         {
             var rayOrigin = ray.origin;

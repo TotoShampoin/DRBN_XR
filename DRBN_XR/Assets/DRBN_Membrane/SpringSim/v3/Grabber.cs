@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace SpringSim.V3
@@ -15,6 +16,8 @@ namespace SpringSim.V3
         public Vector3 Position { get => transform.position; set => transform.position = value; }
         public Vector3 Delta => Position - origin;
 
+        public InputActionReference click;
+
         MeshRenderer mr;
         XRGrabInteractable xrgi;
 
@@ -24,6 +27,8 @@ namespace SpringSim.V3
         {
             mr = GetComponent<MeshRenderer>();
             xrgi = GetComponent<XRGrabInteractable>();
+
+            click.action.canceled += (_) => OnClickRelease();
         }
 
         Color transparent = new(0, 0, 0, 0);
@@ -47,6 +52,11 @@ namespace SpringSim.V3
         public void OnUngrab()
         {
             if (simulator) simulator.Ungrab();
+        }
+
+        public void OnClickRelease()
+        {
+            if (simulator) simulator.Impact();
         }
 
         public void OnHovered() => isHovered = true;
