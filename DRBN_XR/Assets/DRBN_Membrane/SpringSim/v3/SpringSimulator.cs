@@ -7,7 +7,7 @@ using UnityEngine;
 namespace SpringSim.V3
 {
     /// <summary>
-    /// Mass-spring physics simulation, with interop with Unity meshes. Also supports the ability for the user to drag the particles around, by means of the Grabber.
+    /// Standalone mass-spring physics simulation, with interop with Unity meshes. Also supports the ability for the user to drag the particles around, by means of the Grabber.
     /// </summary>
     public class SpringSimulator : MonoBehaviour
     {

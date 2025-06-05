@@ -14,6 +14,9 @@ namespace SpringSim.V1
         public float length;
     };
 
+    /// <summary>
+    /// Prototype of mass-spring simulator, using game-objects to store masses and springs. Obsolete, see V3.
+    /// </summary>
     public class SpringSim : MonoBehaviour
     {
         [Header("Properties")]

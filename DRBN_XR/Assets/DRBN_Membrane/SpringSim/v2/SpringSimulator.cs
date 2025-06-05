@@ -55,6 +55,9 @@ namespace SpringSim.V2
         Rescale,
     }
 
+    /// <summary>
+    /// Mass-spring simulator, reliant on Unity's physics engine and rigidbodies. Obsolete, look at V3.
+    /// </summary>
     public class SpringSimulator : MonoBehaviour
     {
         [Header("Properties")]
