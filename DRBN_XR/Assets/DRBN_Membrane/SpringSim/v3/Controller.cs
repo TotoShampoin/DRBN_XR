@@ -14,6 +14,7 @@ namespace SpringSim.V3
         public WeightPainter weightPainter;
         public float meshExtractionEpsilon = 0.005f;
         public float meshExtractionDistance = 0.2f;
+        public float meshExtractionVelocityInfluence = 0.5f;
         public V2.MeshFromSprings meshFromSprings;
         public float voxeliseRate = 15f;
         public bool constantRebuild = false;
@@ -30,6 +31,11 @@ namespace SpringSim.V3
         {
             get => meshExtractionDistance;
             set => meshExtractionDistance = value;
+        }
+        public float MeshExtractionVelocityInfluence
+        {
+            get => meshExtractionVelocityInfluence;
+            set => meshExtractionVelocityInfluence = value;
         }
         public float MarchingCubeResolution // if this is not a float, Unity's slider won't accept it -_-
         {
@@ -116,7 +122,8 @@ namespace SpringSim.V3
                 var oldMesh = simulator.ToMesh();
                 var newMesh = meshFromSprings.FetchMesh(oldMesh);
                 newMesh = V2.MeshFromSprings.CleanupMesh(newMesh, oldMesh, meshExtractionDistance);
-                simulator.UseMesh(newMesh, meshExtractionEpsilon);
+                // simulator.UseMesh(newMesh, meshExtractionEpsilon);
+                simulator.UseMeshRetainVelocities(newMesh, meshExtractionVelocityInfluence, meshExtractionEpsilon);
                 weightPainter.enabled = false;
                 voxeliseTimer = 0f;
             }

@@ -56,7 +56,7 @@ namespace SpringSim.V3
 
         public void OnClickRelease()
         {
-            if (simulator) simulator.Impact();
+            if (simulator && isHovered) simulator.Impact();
         }
 
         public void OnHovered() => isHovered = true;

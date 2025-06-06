@@ -337,6 +337,34 @@ namespace SpringSim.V3
             cachedMesh.normals = normals;
         }
 
+        public void UseMeshRetainVelocities(Mesh mesh, float searchRadius = 0.5f, float extractionEpsilon = 0.005f)
+        {
+            var oldMasses = masses.Select(m => new { m.position, m.velocity }).ToArray();
+            UseMesh(mesh, extractionEpsilon);
+            for (int i = 0; i < masses.Count; i++)
+            {
+                var newPos = masses[i].position;
+                var neighbors = oldMasses
+                    .Select(m => new { m.velocity, dist = Vector3.Distance(m.position, newPos) })
+                    .Where(x => x.dist < searchRadius)
+                    .ToArray();
+
+                if (neighbors.Length == 0)
+                    continue;
+
+                Vector3 interpolatedVelocity = Vector3.zero;
+                float totalWeight = 0f;
+                foreach (var n in neighbors)
+                {
+                    float w = n.dist / searchRadius;
+                    interpolatedVelocity += n.velocity * w;
+                    totalWeight += w;
+                }
+                masses[i].velocity = interpolatedVelocity / totalWeight;
+
+            }
+        }
+
         /// <summary>
         /// Converts the current state of the simulation into a mesh
         /// </summary>
@@ -500,7 +528,15 @@ namespace SpringSim.V3
         public void ApplyForce(float deltaTime)
         {
             velocity += force / mass * deltaTime;
+            if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
+            {
+                velocity = Vector3.zero;
+            }
             position += velocity * deltaTime;
+            if (float.IsNaN(position.x) || float.IsNaN(position.y) || float.IsNaN(position.z))
+            {
+                position = Vector3.zero;
+            }
             force = Vector3.zero;
         }
     };
