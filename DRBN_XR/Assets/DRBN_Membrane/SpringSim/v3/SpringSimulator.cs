@@ -108,7 +108,7 @@ namespace SpringSim.V3
             });
             externalForces.Clear();
             Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
-            UpdateMesh();
+            UpdateCachedMesh();
             RecalculateNormals();
         }
 
@@ -317,7 +317,7 @@ namespace SpringSim.V3
             }
         }
 
-        private void UpdateMesh()
+        private void UpdateCachedMesh()
         {
             cachedMesh = new Mesh()
             {
@@ -338,10 +338,21 @@ namespace SpringSim.V3
         }
 
         /// <summary>
-        /// Fetches the mass-spring state as a Unity3D mesh
+        /// Converts the current state of the simulation into a mesh
         /// </summary>
         /// <returns></returns>
-        public Mesh ToMesh() => cachedMesh;
+        public Mesh ToMesh()
+        {
+            return new Mesh()
+            {
+                vertices = masses.Select(m => m.position).ToArray(),
+                normals = masses.Select(m => m.normal).ToArray(),
+                triangles = triangles
+                    .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
+                    .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
+                    .ToArray(),
+            };
+        }
 
         public IEnumerable<(Mass m, float d, int i)> NearbyMasses(Vector3 position, float distance)
         {
