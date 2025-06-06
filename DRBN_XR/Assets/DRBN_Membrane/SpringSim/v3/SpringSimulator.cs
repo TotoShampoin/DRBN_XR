@@ -41,6 +41,7 @@ namespace SpringSim.V3
         readonly List<(int i, float w, Vector3 o)> selected = new();
         readonly List<(Vector3 f, Vector3 o, float r)> externalForces = new();
         int closestSelectedIdx = -1;
+        Mesh cachedMesh;
 
         public float ParticleMass { get => particleMass; set => particleMass = value; }
         public float SelectionForce { get => selectionForce; set => selectionForce = value; }
@@ -99,8 +100,6 @@ namespace SpringSim.V3
             {
                 var (force, origin, radius) = ef;
                 var nearby = NearbyMasses(origin, radius).ToArray();
-                Debug.Log(origin);
-                Debug.Log(nearby.Count());
                 Parallel.ForEach(nearby, n =>
                 {
                     var (m, d, i) = n;
@@ -109,13 +108,15 @@ namespace SpringSim.V3
             });
             externalForces.Clear();
             Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
+            UpdateMesh();
+            RecalculateNormals();
         }
 
         public void Render()
         {
             Matrix4x4 localToWorld = transform.localToWorldMatrix;
             if (showMesh)
-                Graphics.DrawMesh(ToMesh(), localToWorld, triangleMaterial, 0);
+                Graphics.DrawMesh(cachedMesh, localToWorld, triangleMaterial, 0);
             else
             {
                 Graphics.DrawMeshInstanced(
@@ -176,9 +177,17 @@ namespace SpringSim.V3
             return springForce + dampingForce;
         }
 
+        /// <summary>
+        /// Adds a localised force that will be applied to the particles on the next physics update. The coordinate space is the global world space.
+        /// </summary>
+        /// <param name="force">Direction and magnitude of the force</param>
+        /// <param name="origin">Where the force comes from</param>
+        /// <param name="radius">The radius of influence from the origin</param>
         public void ApplyForce(Vector3 force, Vector3 origin, float? radius = null)
         {
-            externalForces.Add((force, origin, radius ?? selectionRadius));
+            var F = transform.InverseTransformDirection(force);
+            var O = transform.InverseTransformPoint(origin);
+            externalForces.Add((F, O, radius ?? selectionRadius));
         }
 
         public void Clear()
@@ -187,6 +196,18 @@ namespace SpringSim.V3
             links.Clear();
             triangles.Clear();
             anchors.Clear();
+        }
+
+        /// <summary>
+        /// Uses the converted mesh's normals for the masses' normals
+        /// </summary>
+        void RecalculateNormals()
+        {
+            var normals = cachedMesh.normals;
+            Parallel.For(0, normals.Length, i =>
+            {
+                masses[i].normal = normals[i];
+            });
         }
 
         /// <summary>
@@ -295,22 +316,32 @@ namespace SpringSim.V3
                 masses[closestSelectedIdx].position = selectedPosition.Value;
             }
         }
-        /// <summary>
-        /// Converts the current state of the simulation into a mesh
-        /// </summary>
-        /// <returns></returns>
-        public Mesh ToMesh()
+
+        private void UpdateMesh()
         {
-            return new Mesh()
+            cachedMesh = new Mesh()
             {
                 vertices = masses.Select(m => m.position).ToArray(),
-                normals = masses.Select(m => m.normal).ToArray(),
                 triangles = triangles
                     .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
                     .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
                     .ToArray(),
             };
+            cachedMesh.RecalculateNormals();
+            cachedMesh.RecalculateBounds();
+            var normals = cachedMesh.normals;
+            Parallel.For(0, normals.Length, i =>
+            {
+                normals[i] = normals[i] * Mathf.Sign(Vector3.Dot(masses[i].normal, normals[i]));
+            });
+            cachedMesh.normals = normals;
         }
+
+        /// <summary>
+        /// Fetches the mass-spring state as a Unity3D mesh
+        /// </summary>
+        /// <returns></returns>
+        public Mesh ToMesh() => cachedMesh;
 
         public IEnumerable<(Mass m, float d, int i)> NearbyMasses(Vector3 position, float distance)
         {
@@ -364,19 +395,19 @@ namespace SpringSim.V3
 
         public void Impact()
         {
-            var grabberPosition = transform.TransformPoint(Vector3.Lerp(grabber.Position, vrController.position, 0.2f));
-            Vector3? closestPoint = ClosestToMesh(grabberPosition);
+            var grabberPosition = grabber.Position;
+            var closestPoint = ClosestToMesh(grabberPosition);
             if (closestPoint.HasValue)
             {
-                Vector3 direction = closestPoint.Value - grabberPosition;
+                Vector3 direction = closestPoint.Value.position - grabberPosition;
                 if (direction != Vector3.zero)
                 {
-                    ApplyForce(selectionForce * direction.normalized, grabberPosition, selectionRadius);
+                    ApplyForce(selectionForce * -closestPoint.Value.normal, grabberPosition, selectionRadius);
                 }
             }
         }
 
-        public Vector3? ClosestToMesh(Vector3 at)
+        public (Vector3 position, Vector3 normal)? ClosestToMesh(Vector3 at)
         {
             try
             {
@@ -389,11 +420,19 @@ namespace SpringSim.V3
                         Vector3 v0 = masses[p1].position;
                         Vector3 v1 = masses[p2].position;
                         Vector3 v2 = masses[p3].position;
+                        Vector3 n0 = masses[p1].normal;
+                        Vector3 n1 = masses[p2].normal;
+                        Vector3 n2 = masses[p3].normal;
+                        var vertices = (v0, v1, v2);
+                        var normals = (n0, n1, n2);
 
-                        return Voxelization.VoxelizerCPU.ClosestOnTriangle((v0, v1, v2), at);
+                        var position = Voxelization.VoxelizerCPU.ClosestOnTriangle(vertices, at);
+                        var normal = Voxelization.VoxelizerCPU.TriangleNormal(vertices, normals, position);
+
+                        return (position, normal);
                     })
                     .AsSequential()
-                    .OrderBy(p => Vector3.Distance(p, at))
+                    .OrderBy(v => Vector3.Distance(v.position, at))
                     .First();
             }
             catch
