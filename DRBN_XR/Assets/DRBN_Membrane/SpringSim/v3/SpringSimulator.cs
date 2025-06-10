@@ -19,6 +19,7 @@ namespace SpringSim.V3
         public float viscosity = 2f;
         public float thickness = 0.05f;
         public float comeback = 1500f;
+        public float drag = 0f;
         public bool useAchors = false;
 
         [Header("Interaction")]
@@ -50,6 +51,7 @@ namespace SpringSim.V3
         public float Viscosity { get => viscosity; set => viscosity = value; }
         public float Thickness { get => thickness; set => thickness = value; }
         public float Comeback { get => comeback; set => comeback = value; }
+        public float Drag { get => drag; set => drag = value; }
         public bool ShowMesh { get => showMesh; set => showMesh = value; }
         public bool UseAchors { get => useAchors; set => useAchors = value; }
         public bool HasMasses => masses.Count > 0;
@@ -90,7 +92,16 @@ namespace SpringSim.V3
                     var (idx, weight, origin) = s;
                     var sel = masses[idx];
                     // var delta = grabberPosLocal - sel.position;
-                    lock (sel) { sel.AddForce(selectionForce * weight * delta); }
+                    lock (sel)
+                    {
+                        sel.AddForce(selectionForce * weight * delta);
+
+                        // hack: selected masses shouldn't have drag force
+                        if (sel.velocity == Vector3.zero) return;
+                        var dir = Vector3.Normalize(sel.velocity);
+                        var mag = Vector3.Magnitude(sel.velocity);
+                        sel.AddForce(mag * mag * drag * weight * dir);
+                    }
                     // var selDelta = sel.position - origin;
                     // lock (sel) { sel.AddForce(selectionForce * weight * (delta - selDelta)); }
                 });
@@ -107,6 +118,13 @@ namespace SpringSim.V3
                 });
             });
             externalForces.Clear();
+            Parallel.ForEach(masses, m =>
+            {
+                if (m.velocity == Vector3.zero) return;
+                var dir = Vector3.Normalize(m.velocity);
+                var mag = Vector3.Magnitude(m.velocity);
+                m.AddForce(-mag * mag * drag * dir);
+            });
             Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
             UpdateCachedMesh();
             RecalculateNormals();

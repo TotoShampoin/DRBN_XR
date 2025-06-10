@@ -2,6 +2,7 @@ using UnityEngine;
 using MarchingCubing.V2;
 using WeightPainting;
 using WeightGeneration;
+using System;
 
 namespace SpringSim.V3
 {
@@ -127,6 +128,23 @@ namespace SpringSim.V3
                 weightPainter.enabled = false;
                 voxeliseTimer = 0f;
             }
+        }
+
+        public void SaveMesh()
+        {
+            Mesh mesh;
+            if (simulator.HasMasses)
+            {
+                mesh = simulator.ToMesh();
+            }
+            else
+            {
+                marchingCubes.ClearMesh();
+                mesh = marchingCubes.GenerateMesh(renderTexture,
+                    weightGenerator.Threshold);
+            }
+            var datetime = DateTime.Now.ToString().Replace("/", "-").Replace(":", "-").Replace(" ", "_");
+            MeshLoader.SaveMesh(mesh, $"Assets/DRBN_Membrane/_Save/{datetime}.asset");
         }
 
         public void Quit()
