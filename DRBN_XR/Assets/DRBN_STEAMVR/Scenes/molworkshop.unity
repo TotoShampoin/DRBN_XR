@@ -3878,7 +3878,7 @@ PrefabInstance:
     - target: {fileID: 6237536967775778296, guid: 86d4995f59764af4db7ca8fdcc829e1d,
         type: 3}
       propertyPath: m_Name
-      value: SpringSimMolview2
+      value: Membrane
       objectReference: {fileID: 0}
     - target: {fileID: 6288421184735328979, guid: 86d4995f59764af4db7ca8fdcc829e1d,
         type: 3}
