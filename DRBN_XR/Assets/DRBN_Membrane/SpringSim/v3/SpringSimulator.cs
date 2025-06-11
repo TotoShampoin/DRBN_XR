@@ -20,7 +20,10 @@ namespace SpringSim.V3
         public float thickness = 0.05f;
         public float comeback = 1500f;
         public float drag = 0f;
+        public float rigidityBase = 2f;
+        public float maxRigidity = 5f;
         public bool useAchors = false;
+        public float fps = 120f;
 
         [Header("Interaction")]
         public Grabber grabber;
@@ -52,6 +55,17 @@ namespace SpringSim.V3
         public float Thickness { get => thickness; set => thickness = value; }
         public float Comeback { get => comeback; set => comeback = value; }
         public float Drag { get => drag; set => drag = value; }
+        public float RigidityBase { get => rigidityBase; set => rigidityBase = value; }
+        public float MaxRigidity { get => maxRigidity; set => maxRigidity = value; }
+        public float FPS
+        {
+            get => fps;
+            set
+            {
+                fps = value;
+                // Time.fixedDeltaTime = 1 / value;
+            }
+        }
         public bool ShowMesh { get => showMesh; set => showMesh = value; }
         public bool UseAchors { get => useAchors; set => useAchors = value; }
         public bool HasMasses => masses.Count > 0;
@@ -59,11 +73,11 @@ namespace SpringSim.V3
         void Start()
         {
             grabber.simulator = this;
-            Time.fixedDeltaTime = 0.01f;
         }
         void Update()
         {
             Render();
+            Time.fixedDeltaTime = 1 / fps;
         }
 
         void FixedUpdate()
@@ -185,7 +199,7 @@ namespace SpringSim.V3
             var r = (r1 + r2) / 2f;
 
             var l0 = link.length;
-            var k = stiffness * Mathf.Exp(r);
+            var k = stiffness * Mathf.Pow(rigidityBase, r);
             var d = Vector3.Distance(p1, p2);
 
             if (d == 0) return Vector3.zero;
@@ -337,22 +351,23 @@ namespace SpringSim.V3
 
         private void UpdateCachedMesh()
         {
-            cachedMesh = new Mesh()
-            {
-                vertices = masses.Select(m => m.position).ToArray(),
-                triangles = triangles
-                    .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
-                    .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
-                    .ToArray(),
-            };
-            cachedMesh.RecalculateNormals();
-            cachedMesh.RecalculateBounds();
-            var normals = cachedMesh.normals;
-            Parallel.For(0, normals.Length, i =>
-            {
-                normals[i] = normals[i] * Mathf.Sign(Vector3.Dot(masses[i].normal, normals[i]));
-            });
-            cachedMesh.normals = normals;
+            // cachedMesh = new Mesh()
+            // {
+            //     vertices = masses.Select(m => m.position).ToArray(),
+            //     triangles = triangles
+            //         .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
+            //         .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
+            //         .ToArray(),
+            // };
+            // cachedMesh.RecalculateNormals();
+            // cachedMesh.RecalculateBounds();
+            // var normals = cachedMesh.normals;
+            // Parallel.For(0, normals.Length, i =>
+            // {
+            //     normals[i] = normals[i] * Mathf.Sign(Vector3.Dot(masses[i].normal, normals[i]));
+            // });
+            // cachedMesh.normals = normals;
+            cachedMesh = ToMesh();
         }
 
         public void UseMeshRetainVelocities(Mesh mesh, float searchRadius = 0.5f, float extractionEpsilon = 0.005f)
@@ -389,15 +404,38 @@ namespace SpringSim.V3
         /// <returns></returns>
         public Mesh ToMesh()
         {
-            return new Mesh()
+            var mesh = new Mesh()
             {
                 vertices = masses.Select(m => m.position).ToArray(),
-                normals = masses.Select(m => m.normal).ToArray(),
+                colors = masses
+                    .Select(m =>
+                    {
+                        if (m.rigidity > 0)
+                            return Color.Lerp(Color.white, new Color(0f, 0.5f, 1f), 2f * Mathf.Clamp01(m.rigidity / maxRigidity));
+                        else if (m.rigidity < 0)
+                            return Color.Lerp(Color.white, new Color(1f, 0.5f, 0f), 2f * Mathf.Clamp01(-m.rigidity / maxRigidity));
+                        else
+                            return Color.white;
+                        // var sel = selected.FirstOrDefault(s => s.i == masses.IndexOf(m));
+                        // if (sel != default)
+                        //     return Color.Lerp(Color.white, new Color(1f, 0f, 1f), Mathf.Clamp01(sel.w));
+                        // return Color.white;
+                    })
+                    .ToArray(),
                 triangles = triangles
                     .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
                     .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
                     .ToArray(),
             };
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            var normals = mesh.normals;
+            Parallel.For(0, normals.Length, i =>
+            {
+                normals[i] = normals[i] * Mathf.Sign(Vector3.Dot(masses[i].normal, normals[i]));
+            });
+            mesh.normals = normals;
+            return mesh;
         }
 
         public IEnumerable<(Mass m, float d, int i)> NearbyMasses(Vector3 position, float distance)
@@ -462,6 +500,11 @@ namespace SpringSim.V3
                     ApplyForce(selectionForce * -closestPoint.Value.normal, grabberPosition, selectionRadius);
                 }
             }
+        }
+
+        public void ChangeRigidity(float value)
+        {
+            Parallel.ForEach(selected, sel => masses[sel.i].rigidity = Mathf.Min(masses[sel.i].rigidity + value * sel.w, maxRigidity));
         }
 
         public (Vector3 position, Vector3 normal)? ClosestToMesh(Vector3 at)

@@ -25,6 +25,7 @@ Shader "Custom/DoubleFaced"
         {
             float2 uv_MainTex;
             float facing : VFACE;
+            float4 color : COLOR;
         };
 
         half _Glossiness;
@@ -43,7 +44,7 @@ Shader "Custom/DoubleFaced"
         {
             fixed4 color = IN.facing > 0 ? _ColorFront : _ColorBack;
             fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * color;
-            o.Albedo = c.rgb;
+            o.Albedo = c.rgb * IN.color.rgb;
             o.Metallic = _Metallic;
             o.Smoothness = _Glossiness;
             o.Alpha = c.a;

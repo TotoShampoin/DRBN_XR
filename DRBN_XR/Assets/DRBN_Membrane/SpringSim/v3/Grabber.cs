@@ -17,6 +17,7 @@ namespace SpringSim.V3
         public Vector3 Delta => Position - origin;
 
         public InputActionReference click;
+        public InputActionReference joystick;
 
         MeshRenderer mr;
         XRGrabInteractable xrgi;
@@ -27,6 +28,9 @@ namespace SpringSim.V3
         {
             mr = GetComponent<MeshRenderer>();
             xrgi = GetComponent<XRGrabInteractable>();
+
+            click.action.Enable();
+            joystick.action.Enable();
 
             click.action.canceled += (_) => OnClickRelease();
         }
@@ -40,6 +44,15 @@ namespace SpringSim.V3
                 mr.material.color = Color.red;
             else
                 mr.material.color = transparent;
+
+            if (joystick != null && joystick.action.enabled && IsGrabbed)
+            {
+                float yValue = joystick.action.ReadValue<Vector2>().y;
+                if (Mathf.Abs(yValue) > 0.01f)
+                {
+                    OnChange(yValue);
+                }
+            }
         }
 
         public void ResetOrigin() => origin = Position;
@@ -61,5 +74,6 @@ namespace SpringSim.V3
 
         public void OnHovered() => isHovered = true;
         public void OnUnhovered() => isHovered = IsGrabbed;
+        public void OnChange(float yValue) => simulator.ChangeRigidity(yValue * Time.deltaTime);
     }
 }
