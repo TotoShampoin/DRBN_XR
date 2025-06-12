@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Voxelization;
 using UnityEngine;
 using MarchingCubing.V2;
+using Unity.Profiling;
 
 namespace SpringSim.V2
 {
@@ -19,6 +20,9 @@ namespace SpringSim.V2
 
         public int Resolution { get => marchingCubes.resolution; set => marchingCubes.resolution = value; }
 
+        static readonly ProfilerMarker fetchMarker = new("Membrane.MeshFromSprings.FetchMesh");
+        static readonly ProfilerMarker cleanupMarker = new("Membrane.MeshFromSprings.CleanupMesh");
+
         void Start()
         {
             meshFilter = GetComponent<MeshFilter>();
@@ -32,18 +36,24 @@ namespace SpringSim.V2
         }
         public Mesh FetchMesh(Mesh mesh)
         {
-            var vertices = mesh.vertices;
-            Parallel.For(0, vertices.Length, (i) => vertices[i] *= 0.5f);
-            mesh.vertices = vertices;
-            mesh.RecalculateBounds();
-            voxelizer.Voxelize(mesh, renderTexture, normalTexture);
-            return marchingCubes.GenerateMesh(renderTexture, 0);
+            using (fetchMarker.Auto())
+            {
+                var vertices = mesh.vertices;
+                Parallel.For(0, vertices.Length, (i) => vertices[i] *= 0.5f);
+                mesh.vertices = vertices;
+                mesh.RecalculateBounds();
+                voxelizer.Voxelize(mesh, renderTexture, normalTexture);
+                return marchingCubes.GenerateMesh(renderTexture, 0);
+            }
         }
 
         static public Mesh CleanupMesh(Mesh toCleanUp, Mesh oldMesh, float tolerance = 0.2f)
         {
-            // return CleanupMeshByVertex(toCleanUp, oldMesh, tolerance);
-            return CleanupMeshByCluster(toCleanUp, oldMesh, tolerance);
+            using (cleanupMarker.Auto())
+            {
+                // return CleanupMeshByVertex(toCleanUp, oldMesh, tolerance);
+                return CleanupMeshByCluster(toCleanUp, oldMesh, tolerance);
+            }
         }
 
         static public Mesh CleanupMeshByVertex(Mesh toCleanUp, Mesh oldMesh, float tolerance)

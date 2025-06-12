@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace SpringSim.V3
@@ -69,6 +70,13 @@ namespace SpringSim.V3
         public bool ShowMesh { get => showMesh; set => showMesh = value; }
         public bool UseAchors { get => useAchors; set => useAchors = value; }
         public bool HasMasses => masses.Count > 0;
+
+        static readonly ProfilerMarker normalMarker = new("Membrane.SpringSimulator.NormalCalculation");
+        static readonly ProfilerMarker useMeshMarker = new("Membrane.SpringSimulator.UseMesh");
+        static readonly ProfilerMarker useMeshVeloMarker = new("Membrane.SpringSimulator.UseMeshRetainVelocities");
+        static readonly ProfilerMarker meshCreationMarker = new("Membrane.SpringSimulator.ToMesh");
+        static readonly ProfilerMarker umvSearchNeighborsMarker = new("Membrane.SpringSimulator.UseMeshRetainVelocities.SearchNeighbors");
+        static readonly ProfilerMarker umvCalcVeloMarker = new("Membrane.SpringSimulator.UseMeshRetainVelocities.CalculateVelocities");
 
         void Start()
         {
@@ -140,8 +148,11 @@ namespace SpringSim.V3
                 m.AddForce(-mag * mag * drag * dir);
             });
             Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
-            UpdateCachedMesh();
-            RecalculateNormals();
+            using (normalMarker.Auto())
+            {
+                UpdateCachedMesh();
+                RecalculateNormals();
+            }
         }
 
         public void Render()
@@ -249,103 +260,106 @@ namespace SpringSim.V3
         /// <param name="extractionEpsilon">The minimum distance between two masses, below which they will be merged</param>
         public void UseMesh(Mesh mesh, float extractionEpsilon = 0.005f)
         {
-            Vector3? selectedPosition = selected.Count > 0 ? masses[closestSelectedIdx].position : null;
-
-            Clear();
-            Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
-            var dvertices = dmesh.vertices.Zip(dmesh.normals, (position, normal) => (position, normal));
-            var dtriangles = dmesh.triangles;
-            var bounds = dmesh.bounds;
-            MeshMod.PreventFlatBounds(ref bounds, extractionEpsilon * 2);
-
-            // Fill meshes
-            masses.AddRange(dvertices
-                .AsParallel()
-                .AsOrdered()
-                .Select(v => new Mass() { position = v.position, normal = v.normal })
-                .ToArray());
-
-            // Fill links
-            var newLinks = new ConcurrentDictionary<uint, SpringLink>();
-            static uint HashKey(int a, int b)
+            using (useMeshMarker.Auto())
             {
-                if (a > b) { (a, b) = (b, a); }
-                return (uint)((a + b) * (a + b + 1) / 2 + b);
-            }
-            void TryAddToLinks(int i0, int i1) => newLinks.TryAdd(HashKey(i0, i1), new() { a = i0, b = i1, length = Vector3.Distance(masses[i0].position, masses[i1].position) });
-            Parallel.For(0, dtriangles.Length / 3, i =>
-            {
-                var i0 = dtriangles[i * 3 + 0];
-                var i1 = dtriangles[i * 3 + 1];
-                var i2 = dtriangles[i * 3 + 2];
-                TryAddToLinks(i0, i1);
-                TryAddToLinks(i1, i2);
-                TryAddToLinks(i2, i0);
-            });
-            links.AddRange(newLinks.Values);
+                Vector3? selectedPosition = selected.Count > 0 ? masses[closestSelectedIdx].position : null;
 
-            // Fill triangles
-            var newTriangles = new (int, int, int)[dtriangles.Length / 3];
-            var indexToLink = new Dictionary<(int, int), int>();
-            int linkIdx = 0;
-            foreach (var link in links)
-            {
-                int a = link.a;
-                int b = link.b;
-                if (a > b) (a, b) = (b, a);
-                indexToLink[(a, b)] = linkIdx++;
-            }
-            Parallel.For(0, dtriangles.Length / 3, i =>
-            {
-                int i0 = dtriangles[i * 3 + 0];
-                int i1 = dtriangles[i * 3 + 1];
-                int i2 = dtriangles[i * 3 + 2];
-                var linkA = links[indexToLink[(Mathf.Min(i0, i1), Mathf.Max(i0, i1))]];
-                var linkB = links[indexToLink[(Mathf.Min(i1, i2), Mathf.Max(i1, i2))]];
-                var linkC = links[indexToLink[(Mathf.Min(i2, i0), Mathf.Max(i2, i0))]];
+                Clear();
+                Mesh dmesh = MeshMod.DeduplicateVertices(mesh, extractionEpsilon);
+                var dvertices = dmesh.vertices.Zip(dmesh.normals, (position, normal) => (position, normal));
+                var dtriangles = dmesh.triangles;
+                var bounds = dmesh.bounds;
+                MeshMod.PreventFlatBounds(ref bounds, extractionEpsilon * 2);
 
-                int[] endpoints = { linkA.a, linkA.b, linkB.a, linkB.b, linkC.a, linkC.b };
-                var counts = endpoints.GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count());
-                var verts = counts.Keys.ToArray();
+                // Fill meshes
+                masses.AddRange(dvertices
+                    .AsParallel()
+                    .AsOrdered()
+                    .Select(v => new Mass() { position = v.position, normal = v.normal })
+                    .ToArray());
 
-                if (verts.Length != 3) return;
-
-                int v0 = linkA.a;
-                int v1 = linkA.b;
-                int v2 = verts.First(x => x != v0 && x != v1);
-
-                Vector3 p0 = masses[v0].position;
-                Vector3 p1 = masses[v1].position;
-                Vector3 p2 = masses[v2].position;
-                Vector3 normal = Vector3.Cross(p1 - p0, p2 - p0);
-                if (Vector3.Dot(normal, Vector3.up) < 0) (v1, v2) = (v2, v1);
-
-                newTriangles[i] = (v0, v1, v2);
-            });
-            triangles.AddRange(newTriangles.Where(t => t != default));
-
-            if (useAchors)
-            {
-                var bmin = bounds.min;
-                var bmax = bounds.max;
-                for (int i = 0; i < masses.Count; i++)
+                // Fill links
+                var newLinks = new ConcurrentDictionary<uint, SpringLink>();
+                static uint HashKey(int a, int b)
                 {
-                    var mass = masses[i];
-                    var p = mass.position;
-                    int nbCommon = 0;
-                    if (Mathf.Abs(p.x - bmin.x) < extractionEpsilon || Mathf.Abs(p.x - bmax.x) < extractionEpsilon) nbCommon++;
-                    if (Mathf.Abs(p.y - bmin.y) < extractionEpsilon || Mathf.Abs(p.y - bmax.y) < extractionEpsilon) nbCommon++;
-                    if (Mathf.Abs(p.z - bmin.z) < extractionEpsilon || Mathf.Abs(p.z - bmax.z) < extractionEpsilon) nbCommon++;
-                    if (nbCommon >= 1)
-                        anchors.Add((i, p));
+                    if (a > b) { (a, b) = (b, a); }
+                    return (uint)((a + b) * (a + b + 1) / 2 + b);
                 }
-            }
+                void TryAddToLinks(int i0, int i1) => newLinks.TryAdd(HashKey(i0, i1), new() { a = i0, b = i1, length = Vector3.Distance(masses[i0].position, masses[i1].position) });
+                Parallel.For(0, dtriangles.Length / 3, i =>
+                {
+                    var i0 = dtriangles[i * 3 + 0];
+                    var i1 = dtriangles[i * 3 + 1];
+                    var i2 = dtriangles[i * 3 + 2];
+                    TryAddToLinks(i0, i1);
+                    TryAddToLinks(i1, i2);
+                    TryAddToLinks(i2, i0);
+                });
+                links.AddRange(newLinks.Values);
 
-            if (selectedPosition.HasValue)
-            {
-                grabber.ResetOrigin();
-                GrabAt(selectedPosition.Value);
-                masses[closestSelectedIdx].position = selectedPosition.Value;
+                // Fill triangles
+                var newTriangles = new (int, int, int)[dtriangles.Length / 3];
+                var indexToLink = new Dictionary<(int, int), int>();
+                int linkIdx = 0;
+                foreach (var link in links)
+                {
+                    int a = link.a;
+                    int b = link.b;
+                    if (a > b) (a, b) = (b, a);
+                    indexToLink[(a, b)] = linkIdx++;
+                }
+                Parallel.For(0, dtriangles.Length / 3, i =>
+                {
+                    int i0 = dtriangles[i * 3 + 0];
+                    int i1 = dtriangles[i * 3 + 1];
+                    int i2 = dtriangles[i * 3 + 2];
+                    var linkA = links[indexToLink[(Mathf.Min(i0, i1), Mathf.Max(i0, i1))]];
+                    var linkB = links[indexToLink[(Mathf.Min(i1, i2), Mathf.Max(i1, i2))]];
+                    var linkC = links[indexToLink[(Mathf.Min(i2, i0), Mathf.Max(i2, i0))]];
+
+                    int[] endpoints = { linkA.a, linkA.b, linkB.a, linkB.b, linkC.a, linkC.b };
+                    var counts = endpoints.GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count());
+                    var verts = counts.Keys.ToArray();
+
+                    if (verts.Length != 3) return;
+
+                    int v0 = linkA.a;
+                    int v1 = linkA.b;
+                    int v2 = verts.First(x => x != v0 && x != v1);
+
+                    Vector3 p0 = masses[v0].position;
+                    Vector3 p1 = masses[v1].position;
+                    Vector3 p2 = masses[v2].position;
+                    Vector3 normal = Vector3.Cross(p1 - p0, p2 - p0);
+                    if (Vector3.Dot(normal, Vector3.up) < 0) (v1, v2) = (v2, v1);
+
+                    newTriangles[i] = (v0, v1, v2);
+                });
+                triangles.AddRange(newTriangles.Where(t => t != default));
+
+                if (useAchors)
+                {
+                    var bmin = bounds.min;
+                    var bmax = bounds.max;
+                    for (int i = 0; i < masses.Count; i++)
+                    {
+                        var mass = masses[i];
+                        var p = mass.position;
+                        int nbCommon = 0;
+                        if (Mathf.Abs(p.x - bmin.x) < extractionEpsilon || Mathf.Abs(p.x - bmax.x) < extractionEpsilon) nbCommon++;
+                        if (Mathf.Abs(p.y - bmin.y) < extractionEpsilon || Mathf.Abs(p.y - bmax.y) < extractionEpsilon) nbCommon++;
+                        if (Mathf.Abs(p.z - bmin.z) < extractionEpsilon || Mathf.Abs(p.z - bmax.z) < extractionEpsilon) nbCommon++;
+                        if (nbCommon >= 1)
+                            anchors.Add((i, p));
+                    }
+                }
+
+                if (selectedPosition.HasValue)
+                {
+                    grabber.ResetOrigin();
+                    GrabAt(selectedPosition.Value);
+                    masses[closestSelectedIdx].position = selectedPosition.Value;
+                }
             }
         }
 
@@ -372,29 +386,35 @@ namespace SpringSim.V3
 
         public void UseMeshRetainVelocities(Mesh mesh, float searchRadius = 0.5f, float extractionEpsilon = 0.005f)
         {
-            var oldMasses = masses.Select(m => new { m.position, m.velocity }).ToArray();
-            UseMesh(mesh, extractionEpsilon);
-            for (int i = 0; i < masses.Count; i++)
+            using (useMeshVeloMarker.Auto())
             {
-                var newPos = masses[i].position;
-                var neighbors = oldMasses
-                    .Select(m => new { m.velocity, dist = Vector3.Distance(m.position, newPos) })
-                    .Where(x => x.dist < searchRadius)
-                    .ToArray();
-
-                if (neighbors.Length == 0)
-                    continue;
-
-                Vector3 interpolatedVelocity = Vector3.zero;
-                float totalWeight = 0f;
-                foreach (var n in neighbors)
+                var oldMasses = masses.Select(m => new { m.position, m.velocity }).ToArray();
+                UseMesh(mesh, extractionEpsilon);
+                for (int i = 0; i < masses.Count; i++)
                 {
-                    float w = n.dist / searchRadius;
-                    interpolatedVelocity += n.velocity * w;
-                    totalWeight += w;
-                }
-                masses[i].velocity = interpolatedVelocity / totalWeight;
+                    umvSearchNeighborsMarker.Begin();
+                    var newPos = masses[i].position;
+                    var neighbors = oldMasses
+                        .Select(m => new { m.velocity, dist = Vector3.Distance(m.position, newPos) })
+                        .Where(x => x.dist < searchRadius)
+                        .ToArray();
+                    umvSearchNeighborsMarker.End();
 
+                    if (neighbors.Length == 0)
+                        return;
+
+                    umvCalcVeloMarker.Begin();
+                    Vector3 interpolatedVelocity = Vector3.zero;
+                    float totalWeight = 0f;
+                    foreach (var n in neighbors)
+                    {
+                        float w = n.dist / searchRadius;
+                        interpolatedVelocity += n.velocity * w;
+                        totalWeight += w;
+                    }
+                    masses[i].velocity = interpolatedVelocity / totalWeight;
+                    umvCalcVeloMarker.End();
+                }
             }
         }
 
@@ -404,10 +424,12 @@ namespace SpringSim.V3
         /// <returns></returns>
         public Mesh ToMesh()
         {
-            var mesh = new Mesh()
+            using (meshCreationMarker.Auto())
             {
-                vertices = masses.Select(m => m.position).ToArray(),
-                colors = masses
+                var mesh = new Mesh()
+                {
+                    vertices = masses.Select(m => m.position).ToArray(),
+                    colors = masses
                     .Select(m =>
                     {
                         if (m.rigidity > 0)
@@ -422,20 +444,21 @@ namespace SpringSim.V3
                         // return Color.white;
                     })
                     .ToArray(),
-                triangles = triangles
+                    triangles = triangles
                     .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
                     .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
                     .ToArray(),
-            };
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            var normals = mesh.normals;
-            Parallel.For(0, normals.Length, i =>
-            {
-                normals[i] = normals[i] * Mathf.Sign(Vector3.Dot(masses[i].normal, normals[i]));
-            });
-            mesh.normals = normals;
-            return mesh;
+                };
+                mesh.RecalculateNormals();
+                mesh.RecalculateBounds();
+                var normals = mesh.normals;
+                Parallel.For(0, normals.Length, i =>
+                {
+                    normals[i] = normals[i] * Mathf.Sign(Vector3.Dot(masses[i].normal, normals[i]));
+                });
+                mesh.normals = normals;
+                return mesh;
+            }
         }
 
         public IEnumerable<(Mass m, float d, int i)> NearbyMasses(Vector3 position, float distance)
@@ -584,8 +607,12 @@ namespace SpringSim.V3
         public float rigidity = 0;
 
         static public float mass;
+        static readonly ProfilerMarker addForceMarker = new("Membrane.SpringSimulator.AddForce");
 
-        public void AddForce(Vector3 force) => this.force += force;
+        public void AddForce(Vector3 force)
+        {
+            using (addForceMarker.Auto()) { this.force += force; }
+        }
         public void ApplyForce(float deltaTime)
         {
             velocity += force / mass * deltaTime;

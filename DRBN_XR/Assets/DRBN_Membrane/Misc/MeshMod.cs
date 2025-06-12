@@ -2,9 +2,13 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Unity.Profiling;
 
 public class MeshMod
 {
+    static readonly ProfilerMarker dedupeMarker = new("Membrane.MeshMod.DeduplicateVertices");
+    static readonly ProfilerMarker distGroupMarker = new("Membrane.MeshMod.DistanceOfGroups");
+
     /// <summary>
     /// Takes a mesh, and merges vertices that are too close to each other
     /// </summary>
@@ -13,37 +17,40 @@ public class MeshMod
     /// <returns>The resulting new mesh</returns>
     static public Mesh DeduplicateVertices(Mesh mesh, float epsilon = 0.0001f)
     {
-        Vector3[] vertices = mesh.vertices;
-        int[] triangles = mesh.triangles;
-
-        List<Vector3> newVertices = new();
-        List<int> vertexCumul = new();
-        List<int> newTriangles = new();
-
-        for (int i = 0; i < triangles.Length; i += 3)
+        using (dedupeMarker.Auto())
         {
-            Vector3 v1 = vertices[triangles[i]];
-            Vector3 v2 = vertices[triangles[i + 1]];
-            Vector3 v3 = vertices[triangles[i + 2]];
+            Vector3[] vertices = mesh.vertices;
+            int[] triangles = mesh.triangles;
 
-            int index1 = FindOrAddVertex(newVertices, vertexCumul, v1, epsilon);
-            int index2 = FindOrAddVertex(newVertices, vertexCumul, v2, epsilon);
-            int index3 = FindOrAddVertex(newVertices, vertexCumul, v3, epsilon);
+            List<Vector3> newVertices = new();
+            List<int> vertexCumul = new();
+            List<int> newTriangles = new();
 
-            newTriangles.Add(index1);
-            newTriangles.Add(index2);
-            newTriangles.Add(index3);
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                Vector3 v1 = vertices[triangles[i]];
+                Vector3 v2 = vertices[triangles[i + 1]];
+                Vector3 v3 = vertices[triangles[i + 2]];
+
+                int index1 = FindOrAddVertex(newVertices, vertexCumul, v1, epsilon);
+                int index2 = FindOrAddVertex(newVertices, vertexCumul, v2, epsilon);
+                int index3 = FindOrAddVertex(newVertices, vertexCumul, v3, epsilon);
+
+                newTriangles.Add(index1);
+                newTriangles.Add(index2);
+                newTriangles.Add(index3);
+            }
+
+            Mesh result = new()
+            {
+                vertices = newVertices.ToArray(),
+                triangles = newTriangles.ToArray()
+            };
+            result.RecalculateNormals();
+            result.RecalculateBounds();
+
+            return result;
         }
-
-        Mesh result = new()
-        {
-            vertices = newVertices.ToArray(),
-            triangles = newTriangles.ToArray()
-        };
-        result.RecalculateNormals();
-        result.RecalculateBounds();
-
-        return result;
     }
 
     /// <summary>
@@ -156,14 +163,17 @@ public class MeshMod
     /// <returns></returns>
     static public float[] DistanceOfGroups(Group of, Group with)
     {
-        var vertices = of.mesh.vertices;
-        var kd = new KDTree3(with.mesh.vertices);
-        return of.groups.AsParallel().Select(
-            group => group
-                .AsParallel()
-                .Select(idx => kd.NearestDistance(vertices[idx]))
-                .Min()
-        ).ToArray();
+        using (distGroupMarker.Auto())
+        {
+            var vertices = of.mesh.vertices;
+            var kd = new KDTree3(with.mesh.vertices);
+            return of.groups.AsParallel().Select(
+                group => group
+                    .AsParallel()
+                    .Select(idx => kd.NearestDistance(vertices[idx]))
+                    .Min()
+            ).ToArray();
+        }
     }
 
     /// <summary>

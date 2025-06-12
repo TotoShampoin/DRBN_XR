@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace MarchingCubing.V2
@@ -26,6 +27,11 @@ namespace MarchingCubing.V2
         public int resolution = 32;
         public bool smooth = true;
         public Bounds bounds = new(Vector3.zero, Vector3.one);
+
+        static readonly ProfilerMarker prepareMarker = new("Membrane.MarchingCube.Prepare");
+        static readonly ProfilerMarker marchMarker = new("Membrane.MarchingCube.March");
+        static readonly ProfilerMarker readbackMarker = new("Membrane.MarchingCube.GpuRead");
+        static readonly ProfilerMarker parseMarker = new("Membrane.MarchingCube.MeshConversion");
 
         void OnEnable()
         {
@@ -62,32 +68,45 @@ namespace MarchingCubing.V2
 
         public Mesh GenerateMesh(RenderTexture renderTexture, float threshold)
         {
-            PrepareBuffer();
+            using (prepareMarker.Auto())
+            {
+                PrepareBuffer();
+            }
 
-            var kernel = marchingCubesShader.FindKernel("MarchingCubes");
+            using (marchMarker.Auto())
+            {
+                var kernel = marchingCubesShader.FindKernel("MarchingCubes");
 
-            marchingCubesShader.SetBuffer(kernel, "_Triangles", triangleBuffer);
-            marchingCubesShader.SetTexture(kernel, "_Input", renderTexture);
+                marchingCubesShader.SetBuffer(kernel, "_Triangles", triangleBuffer);
+                marchingCubesShader.SetTexture(kernel, "_Input", renderTexture);
 
-            marchingCubesShader.SetInt("_Resolution", resolution);
-            marchingCubesShader.SetFloat("_Threshold", threshold);
-            marchingCubesShader.SetVector("_Min", bounds.min);
-            marchingCubesShader.SetVector("_Max", bounds.max);
+                marchingCubesShader.SetInt("_Resolution", resolution);
+                marchingCubesShader.SetFloat("_Threshold", threshold);
+                marchingCubesShader.SetVector("_Min", bounds.min);
+                marchingCubesShader.SetVector("_Max", bounds.max);
 
-            triangleBuffer.SetCounterValue(0);
+                triangleBuffer.SetCounterValue(0);
 
-            marchingCubesShader.Dispatch(
-                kernel,
-                Mathf.CeilToInt((float)resolution / 8),
-                Mathf.CeilToInt((float)resolution / 8),
-                Mathf.CeilToInt((float)resolution / 8));
+                marchingCubesShader.Dispatch(
+                    kernel,
+                    Mathf.CeilToInt((float)resolution / 8),
+                    Mathf.CeilToInt((float)resolution / 8),
+                    Mathf.CeilToInt((float)resolution / 8));
+            }
 
-            Triangle[] triangles = new Triangle[ReadTriangleCount()];
-            triangleBuffer.GetData(triangles); // [MARKER] Bottleneck
+            Triangle[] triangles;
+            using (readbackMarker.Auto())
+            {
+                triangles = new Triangle[ReadTriangleCount()];
+                triangleBuffer.GetData(triangles); // [MARKER] Bottleneck
+            }
 
-            return smooth
+            using (parseMarker.Auto())
+            {
+                return smooth
                 ? SmoothMeshFromTriangles(triangles)
                 : SharpMeshFromTriangles(triangles);
+            }
         }
 
         Mesh SharpMeshFromTriangles(Triangle[] triangles)
