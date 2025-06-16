@@ -49,9 +49,9 @@ public class SpatialHash<T>
         return hashmap.TryGetValue(key, out var cell) && cell.Contains(value);
     }
 
-    public List<T> GetSurrounding(Vector3 at, float radius)
+    public List<T> GetSurrounding(Vector3 at, float radius, List<T> result = null)
     {
-        var result = new List<T>();
+        result ??= new();
         var center = GetCell(at);
         var cellRadius = Mathf.CeilToInt(radius / cellSize);
 

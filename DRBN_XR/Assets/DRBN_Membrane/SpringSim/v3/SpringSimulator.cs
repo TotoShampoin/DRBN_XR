@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -281,8 +282,7 @@ namespace SpringSim.V3
                 masses.AddRange(dvertices
                     .AsParallel()
                     .AsOrdered()
-                    .Select(v => new Mass() { position = v.position, normal = v.normal })
-                    .ToArray());
+                    .Select(v => new Mass() { position = v.position, normal = v.normal }));
 
                 // Fill links
                 using (linkFillMarker.Auto())
@@ -401,35 +401,41 @@ namespace SpringSim.V3
             cachedMesh = ToMesh();
         }
 
+        readonly List<(Vector3 position, Vector3 velocity)> oldMasses = new();
+        readonly List<(Vector3 position, Vector3 velocity)> neighbors = new();
         public void UseMeshRetainVelocities(Mesh mesh, float searchRadius = 0.5f, float extractionEpsilon = 0.005f)
         {
             using (useMeshVeloMarker.Auto())
             {
-                var oldMasses = masses.Select(m => new { m.position, m.velocity }).ToArray();
+                oldMasses.Clear();
+                oldMasses.AddRange(masses.Select(m => (m.position, m.velocity)));
+
+                SpatialHash<(Vector3 position, Vector3 velocity)> oldMassesHash = new(searchRadius);
+                for (int i = 0; i < oldMasses.Count; i++)
+                    oldMassesHash.AddAt(oldMasses[i].position, oldMasses[i]);
+
                 UseMesh(mesh, extractionEpsilon);
                 for (int i = 0; i < masses.Count; i++)
                 {
                     umvSearchNeighborsMarker.Begin();
                     var newPos = masses[i].position;
-                    var neighbors = oldMasses
-                        .Select(m => new { m.velocity, dist = Vector3.Distance(m.position, newPos) })
-                        .Where(x => x.dist < searchRadius)
-                        .ToArray();
+                    neighbors.Clear();
+                    oldMassesHash.GetSurrounding(newPos, searchRadius, neighbors);
                     umvSearchNeighborsMarker.End();
-
-                    if (neighbors.Length == 0)
-                        return;
 
                     umvCalcVeloMarker.Begin();
                     Vector3 interpolatedVelocity = Vector3.zero;
                     float totalWeight = 0f;
-                    foreach (var n in neighbors)
+                    foreach (var (position, velocity) in neighbors)
                     {
-                        float w = n.dist / searchRadius;
-                        interpolatedVelocity += n.velocity * w;
+                        var dist = Vector3.Distance(position, newPos);
+                        if (dist > searchRadius) continue;
+                        float w = dist / searchRadius;
+                        interpolatedVelocity += velocity * w;
                         totalWeight += w;
                     }
-                    masses[i].velocity = interpolatedVelocity / totalWeight;
+                    if (totalWeight != 0)
+                        masses[i].velocity = interpolatedVelocity / totalWeight;
                     umvCalcVeloMarker.End();
                 }
             }
@@ -497,8 +503,10 @@ namespace SpringSim.V3
         public void GrabAt(Vector3 localGrabberPos)
         {
             selected.Clear();
-            var nearby = NearbyMasses(localGrabberPos, selectionRadius).ToArray();
-            selected.AddRange(nearby.Select(m => (m.i, 1f - m.d / selectionRadius, m.m.position)));
+            selected.AddRange(
+                NearbyMasses(localGrabberPos, selectionRadius)
+                    .Select(m => (m.i, 1f - m.d / selectionRadius, m.m.position))
+            );
 
             if (selected.Count > 0)
             {
