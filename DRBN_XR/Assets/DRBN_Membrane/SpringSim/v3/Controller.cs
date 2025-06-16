@@ -70,6 +70,7 @@ namespace SpringSim.V3
             }
             Voxelize();
 
+            simulator.NeedsRecalcNormals = !constantRebuild;
             if (constantRebuild && simulator.HasMasses && (voxeliseTimer += Time.deltaTime) >= voxeliseInterval)
             {
                 GenerateSpringsWithVoxelizer();

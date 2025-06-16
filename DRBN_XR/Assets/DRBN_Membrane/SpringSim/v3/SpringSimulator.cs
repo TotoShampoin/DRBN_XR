@@ -70,9 +70,12 @@ namespace SpringSim.V3
         public bool ShowMesh { get => showMesh; set => showMesh = value; }
         public bool UseAchors { get => useAchors; set => useAchors = value; }
         public bool HasMasses => masses.Count > 0;
+        public bool NeedsRecalcNormals { get; set; } = true;
 
         static readonly ProfilerMarker normalMarker = new("Membrane.SpringSimulator.NormalCalculation");
         static readonly ProfilerMarker useMeshMarker = new("Membrane.SpringSimulator.UseMesh");
+        static readonly ProfilerMarker linkFillMarker = new("Membrane.SpringSimulator.UseMesh.FillLinks");
+        static readonly ProfilerMarker triangleFillMarker = new("Membrane.SpringSimulator.UseMesh.FillTriangles");
         static readonly ProfilerMarker useMeshVeloMarker = new("Membrane.SpringSimulator.UseMeshRetainVelocities");
         static readonly ProfilerMarker meshCreationMarker = new("Membrane.SpringSimulator.ToMesh");
         static readonly ProfilerMarker umvSearchNeighborsMarker = new("Membrane.SpringSimulator.UseMeshRetainVelocities.SearchNeighbors");
@@ -148,10 +151,13 @@ namespace SpringSim.V3
                 m.AddForce(-mag * mag * drag * dir);
             });
             Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
-            using (normalMarker.Auto())
+            if (NeedsRecalcNormals)
             {
-                UpdateCachedMesh();
-                RecalculateNormals();
+                using (normalMarker.Auto())
+                {
+                    UpdateCachedMesh();
+                    RecalculateNormals();
+                }
             }
         }
 
@@ -279,63 +285,90 @@ namespace SpringSim.V3
                     .ToArray());
 
                 // Fill links
-                var newLinks = new ConcurrentDictionary<uint, SpringLink>();
-                static uint HashKey(int a, int b)
+                using (linkFillMarker.Auto())
                 {
-                    if (a > b) { (a, b) = (b, a); }
-                    return (uint)((a + b) * (a + b + 1) / 2 + b);
+                    var edgeSet = new HashSet<(int, int)>();
+                    for (int i = 0; i < dtriangles.Length; i += 3)
+                    {
+                        int i0 = dtriangles[i + 0];
+                        int i1 = dtriangles[i + 1];
+                        int i2 = dtriangles[i + 2];
+
+                        // Always store edges as (min, max) to avoid duplicates
+                        edgeSet.Add((Mathf.Min(i0, i1), Mathf.Max(i0, i1)));
+                        edgeSet.Add((Mathf.Min(i1, i2), Mathf.Max(i1, i2)));
+                        edgeSet.Add((Mathf.Min(i2, i0), Mathf.Max(i2, i0)));
+                    }
+
+                    links.Capacity = edgeSet.Count;
+                    foreach (var (a, b) in edgeSet)
+                    {
+                        links.Add(new SpringLink
+                        {
+                            a = a,
+                            b = b,
+                            length = Vector3.Distance(masses[a].position, masses[b].position)
+                        });
+                    }
                 }
-                void TryAddToLinks(int i0, int i1) => newLinks.TryAdd(HashKey(i0, i1), new() { a = i0, b = i1, length = Vector3.Distance(masses[i0].position, masses[i1].position) });
-                Parallel.For(0, dtriangles.Length / 3, i =>
-                {
-                    var i0 = dtriangles[i * 3 + 0];
-                    var i1 = dtriangles[i * 3 + 1];
-                    var i2 = dtriangles[i * 3 + 2];
-                    TryAddToLinks(i0, i1);
-                    TryAddToLinks(i1, i2);
-                    TryAddToLinks(i2, i0);
-                });
-                links.AddRange(newLinks.Values);
 
                 // Fill triangles
                 var newTriangles = new (int, int, int)[dtriangles.Length / 3];
                 var indexToLink = new Dictionary<(int, int), int>();
                 int linkIdx = 0;
-                foreach (var link in links)
+                using (triangleFillMarker.Auto())
                 {
-                    int a = link.a;
-                    int b = link.b;
-                    if (a > b) (a, b) = (b, a);
-                    indexToLink[(a, b)] = linkIdx++;
+                    foreach (var link in links)
+                    {
+                        int a = link.a;
+                        int b = link.b;
+                        if (a > b) (a, b) = (b, a);
+                        indexToLink[(a, b)] = linkIdx++;
+                    }
+
+                    // Precompute link indices for all triangle edges
+                    int triCount = dtriangles.Length / 3;
+                    var edgeLinkIndices = new int[triCount, 3];
+                    for (int i = 0; i < triCount; i++)
+                    {
+                        int i0 = dtriangles[i * 3 + 0];
+                        int i1 = dtriangles[i * 3 + 1];
+                        int i2 = dtriangles[i * 3 + 2];
+                        edgeLinkIndices[i, 0] = indexToLink[(Mathf.Min(i0, i1), Mathf.Max(i0, i1))];
+                        edgeLinkIndices[i, 1] = indexToLink[(Mathf.Min(i1, i2), Mathf.Max(i1, i2))];
+                        edgeLinkIndices[i, 2] = indexToLink[(Mathf.Min(i2, i0), Mathf.Max(i2, i0))];
+                    }
+
+                    Parallel.For(0, dtriangles.Length / 3, i =>
+                    {
+                        var linkA = links[edgeLinkIndices[i, 0]];
+                        var linkB = links[edgeLinkIndices[i, 1]];
+                        var linkC = links[edgeLinkIndices[i, 2]];
+
+                        int[] endpoints = { linkA.a, linkA.b, linkB.a, linkB.b, linkC.a, linkC.b };
+                        int v0 = linkA.a, v1 = linkA.b, v2 = -1;
+
+                        for (int j = 0; j < 6; j++)
+                        {
+                            int candidate = endpoints[j];
+                            if (candidate != v0 && candidate != v1)
+                            {
+                                v2 = candidate;
+                                break;
+                            }
+                        }
+                        if (v2 == -1) return;
+
+                        Vector3 p0 = masses[v0].position;
+                        Vector3 p1 = masses[v1].position;
+                        Vector3 p2 = masses[v2].position;
+                        Vector3 normal = Vector3.Cross(p1 - p0, p2 - p0);
+                        if (Vector3.Dot(normal, Vector3.up) < 0) (v1, v2) = (v2, v1);
+
+                        newTriangles[i] = (v0, v1, v2);
+                    });
+                    triangles.AddRange(newTriangles.Where(t => t != default));
                 }
-                Parallel.For(0, dtriangles.Length / 3, i =>
-                {
-                    int i0 = dtriangles[i * 3 + 0];
-                    int i1 = dtriangles[i * 3 + 1];
-                    int i2 = dtriangles[i * 3 + 2];
-                    var linkA = links[indexToLink[(Mathf.Min(i0, i1), Mathf.Max(i0, i1))]];
-                    var linkB = links[indexToLink[(Mathf.Min(i1, i2), Mathf.Max(i1, i2))]];
-                    var linkC = links[indexToLink[(Mathf.Min(i2, i0), Mathf.Max(i2, i0))]];
-
-                    int[] endpoints = { linkA.a, linkA.b, linkB.a, linkB.b, linkC.a, linkC.b };
-                    var counts = endpoints.GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count());
-                    var verts = counts.Keys.ToArray();
-
-                    if (verts.Length != 3) return;
-
-                    int v0 = linkA.a;
-                    int v1 = linkA.b;
-                    int v2 = verts.First(x => x != v0 && x != v1);
-
-                    Vector3 p0 = masses[v0].position;
-                    Vector3 p1 = masses[v1].position;
-                    Vector3 p2 = masses[v2].position;
-                    Vector3 normal = Vector3.Cross(p1 - p0, p2 - p0);
-                    if (Vector3.Dot(normal, Vector3.up) < 0) (v1, v2) = (v2, v1);
-
-                    newTriangles[i] = (v0, v1, v2);
-                });
-                triangles.AddRange(newTriangles.Where(t => t != default));
 
                 if (useAchors)
                 {
@@ -365,22 +398,6 @@ namespace SpringSim.V3
 
         private void UpdateCachedMesh()
         {
-            // cachedMesh = new Mesh()
-            // {
-            //     vertices = masses.Select(m => m.position).ToArray(),
-            //     triangles = triangles
-            //         .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
-            //         .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
-            //         .ToArray(),
-            // };
-            // cachedMesh.RecalculateNormals();
-            // cachedMesh.RecalculateBounds();
-            // var normals = cachedMesh.normals;
-            // Parallel.For(0, normals.Length, i =>
-            // {
-            //     normals[i] = normals[i] * Mathf.Sign(Vector3.Dot(masses[i].normal, normals[i]));
-            // });
-            // cachedMesh.normals = normals;
             cachedMesh = ToMesh();
         }
 
@@ -426,28 +443,28 @@ namespace SpringSim.V3
         {
             using (meshCreationMarker.Auto())
             {
-                var mesh = new Mesh()
+                var mesh = new Mesh() // [MARKER] Bottleneck, not really, mostly the GC; TODO: Get rid of LINQ?
                 {
                     vertices = masses.Select(m => m.position).ToArray(),
                     colors = masses
-                    .Select(m =>
-                    {
-                        if (m.rigidity > 0)
-                            return Color.Lerp(Color.white, new Color(0f, 0.5f, 1f), 2f * Mathf.Clamp01(m.rigidity / maxRigidity));
-                        else if (m.rigidity < 0)
-                            return Color.Lerp(Color.white, new Color(1f, 0.5f, 0f), 2f * Mathf.Clamp01(-m.rigidity / maxRigidity));
-                        else
-                            return Color.white;
-                        // var sel = selected.FirstOrDefault(s => s.i == masses.IndexOf(m));
-                        // if (sel != default)
-                        //     return Color.Lerp(Color.white, new Color(1f, 0f, 1f), Mathf.Clamp01(sel.w));
-                        // return Color.white;
-                    })
-                    .ToArray(),
+                        .Select(m =>
+                        {
+                            if (m.rigidity > 0)
+                                return Color.Lerp(Color.white, new Color(0f, 0.5f, 1f), 2f * Mathf.Clamp01(m.rigidity / maxRigidity));
+                            else if (m.rigidity < 0)
+                                return Color.Lerp(Color.white, new Color(1f, 0.5f, 0f), 2f * Mathf.Clamp01(-m.rigidity / maxRigidity));
+                            else
+                                return Color.white;
+                            // var sel = selected.FirstOrDefault(s => s.i == masses.IndexOf(m));
+                            // if (sel != default)
+                            //     return Color.Lerp(Color.white, new Color(1f, 0f, 1f), Mathf.Clamp01(sel.w));
+                            // return Color.white;
+                        })
+                        .ToArray(),
                     triangles = triangles
-                    .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
-                    .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
-                    .ToArray(),
+                        .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
+                        .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
+                        .ToArray(),
                 };
                 mesh.RecalculateNormals();
                 mesh.RecalculateBounds();
