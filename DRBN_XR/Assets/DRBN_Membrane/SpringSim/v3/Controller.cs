@@ -70,6 +70,7 @@ namespace SpringSim.V3
             }
             Voxelize();
 
+            simulator.NeedsRecalcNormals = !constantRebuild;
             if (constantRebuild && simulator.HasMasses && (voxeliseTimer += Time.deltaTime) >= voxeliseInterval)
             {
                 GenerateSpringsWithVoxelizer();
@@ -123,8 +124,10 @@ namespace SpringSim.V3
                 var oldMesh = simulator.ToMesh();
                 var newMesh = meshFromSprings.FetchMesh(oldMesh);
                 newMesh = V2.MeshFromSprings.CleanupMesh(newMesh, oldMesh, meshExtractionDistance);
-                // simulator.UseMesh(newMesh, meshExtractionEpsilon);
-                simulator.UseMeshRetainVelocities(newMesh, meshExtractionVelocityInfluence, meshExtractionEpsilon);
+                if (Mathf.Approximately(meshExtractionVelocityInfluence, 0))
+                    simulator.UseMesh(newMesh, meshExtractionEpsilon);
+                else
+                    simulator.UseMeshRetainVelocities(newMesh, meshExtractionVelocityInfluence, meshExtractionEpsilon);
                 weightPainter.enabled = false;
                 voxeliseTimer = 0f;
             }

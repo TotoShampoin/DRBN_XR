@@ -67,7 +67,7 @@ namespace SpringSim.V1
             return -dragForce * mass * tmpVelocity;
         }
 
-        public Vector3 AvoidForce(SpatialHash<Mass> masses)
+        public Vector3 AvoidForce(ConcurrentSpatialHash<Mass> masses)
         {
             var p = position;
             Vector3 F = Vector3.zero;

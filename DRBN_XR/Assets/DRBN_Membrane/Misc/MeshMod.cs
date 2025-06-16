@@ -2,9 +2,13 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Unity.Profiling;
 
 public class MeshMod
 {
+    static readonly ProfilerMarker dedupeMarker = new("Membrane.MeshMod.DeduplicateVertices");
+    static readonly ProfilerMarker distGroupMarker = new("Membrane.MeshMod.DistanceOfGroups");
+
     /// <summary>
     /// Takes a mesh, and merges vertices that are too close to each other
     /// </summary>
@@ -13,37 +17,55 @@ public class MeshMod
     /// <returns>The resulting new mesh</returns>
     static public Mesh DeduplicateVertices(Mesh mesh, float epsilon = 0.0001f)
     {
-        Vector3[] vertices = mesh.vertices;
-        int[] triangles = mesh.triangles;
-
-        List<Vector3> newVertices = new();
-        List<int> vertexCumul = new();
-        List<int> newTriangles = new();
-
-        for (int i = 0; i < triangles.Length; i += 3)
+        using (dedupeMarker.Auto())
         {
-            Vector3 v1 = vertices[triangles[i]];
-            Vector3 v2 = vertices[triangles[i + 1]];
-            Vector3 v3 = vertices[triangles[i + 2]];
+            Vector3[] vertices = mesh.vertices;
+            int[] triangles = mesh.triangles;
 
-            int index1 = FindOrAddVertex(newVertices, vertexCumul, v1, epsilon);
-            int index2 = FindOrAddVertex(newVertices, vertexCumul, v2, epsilon);
-            int index3 = FindOrAddVertex(newVertices, vertexCumul, v3, epsilon);
+            var grid = new Dictionary<(int, int, int), int>();
+            var newVertices = new List<Vector3>();
+            var vertexCumul = new List<int>();
+            var map = new int[vertices.Length];
 
-            newTriangles.Add(index1);
-            newTriangles.Add(index2);
-            newTriangles.Add(index3);
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                var v = vertices[i];
+                var key = (
+                    Mathf.RoundToInt(v.x / epsilon),
+                    Mathf.RoundToInt(v.y / epsilon),
+                    Mathf.RoundToInt(v.z / epsilon)
+                );
+
+                if (grid.TryGetValue(key, out int idx))
+                {
+                    // Merge
+                    newVertices[idx] = (newVertices[idx] * vertexCumul[idx] + v) / (vertexCumul[idx] + 1);
+                    vertexCumul[idx]++;
+                    map[i] = idx;
+                }
+                else
+                {
+                    grid[key] = newVertices.Count;
+                    newVertices.Add(v);
+                    vertexCumul.Add(1);
+                    map[i] = newVertices.Count - 1;
+                }
+            }
+
+            var newTriangles = new int[triangles.Length];
+            for (int i = 0; i < triangles.Length; i++)
+                newTriangles[i] = map[triangles[i]];
+
+            Mesh result = new()
+            {
+                vertices = newVertices.ToArray(),
+                triangles = newTriangles
+            };
+            result.RecalculateNormals();
+            result.RecalculateBounds();
+
+            return result;
         }
-
-        Mesh result = new()
-        {
-            vertices = newVertices.ToArray(),
-            triangles = newTriangles.ToArray()
-        };
-        result.RecalculateNormals();
-        result.RecalculateBounds();
-
-        return result;
     }
 
     /// <summary>
@@ -156,14 +178,17 @@ public class MeshMod
     /// <returns></returns>
     static public float[] DistanceOfGroups(Group of, Group with)
     {
-        var vertices = of.mesh.vertices;
-        var kd = new KDTree3(with.mesh.vertices);
-        return of.groups.AsParallel().Select(
-            group => group
-                .AsParallel()
-                .Select(idx => kd.NearestDistance(vertices[idx]))
-                .Min()
-        ).ToArray();
+        using (distGroupMarker.Auto())
+        {
+            var vertices = of.mesh.vertices;
+            var kd = new KDTree3(with.mesh.vertices);
+            return of.groups.AsParallel().Select(
+                group => group
+                    .AsParallel()
+                    .Select(idx => kd.NearestDistance(vertices[idx]))
+                    .Min()
+            ).ToArray();
+        }
     }
 
     /// <summary>
@@ -192,23 +217,6 @@ public class MeshMod
             max.z += 0.5f;
         }
         bounds.SetMinMax(min, max);
-    }
-
-    static private int FindOrAddVertex(List<Vector3> vertices, List<int> vertexCumul, Vector3 vertex, float epsilon = 0.0001f)
-    {
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            if (Vector3.SqrMagnitude(vertices[i] - vertex) < epsilon)
-            {
-                vertices[i] = (vertices[i] * vertexCumul[i] + vertex) / (vertexCumul[i] + 1);
-                vertexCumul[i]++;
-                return i;
-            }
-        }
-
-        vertices.Add(vertex);
-        vertexCumul.Add(1);
-        return vertices.Count - 1;
     }
 
     /// <summary>

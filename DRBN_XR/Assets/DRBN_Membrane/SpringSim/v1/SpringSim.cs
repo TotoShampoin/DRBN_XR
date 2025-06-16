@@ -47,7 +47,7 @@ namespace SpringSim.V1
 
         private readonly List<Mass> massBodies = new();
         private readonly List<Link> linkObjects = new();
-        private SpatialHash<Mass> massHash;
+        private ConcurrentSpatialHash<Mass> massHash;
         private int massCount = 0;
         private int linkCount = 0;
 
