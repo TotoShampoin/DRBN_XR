@@ -161,6 +161,8 @@ namespace SpringSim.V3
             }
         }
 
+        Matrix4x4[] beads;
+        Matrix4x4[] rods;
         public void Render()
         {
             Matrix4x4 localToWorld = transform.localToWorldMatrix;
@@ -168,39 +170,37 @@ namespace SpringSim.V3
                 Graphics.DrawMesh(cachedMesh, localToWorld, triangleMaterial, 0);
             else
             {
-                Graphics.DrawMeshInstanced(
-                    massMesh, 0,
-                    material,
-                    masses
-                        .AsParallel()
-                        .Select(m =>
-                            localToWorld *
-                            Matrix4x4.TRS(
-                                m.position, m.normal == Vector3.zero ? Quaternion.identity : Quaternion.LookRotation(m.normal), thickness * Vector3.one
-                            ))
-                        .ToArray()
-                );
-                Graphics.DrawMeshInstanced(
-                    linkMesh, 0,
-                    material,
-                    links
-                        .AsParallel()
-                        .Select(link =>
-                        {
-                            Vector3 start = masses[link.a].position;
-                            Vector3 end = masses[link.b].position;
-                            var delta = end - start;
-                            Vector3 mid = (start + end) / 2;
-                            float length = Vector3.Distance(start, end);
-                            return localToWorld *
-                                Matrix4x4.TRS(
-                                    mid,
-                                    delta == Vector3.zero ? Quaternion.identity : Quaternion.LookRotation(delta),
-                                    new Vector3(thickness / 4f, thickness / 4f, length) / 2f
-                                );
-                        })
-                        .ToArray()
-                );
+                if (beads == null || beads.Length != masses.Count) beads = new Matrix4x4[masses.Count];
+                if (rods == null || rods.Length != links.Count) rods = new Matrix4x4[links.Count];
+                Parallel.For(0, beads.Length, i =>
+                {
+                    var m = masses[i];
+                    beads[i] =
+                        localToWorld *
+                        Matrix4x4.TRS(
+                            m.position,
+                            m.normal == Vector3.zero ? Quaternion.identity : Quaternion.LookRotation(m.normal),
+                            thickness * Vector3.one
+                        );
+                });
+                Parallel.For(0, rods.Length, i =>
+                {
+                    var l = links[i];
+                    Vector3 start = masses[l.a].position;
+                    Vector3 end = masses[l.b].position;
+                    var delta = end - start;
+                    Vector3 mid = (start + end) / 2;
+                    float length = Vector3.Distance(start, end);
+                    rods[i] =
+                        localToWorld *
+                        Matrix4x4.TRS(
+                            mid,
+                            delta == Vector3.zero ? Quaternion.identity : Quaternion.LookRotation(delta),
+                            new Vector3(thickness / 4f, thickness / 4f, length) / 2f
+                        );
+                });
+                Graphics.DrawMeshInstanced(massMesh, 0, material, beads);
+                Graphics.DrawMeshInstanced(linkMesh, 0, material, rods);
             }
         }
 
