@@ -42,7 +42,8 @@ namespace SpringSim.V2
                 Parallel.For(0, vertices.Length, (i) => vertices[i] *= 0.5f);
                 mesh.vertices = vertices;
                 mesh.RecalculateBounds();
-                voxelizer.Voxelize(mesh, renderTexture, normalTexture);
+                // voxelizer.Voxelize(mesh, renderTexture, normalTexture);
+                voxelizer.Voxelize(mesh, renderTexture);
                 return marchingCubes.GenerateMesh(renderTexture, 0);
             }
         }
