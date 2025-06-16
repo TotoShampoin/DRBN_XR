@@ -6,10 +6,104 @@ using System.Linq;
 
 public class SpatialHash<T>
 {
-    private readonly ConcurrentDictionary<Vector3Int, ConcurrentBag<T>> hashmap;
+    private readonly Dictionary<Vector3Int, List<T>> hashmap;
     public float cellSize;
 
     public SpatialHash(float cellSize)
+    {
+        hashmap = new();
+        this.cellSize = cellSize;
+    }
+
+    public List<T> this[Vector3Int key] => GetWithEmplace(key);
+
+    public void Add(Vector3Int key, T value) => GetWithEmplace(key).Add(value);
+
+    public void Remove(Vector3Int key, T value)
+    {
+        var cell = GetWithEmplace(key);
+        cell.Remove(value);
+    }
+
+    public List<T> Get(Vector3Int key)
+    {
+        return hashmap.TryGetValue(key, out var cell) ? cell : new List<T>();
+    }
+
+    public List<T> GetWithEmplace(Vector3Int key)
+    {
+        if (!hashmap.TryGetValue(key, out var cell))
+        {
+            cell = new List<T>();
+            hashmap[key] = cell;
+        }
+        return cell;
+    }
+
+    public Vector3Int GetCell(Vector3 at) => Vector3Int.FloorToInt(at / cellSize);
+
+    public void AddAt(Vector3 at, T value) => Add(GetCell(at), value);
+
+    public bool ContainsAt(Vector3Int key, T value)
+    {
+        return hashmap.TryGetValue(key, out var cell) && cell.Contains(value);
+    }
+
+    public List<T> GetSurrounding(Vector3 at, float radius)
+    {
+        var result = new List<T>();
+        var center = GetCell(at);
+        var cellRadius = Mathf.CeilToInt(radius / cellSize);
+
+        for (int x = center.x - cellRadius; x <= center.x + cellRadius; x++)
+        {
+            for (int y = center.y - cellRadius; y <= center.y + cellRadius; y++)
+            {
+                for (int z = center.z - cellRadius; z <= center.z + cellRadius; z++)
+                {
+                    var key = new Vector3Int(x, y, z);
+                    if (hashmap.TryGetValue(key, out var cell))
+                        result.AddRange(cell);
+                }
+            }
+        }
+        return result;
+    }
+
+    public void Move(Vector3 from, Vector3 to, T item)
+    {
+        var fromCell = GetCell(from);
+        var toCell = GetCell(to);
+        if (fromCell == toCell)
+        {
+            if (!ContainsAt(toCell, item))
+                Add(toCell, item);
+            return;
+        }
+        Remove(fromCell, item);
+        AddAt(toCell, item);
+    }
+
+    public List<T> GetAll()
+    {
+        var result = new List<T>();
+        foreach (var cell in hashmap.Values)
+            result.AddRange(cell);
+        return result;
+    }
+
+    public void Clear()
+    {
+        hashmap.Clear();
+    }
+}
+
+public class ConcurrentSpatialHash<T>
+{
+    private readonly ConcurrentDictionary<Vector3Int, ConcurrentBag<T>> hashmap;
+    public float cellSize;
+
+    public ConcurrentSpatialHash(float cellSize)
     {
         hashmap = new();
         this.cellSize = cellSize;
