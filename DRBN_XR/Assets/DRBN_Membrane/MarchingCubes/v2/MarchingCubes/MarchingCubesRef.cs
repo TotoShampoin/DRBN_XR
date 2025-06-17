@@ -50,7 +50,7 @@ namespace MarchingCubing.V2
             triangleCountBuffer?.Release();
         }
 
-        void OnDrawGizmos()
+        void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.white;
             Gizmos.matrix = transform.localToWorldMatrix;

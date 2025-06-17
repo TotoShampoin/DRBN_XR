@@ -61,7 +61,7 @@ public class VolumeRenderer : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    void OnDrawGizmos()
+    void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
         Gizmos.matrix = transform.localToWorldMatrix;
