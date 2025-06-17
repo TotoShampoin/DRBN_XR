@@ -99,6 +99,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de6a47bce0ede384ea642ebcf63796e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  marchingCubesShader: {fileID: 7200000, guid: daf38f6f439c47346b6fcb0da4bb114e, type: 3}
+  marchingCubesShader: {fileID: 7200000, guid: dfa44cfd2616af74592442ed74387495, type: 3}
   resolution: 32
   smooth: 1
+  bounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0.5, y: 0.5, z: 0.5}

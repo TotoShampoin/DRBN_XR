@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace MarchingCubing.V2
@@ -24,11 +26,17 @@ namespace MarchingCubing.V2
 
         public int resolution = 32;
         public bool smooth = true;
+        public Bounds bounds = new(Vector3.zero, Vector3.one);
 
         readonly List<Vector3> cachedVerts = new();
         readonly List<int> cachedTris = new();
         readonly Dictionary<Vector3, int> cachedVertDict = new();
         readonly List<Triangle> cachedTriangles = new();
+
+        static readonly ProfilerMarker prepareMarker = new("Membrane.MarchingCube.Prepare");
+        static readonly ProfilerMarker marchMarker = new("Membrane.MarchingCube.March");
+        static readonly ProfilerMarker readbackMarker = new("Membrane.MarchingCube.GpuRead");
+        static readonly ProfilerMarker parseMarker = new("Membrane.MarchingCube.MeshConversion");
 
         void OnEnable()
         {
@@ -46,7 +54,7 @@ namespace MarchingCubing.V2
         {
             Gizmos.color = Color.white;
             Gizmos.matrix = transform.localToWorldMatrix;
-            Gizmos.DrawWireCube(Vector3.zero, new Vector3(1, 1, 1));
+            Gizmos.DrawWireCube(bounds.center, bounds.size);
         }
 
         public void ClearMesh()
@@ -61,54 +69,73 @@ namespace MarchingCubing.V2
 
         public void GenerateMesh(RenderTexture renderTexture, float threshold, Mesh mesh)
         {
-            PrepareBuffer();
-
-            var kernel = marchingCubesShader.FindKernel("MarchingCubes");
-
-            marchingCubesShader.SetBuffer(kernel, "_Triangles", triangleBuffer);
-            marchingCubesShader.SetTexture(kernel, "_Input", renderTexture);
-
-            marchingCubesShader.SetInt("_Resolution", resolution);
-            marchingCubesShader.SetFloat("_Threshold", threshold);
-
-            triangleBuffer.SetCounterValue(0);
-
-            marchingCubesShader.Dispatch(
-                kernel,
-                Mathf.CeilToInt((float)resolution / 8),
-                Mathf.CeilToInt((float)resolution / 8),
-                Mathf.CeilToInt((float)resolution / 8));
-
-            int triCount = ReadTriangleCount();
-            if (cachedTriangles.Capacity < triCount)
-                cachedTriangles.Capacity = triCount;
-            cachedTriangles.Clear();
-            if (triCount > 0)
+            using (prepareMarker.Auto())
             {
-                Triangle[] tempTriangles = new Triangle[triCount];
-                triangleBuffer.GetData(tempTriangles);
-                cachedTriangles.AddRange(tempTriangles);
+                PrepareBuffer();
             }
 
-            if (smooth)
-                SmoothMeshFromTriangles(cachedTriangles, mesh);
-            else
-                SharpMeshFromTriangles(cachedTriangles, mesh);
+            using (marchMarker.Auto())
+            {
+                var kernel = marchingCubesShader.FindKernel("MarchingCubes");
+
+                marchingCubesShader.SetBuffer(kernel, "_Triangles", triangleBuffer);
+                marchingCubesShader.SetTexture(kernel, "_Input", renderTexture);
+
+                marchingCubesShader.SetInt("_Resolution", resolution);
+                marchingCubesShader.SetFloat("_Threshold", threshold);
+                marchingCubesShader.SetVector("_Min", bounds.min);
+                marchingCubesShader.SetVector("_Max", bounds.max);
+
+                triangleBuffer.SetCounterValue(0);
+
+                marchingCubesShader.Dispatch(
+                    kernel,
+                    Mathf.CeilToInt((float)resolution / 8),
+                    Mathf.CeilToInt((float)resolution / 8),
+                    Mathf.CeilToInt((float)resolution / 8));
+            }
+
+            int triCount = ReadTriangleCount();
+            using (readbackMarker.Auto())
+            {
+                if (cachedTriangles.Capacity < triCount)
+                    cachedTriangles.Capacity = triCount;
+                cachedTriangles.Clear();
+                if (triCount > 0)
+                {
+                    Triangle[] tempTriangles = new Triangle[triCount];
+                    triangleBuffer.GetData(tempTriangles);
+                    cachedTriangles.AddRange(tempTriangles);
+                }
+            }
+
+            using (parseMarker.Auto())
+            {
+                if (smooth)
+                    SmoothMeshFromTriangles(cachedTriangles, mesh);
+                else
+                    SharpMeshFromTriangles(cachedTriangles, mesh);
+            }
         }
 
         void SharpMeshFromTriangles(IList<Triangle> triangles, Mesh mesh)
         {
             cachedVerts.Clear();
             cachedTris.Clear();
-            for (int i = 0; i < triangles.Count; i++)
+            int triCount = triangles.Count;
+            cachedVerts.AddRange(new Vector3[triCount * 3]);
+            cachedTris.AddRange(new int[triCount * 3]);
+            Parallel.For(0, triCount, i =>
             {
-                cachedVerts.Add(triangles[i].a);
-                cachedVerts.Add(triangles[i].b);
-                cachedVerts.Add(triangles[i].c);
-                cachedTris.Add(i * 3);
-                cachedTris.Add(i * 3 + 1);
-                cachedTris.Add(i * 3 + 2);
-            }
+                var tri = triangles[i];
+                int vIdx = i * 3;
+                cachedVerts[vIdx] = tri.a;
+                cachedVerts[vIdx + 1] = tri.b;
+                cachedVerts[vIdx + 2] = tri.c;
+                cachedTris[vIdx] = vIdx;
+                cachedTris[vIdx + 1] = vIdx + 1;
+                cachedTris[vIdx + 2] = vIdx + 2;
+            });
             mesh.Clear();
             mesh.SetVertices(cachedVerts);
             mesh.SetTriangles(cachedTris, 0);
