@@ -31,8 +31,8 @@ namespace WeightGeneration
             quadraticCurve3DShader.SetFloat("_A", a);
             quadraticCurve3DShader.SetFloat("_B", b);
             quadraticCurve3DShader.SetFloat("_C", c);
-            quadraticCurve3DShader.SetVector("_MinBounds", minBounds);
-            quadraticCurve3DShader.SetVector("_MaxBounds", maxBounds);
+            quadraticCurve3DShader.SetVector("_MinBounds", minBounds + offset);
+            quadraticCurve3DShader.SetVector("_MaxBounds", maxBounds + offset);
 
             quadraticCurve3DShader.Dispatch(
                 kernel,

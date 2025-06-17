@@ -32,9 +32,9 @@ namespace WeightGeneration
             particleDensityShader
                 .SetFloat("_DensityRadius", particleSimulator.DensityRadius);
             particleDensityShader
-                .SetVector("_MinBounds", particleSimulator.MinBounds);
+                .SetVector("_MinBounds", particleSimulator.MinBounds + offset);
             particleDensityShader
-                .SetVector("_MaxBounds", particleSimulator.MaxBounds);
+                .SetVector("_MaxBounds", particleSimulator.MaxBounds + offset);
 
             particleDensityShader.Dispatch(
                 kernel,

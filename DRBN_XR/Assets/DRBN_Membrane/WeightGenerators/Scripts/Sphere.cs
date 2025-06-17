@@ -29,8 +29,8 @@ namespace WeightGeneration
 
             sphereShader.SetFloat("_Radius", radius);
             sphereShader.SetFloat("_N", n);
-            sphereShader.SetVector("_MinBounds", minBounds);
-            sphereShader.SetVector("_MaxBounds", maxBounds);
+            sphereShader.SetVector("_MinBounds", minBounds + offset);
+            sphereShader.SetVector("_MaxBounds", maxBounds + offset);
 
             sphereShader.Dispatch(
                 kernel,

@@ -24,5 +24,7 @@ namespace WeightGeneration
         /// </summary>
         /// <param name="renderTexture"></param>
         public abstract void Generate(RenderTexture renderTexture);
+
+        [NonSerialized] public Vector3 offset = Vector3.zero;
     }
 }
