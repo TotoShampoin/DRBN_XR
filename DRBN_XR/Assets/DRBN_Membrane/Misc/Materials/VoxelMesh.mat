@@ -76,10 +76,10 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _MaxValue: 2
+    - _MaxValue: 1
     - _MaxVelocity: 100
     - _Metallic: 0
-    - _MinValue: -2
+    - _MinValue: -1
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Opacity: 1
@@ -90,7 +90,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _VoxelSize: 0.01
+    - _VoxelSize: 0.1
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
