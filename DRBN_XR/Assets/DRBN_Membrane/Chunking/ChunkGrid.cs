@@ -3,16 +3,24 @@ using UnityEngine;
 using MarchingCubing.V2;
 using WeightGeneration;
 using WeightPainting;
+using Voxelization;
+using System.Linq;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class ChunkGrid : MonoBehaviour
 {
     public WeightGenerator weightGenerator;
     public WeightPainterNobehaviour weightPainter;
     public MarchingCubesRef marchingCubes;
+    public Voxelizer voxelizer;
     public Material material;
     public RenderTexture baseVolume;
 
     public int marchResolution = 8;
+    public bool constantCycle = false;
     float offsetFactor;
 
     public struct ChunkData
@@ -24,29 +32,40 @@ public class ChunkGrid : MonoBehaviour
 
     void Start()
     {
-        int N = 1;
+        PrepareModules();
+        int N = 2;
+        int y = 0;
         for (int x = -N; x <= N; x++)
-            for (int y = -N; y <= N; y++)
-                for (int z = -N; z <= N; z++)
-                    CreateChunk(new Vector3Int(x, y, z));
+            // for (int y = -N; y <= N; y++)
+            for (int z = -N; z <= N; z++)
+            {
+                var at = new Vector3Int(x, y, z);
+                CreateChunk(at);
+                RegenerateChunk(at);
+                MarchChunk(at, weightGenerator.Threshold);
+            }
     }
 
     void Update()
     {
-        offsetFactor = 2f - (float)4 / marchResolution;
-        marchingCubes.resolution = marchResolution;
-        marchingCubes.bounds.size = new Vector3(offsetFactor, offsetFactor, offsetFactor);
         RenderParams rp = new(material);
         foreach (var (pos, chunk) in grid)
         {
             Vector3 posf = pos;
-            RegenerateChunk(pos);
-            MarchChunk(pos);
             Graphics.RenderMesh(
                 rp, chunk.mesh, 0,
                 transform.localToWorldMatrix * Matrix4x4.TRS(posf * offsetFactor, Quaternion.identity, Vector3.one)
             );
         }
+        if (constantCycle)
+            CycleAll();
+    }
+
+    void PrepareModules()
+    {
+        offsetFactor = 2f - (float)4 / marchResolution;
+        marchingCubes.resolution = marchResolution;
+        marchingCubes.bounds.size = new Vector3(offsetFactor, offsetFactor, offsetFactor);
     }
 
     public void CreateChunk(Vector3Int at)
@@ -64,26 +83,107 @@ public class ChunkGrid : MonoBehaviour
         weightGenerator.offset = atf * offsetFactor;
         weightGenerator.Generate(grid[at].volume);
     }
-    public void MarchChunk(Vector3Int at)
+    public void VoxelizeChunk(Vector3Int at)
     {
-        marchingCubes.GenerateMesh(grid[at].volume, 0, grid[at].mesh);
+        var vertices = grid[at].mesh.vertices.ToList();
+        var triangles = grid[at].mesh.triangles.ToList();
+        Vector3Int[] neighbors = {
+            new (1, 0, 0), new (-1, 0, 0),
+            new (0, 1, 0), new (0, -1, 0),
+            new (0, 0, 1), new (0, 0, -1),
+            new (1, 1, 0), new (1, -1, 0), new (-1, 1, 0), new (-1, -1, 0),
+            new (1, 0, 1), new (1, 0, -1), new (-1, 0, 1), new (-1, 0, -1),
+            new (0, 1, 1), new (0, 1, -1), new (0, -1, 1), new (0, -1, -1),
+            new (1, 1, 1), new (1, 1, -1), new (1, -1, 1), new (1, -1, -1),
+            new (-1, 1, 1), new (-1, 1, -1), new (-1, -1, 1), new (-1, -1, -1)
+        };
+
+        int vertexOffset = vertices.Count;
+        foreach (var neighbor in neighbors)
+        {
+            Vector3Int neighborPos = at + neighbor;
+            if (grid.TryGetValue(neighborPos, out var neighborChunk) && neighborChunk.mesh != null)
+            {
+                var neighborVertices = neighborChunk.mesh.vertices;
+                var neighborTriangles = neighborChunk.mesh.triangles;
+                Vector3 delta = neighborPos - at;
+                Vector3 offset = delta * offsetFactor;
+                int baseIndex = vertices.Count;
+                vertices.AddRange(neighborVertices.Select(v => v + offset));
+                triangles.AddRange(neighborTriangles.Select(i => i + baseIndex));
+            }
+        }
+        var mesh = new Mesh()
+        {
+            vertices = vertices.ToArray(),
+            triangles = triangles.ToArray(),
+        };
+        mesh.RecalculateNormals();
+
+        voxelizer.Voxelize(mesh, grid[at].volume);
+    }
+    public void MarchChunk(Vector3Int at, float threshold = 0)
+    {
+        marchingCubes.GenerateMesh(grid[at].volume, threshold, grid[at].mesh);
     }
 
-    // void OnPreRender()
-    // {
-    //     RenderParams rp = new(material);
-    //     foreach (var (pos, chunk) in grid)
-    //     {
-    //         Graphics.RenderMesh(
-    //             rp, chunk.mesh, 0,
-    //             transform.localToWorldMatrix * Matrix4x4.TRS(pos, Quaternion.identity, Vector3.one)
-    //         );
-    //     }
-    // }
+    public void RegenerateAll()
+    {
+        PrepareModules();
+        foreach (var pos in grid.Keys)
+        {
+            RegenerateChunk(pos);
+            MarchChunk(pos);
+        }
+    }
+    public void VoxelizeAll()
+    {
+        PrepareModules();
+        foreach (var pos in grid.Keys)
+        {
+            VoxelizeChunk(pos);
+        }
+    }
+    public void MarchAll()
+    {
+        PrepareModules();
+        foreach (var pos in grid.Keys)
+        {
+            MarchChunk(pos);
+        }
+    }
+    public void CycleAll()
+    {
+        VoxelizeAll();
+        MarchAll();
+    }
 
     void OnDrawGizmosSelected()
     {
         Gizmos.matrix = transform.localToWorldMatrix;
-        Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
+        Gizmos.DrawWireCube(Vector3.zero, new Vector3(offsetFactor, offsetFactor, offsetFactor));
     }
 }
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(ChunkGrid))]
+public class ChunkGridEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        ChunkGrid grid = (ChunkGrid)target;
+
+        GUILayout.Space(10);
+        if (GUILayout.Button("Regenerate All Chunks"))
+        {
+            grid.RegenerateAll();
+        }
+        if (GUILayout.Button("Voxelizer Cycle"))
+        {
+            grid.CycleAll();
+        }
+    }
+}
+#endif

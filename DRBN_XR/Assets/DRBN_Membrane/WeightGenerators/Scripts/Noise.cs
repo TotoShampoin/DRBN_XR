@@ -25,8 +25,9 @@ namespace WeightGeneration
 
             noiseShader.SetTexture(kernel, "_Output", renderTexture);
 
-            noiseShader.SetVector("_MinBounds", minBounds + offset);
-            noiseShader.SetVector("_MaxBounds", maxBounds + offset);
+            noiseShader.SetVector("_Offset", offset);
+            noiseShader.SetVector("_MinBounds", minBounds);
+            noiseShader.SetVector("_MaxBounds", maxBounds);
 
             noiseShader.Dispatch(
                 kernel,

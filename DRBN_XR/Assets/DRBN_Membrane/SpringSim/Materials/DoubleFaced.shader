@@ -43,6 +43,10 @@ Shader "Custom/DoubleFaced"
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
             fixed4 color = IN.facing > 0 ? _ColorFront : _ColorBack;
+            if (IN.facing < 0)
+            {
+                o.Normal = -o.Normal;
+            }
             fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * color;
             o.Albedo = c.rgb * IN.color.rgb;
             o.Metallic = _Metallic;

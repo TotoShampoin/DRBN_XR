@@ -2,6 +2,7 @@
 
 RWTexture3D<float> _Output;
 
+float3 _Offset;
 float3 _MinBounds;
 float3 _MaxBounds;
 
@@ -117,7 +118,7 @@ float3 fade(float3 t) {
 float perlinNoise(float3 position, uint seed) {
     float3 floorPosition = floor(position);
     float3 fractPosition = position - floorPosition;
-    uint3 cellCoordinates = uint3(floorPosition);
+    uint3 cellCoordinates = uint3(int3(floorPosition));
     float value1 = dot(gradientDirection(hash(cellCoordinates, seed)), fractPosition);
     float value2 = dot(gradientDirection(hash((cellCoordinates + uint3(1, 0, 0)), seed)), fractPosition - float3(1, 0, 0));
     float value3 = dot(gradientDirection(hash((cellCoordinates + uint3(0, 1, 0)), seed)), fractPosition - float3(0, 1, 0));
@@ -166,12 +167,13 @@ void Noise (uint3 id : SV_DispatchThreadID)
     float3 uvw = (float3)id / float3(width, height, depth);
     
     // Calculate the 3D position in the texture
-    float3 position = lerp(_MinBounds, _MaxBounds, uvw);
+    float3 position = lerp(_MinBounds, _MaxBounds, uvw) + _Offset;
 
     // Generate the noise value
     float noiseValue = perlinNoise(position, 1, 6, 0.5, 2.0, 0x578437adU); // multiple octaves
     noiseValue = (noiseValue + 1.0) * 0.5; // convert from range [-1, 1] to range [0, 1]
-    noiseValue *= 1.0 - uvw.y; // apply a gradient based on the y coordinate
+    // noiseValue *= 1.0 - uvw.y; // apply a gradient based on the y coordinate
+    noiseValue -= (position.y - _MinBounds.y) / (_MaxBounds.y - _MinBounds.y);
 
     // Write the noise value to the output texture
     _Output[id] = noiseValue;
