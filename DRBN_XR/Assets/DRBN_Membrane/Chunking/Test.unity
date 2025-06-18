@@ -192,11 +192,47 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3838591909117182087, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
+        type: 3}
+      propertyPath: m_GripInput.m_InputActionReference
+      value: 
+      objectReference: {fileID: -4557536671329432002, guid: c348712bda248c246b8c49b3db54643f,
+        type: 3}
+    - target: {fileID: 3838591909117182087, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
+        type: 3}
+      propertyPath: m_StickInput.m_InputActionReference
+      value: 
+      objectReference: {fileID: 6972639530819350904, guid: c348712bda248c246b8c49b3db54643f,
+        type: 3}
+    - target: {fileID: 3838591909117182087, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
+        type: 3}
+      propertyPath: m_TriggerInput.m_InputActionReference
+      value: 
+      objectReference: {fileID: -6395602842196007441, guid: c348712bda248c246b8c49b3db54643f,
+        type: 3}
     - target: {fileID: 4053579577978487484, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
         type: 3}
       propertyPath: m_PhysicsLayerMask.m_Bits
       value: 1025
       objectReference: {fileID: 0}
+    - target: {fileID: 4883220357337963943, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
+        type: 3}
+      propertyPath: m_GripInput.m_InputActionReference
+      value: 
+      objectReference: {fileID: -8979920020589327954, guid: c348712bda248c246b8c49b3db54643f,
+        type: 3}
+    - target: {fileID: 4883220357337963943, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
+        type: 3}
+      propertyPath: m_StickInput.m_InputActionReference
+      value: 
+      objectReference: {fileID: 678435681617481926, guid: c348712bda248c246b8c49b3db54643f,
+        type: 3}
+    - target: {fileID: 4883220357337963943, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
+        type: 3}
+      propertyPath: m_TriggerInput.m_InputActionReference
+      value: 
+      objectReference: {fileID: 3279264004350380116, guid: c348712bda248c246b8c49b3db54643f,
+        type: 3}
     - target: {fileID: 6232745470614056090, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
         type: 3}
       propertyPath: m_Enabled
@@ -420,6 +456,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c33a0d3476579e4280aad18129c0b2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!4 &1189709270 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3954319948395782924, guid: f6336ac4ac8b4d34bc5072418cdc62a0,
+    type: 3}
+  m_PrefabInstance: {fileID: 442064375}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1302611206
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -666,9 +708,17 @@ MonoBehaviour:
   marchingCubes: {fileID: 1810203732}
   voxelizer: {fileID: 1810203735}
   material: {fileID: 2100000, guid: ae4e451939af45c4ebe152c2845fc678, type: 2}
+  highlightMaterial: {fileID: 2100000, guid: e0bd6264bc3b99e4db1c73232d4da363, type: 2}
   baseVolume: {fileID: 8400000, guid: 1a7caa3c72642e64bafc6dac8f214c6c, type: 2}
+  cursor: {fileID: 1189709270}
+  primary: {fileID: 3279264004350380116, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  secondary: {fileID: -8979920020589327954, guid: c348712bda248c246b8c49b3db54643f,
+    type: 3}
   marchResolution: 8
-  constantCycle: 1
+  initNbChunks: 15
+  constantCycle: 0
+  paintRadius: 0.2
+  paintWeight: 2
 --- !u!4 &1810203728
 Transform:
   m_ObjectHideFlags: 0
