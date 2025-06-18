@@ -23,7 +23,7 @@ public class ChunkGrid : MonoBehaviour
     public bool constantCycle = false;
     float offsetFactor;
 
-    public struct ChunkData
+    public class ChunkData
     {
         public Mesh mesh;
         public RenderTexture volume;
@@ -125,6 +125,7 @@ public class ChunkGrid : MonoBehaviour
     public void MarchChunk(Vector3Int at, float threshold = 0)
     {
         marchingCubes.GenerateMesh(grid[at].volume, threshold, grid[at].mesh);
+        MeshMod.DeduplicateVertices(grid[at].mesh);
     }
 
     public void RegenerateAll()
@@ -158,11 +159,30 @@ public class ChunkGrid : MonoBehaviour
         MarchAll();
     }
 
+#if UNITY_EDITOR
     void OnDrawGizmosSelected()
     {
-        Gizmos.matrix = transform.localToWorldMatrix;
-        Gizmos.DrawWireCube(Vector3.zero, new Vector3(offsetFactor, offsetFactor, offsetFactor));
+        if (grid.Count > 0)
+        {
+            var min = new Vector3(
+                grid.Keys.Min(k => k.x),
+                grid.Keys.Min(k => k.y),
+                grid.Keys.Min(k => k.z)
+            );
+            var max = new Vector3(
+                grid.Keys.Max(k => k.x),
+                grid.Keys.Max(k => k.y),
+                grid.Keys.Max(k => k.z)
+            );
+            Gizmos.color = Color.yellow;
+            Vector3 center = 0.5f * offsetFactor * (min + max);
+            Vector3 size = (max - min + Vector3.one) * offsetFactor;
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.DrawWireCube(center, size);
+        }
     }
+#endif
+
 }
 
 #if UNITY_EDITOR
