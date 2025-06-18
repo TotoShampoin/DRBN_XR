@@ -7,6 +7,9 @@ using Unity.Profiling;
 public class MeshMod
 {
     static readonly ProfilerMarker dedupeMarker = new("Membrane.MeshMod.DeduplicateVertices");
+    static readonly ProfilerMarker dedupeAllocMarker = new("Membrane.MeshMod.DeduplicateVertices.Allocation");
+    static readonly ProfilerMarker dedupeVerticesMarker = new("Membrane.MeshMod.DeduplicateVertices.ProcessVertices");
+    static readonly ProfilerMarker dedupeTrianglesMarker = new("Membrane.MeshMod.DeduplicateVertices.FillTriangles");
     static readonly ProfilerMarker distGroupMarker = new("Membrane.MeshMod.DistanceOfGroups");
 
     /// <summary>
@@ -22,11 +25,14 @@ public class MeshMod
             Vector3[] vertices = mesh.vertices;
             int[] triangles = mesh.triangles;
 
+            dedupeAllocMarker.Begin();
             var grid = new Dictionary<(int, int, int), int>();
             var newVertices = new List<Vector3>();
             var vertexCumul = new List<int>();
             var map = new int[vertices.Length];
+            dedupeAllocMarker.End();
 
+            dedupeVerticesMarker.Begin();
             for (int i = 0; i < vertices.Length; i++)
             {
                 var v = vertices[i];
@@ -51,10 +57,13 @@ public class MeshMod
                     map[i] = newVertices.Count - 1;
                 }
             }
+            dedupeVerticesMarker.End();
 
+            dedupeTrianglesMarker.Begin();
             var newTriangles = new int[triangles.Length];
             for (int i = 0; i < triangles.Length; i++)
                 newTriangles[i] = map[triangles[i]];
+            dedupeTrianglesMarker.End();
 
             Mesh result = new()
             {
