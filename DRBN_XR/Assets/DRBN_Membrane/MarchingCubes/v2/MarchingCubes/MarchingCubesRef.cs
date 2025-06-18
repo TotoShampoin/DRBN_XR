@@ -10,7 +10,7 @@ namespace MarchingCubing.V2
     /// </summary>
     public class MarchingCubesRef : MonoBehaviour
     {
-        struct Triangle
+        public struct Triangle
         {
             public Vector3 a;
             public Vector3 b;
@@ -31,7 +31,6 @@ namespace MarchingCubing.V2
         readonly List<Vector3> cachedVerts = new();
         readonly List<int> cachedTris = new();
         readonly Dictionary<Vector3, int> cachedVertDict = new();
-        readonly List<Triangle> cachedTriangles = new();
 
         static readonly ProfilerMarker prepareMarker = new("Membrane.MarchingCube.Prepare");
         static readonly ProfilerMarker marchMarker = new("Membrane.MarchingCube.March");
@@ -50,13 +49,6 @@ namespace MarchingCubing.V2
             triangleCountBuffer?.Release();
         }
 
-        void OnDrawGizmosSelected()
-        {
-            Gizmos.color = Color.white;
-            Gizmos.matrix = transform.localToWorldMatrix;
-            Gizmos.DrawWireCube(bounds.center, bounds.size);
-        }
-
         public void ClearMesh()
         {
             meshFilter.mesh = new();
@@ -67,13 +59,20 @@ namespace MarchingCubing.V2
             GenerateMesh(renderTexture, threshold, meshFilter.mesh);
         }
 
-        public void GenerateMesh(RenderTexture renderTexture, float threshold, Mesh mesh)
+        public void PrepareBuffer()
         {
             using (prepareMarker.Auto())
             {
-                PrepareBuffer();
+                var size = 5 * resolution * resolution * resolution;
+                if (triangleBuffer == null || triangleBuffer.count != size)
+                {
+                    triangleBuffer?.Release();
+                    triangleBuffer = new(size, Triangle.Size, ComputeBufferType.Append);
+                }
             }
-
+        }
+        public void March(RenderTexture renderTexture, float threshold)
+        {
             using (marchMarker.Auto())
             {
                 var kernel = marchingCubesShader.FindKernel("MarchingCubes");
@@ -94,28 +93,35 @@ namespace MarchingCubing.V2
                     Mathf.CeilToInt((float)resolution / 8),
                     Mathf.CeilToInt((float)resolution / 8));
             }
-
-            int triCount = ReadTriangleCount();
+        }
+        public Triangle[] ReadbackTriangles()
+        {
             using (readbackMarker.Auto())
             {
-                if (cachedTriangles.Capacity < triCount)
-                    cachedTriangles.Capacity = triCount;
-                cachedTriangles.Clear();
-                if (triCount > 0)
-                {
-                    Triangle[] tempTriangles = new Triangle[triCount];
-                    triangleBuffer.GetData(tempTriangles);
-                    cachedTriangles.AddRange(tempTriangles);
-                }
+                if (triangleBuffer == null) return new Triangle[0];
+                int triCount = ReadTriangleCount();
+                Triangle[] tempTriangles = new Triangle[triCount];
+                if (triCount > 0) triangleBuffer.GetData(tempTriangles);
+                return tempTriangles;
             }
-
+        }
+        public void ParseTrianglesIntoMesh(Triangle[] triangles, Mesh mesh)
+        {
             using (parseMarker.Auto())
             {
                 if (smooth)
-                    SmoothMeshFromTriangles(cachedTriangles, mesh);
+                    SmoothMeshFromTriangles(triangles, mesh);
                 else
-                    SharpMeshFromTriangles(cachedTriangles, mesh);
+                    SharpMeshFromTriangles(triangles, mesh);
             }
+        }
+
+        public void GenerateMesh(RenderTexture renderTexture, float threshold, Mesh mesh)
+        {
+            PrepareBuffer();
+            March(renderTexture, threshold);
+            var triangles = ReadbackTriangles();
+            ParseTrianglesIntoMesh(triangles, mesh);
         }
 
         void SharpMeshFromTriangles(IList<Triangle> triangles, Mesh mesh)
@@ -187,15 +193,6 @@ namespace MarchingCubing.V2
             mesh.RecalculateBounds();
         }
 
-        void PrepareBuffer()
-        {
-            var size = 5 * resolution * resolution * resolution;
-            if (triangleBuffer == null || triangleBuffer.count != size)
-            {
-                triangleBuffer?.Release();
-                triangleBuffer = new(size, Triangle.Size, ComputeBufferType.Append);
-            }
-        }
         int ReadTriangleCount()
         {
             int[] triCount = { 0 };
