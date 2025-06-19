@@ -5,7 +5,7 @@ namespace WeightGeneration
     /// <summary>
     /// Fast Improved 3D Perlin Noise, from https://www.shadertoy.com/view/slB3z3
     /// </summary>
-    class Noise : WeightGenerator
+    public class Noise : WeightGenerator
     {
         public override bool ConstantlyRegenerate => false;
         public float threshold = 0.5f;
@@ -18,6 +18,7 @@ namespace WeightGeneration
 
         [SerializeField] Vector3 minBounds = new(-1, -1, -1);
         [SerializeField] Vector3 maxBounds = new(1, 1, 1);
+        public Vector3 noiseOffset = Vector3.zero;
 
         public override void Generate(RenderTexture renderTexture)
         {
@@ -26,6 +27,7 @@ namespace WeightGeneration
             noiseShader.SetTexture(kernel, "_Output", renderTexture);
 
             noiseShader.SetVector("_Offset", offset);
+            noiseShader.SetVector("_NoiseOffset", noiseOffset);
             noiseShader.SetVector("_MinBounds", minBounds);
             noiseShader.SetVector("_MaxBounds", maxBounds);
 

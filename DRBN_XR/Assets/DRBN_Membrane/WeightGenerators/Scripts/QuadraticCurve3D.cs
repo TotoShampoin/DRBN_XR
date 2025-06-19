@@ -5,7 +5,7 @@ namespace WeightGeneration
     /// <summary>
     /// f(x,y,z) = a r^2 + b r + c - y  ,  with r = sqrt(x^2 + z^2)
     /// </summary>
-    class QuadraticCurve3D : WeightGenerator
+    public class QuadraticCurve3D : WeightGenerator
     {
         public override bool ConstantlyRegenerate => false;
         public float threshold = 0.0f;

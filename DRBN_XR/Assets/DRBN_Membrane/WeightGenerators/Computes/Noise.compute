@@ -2,6 +2,7 @@
 
 RWTexture3D<float> _Output;
 
+float3 _NoiseOffset;
 float3 _Offset;
 float3 _MinBounds;
 float3 _MaxBounds;
@@ -170,7 +171,7 @@ void Noise (uint3 id : SV_DispatchThreadID)
     float3 position = lerp(_MinBounds, _MaxBounds, uvw) + _Offset;
 
     // Generate the noise value
-    float noiseValue = perlinNoise(position, 1, 6, 0.5, 2.0, 0x578437adU); // multiple octaves
+    float noiseValue = perlinNoise(position + _NoiseOffset, 1, 6, 0.5, 2.0, 0x578437adU); // multiple octaves
     noiseValue = (noiseValue + 1.0) * 0.5; // convert from range [-1, 1] to range [0, 1]
     // noiseValue *= 1.0 - uvw.y; // apply a gradient based on the y coordinate
     noiseValue -= (position.y - _MinBounds.y) / (_MaxBounds.y - _MinBounds.y);
