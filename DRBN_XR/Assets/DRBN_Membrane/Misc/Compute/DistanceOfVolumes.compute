@@ -1,0 +1,51 @@
+#pragma kernel Distance
+#pragma kernel MaxReduce
+
+Texture3D<float> TextureA;
+Texture3D<float> TextureB;
+RWTexture3D<float> Result;
+RWStructuredBuffer<float> OutputBuffer;
+
+float D;
+float Kernel(float value)
+{
+    return exp(-D * value * value);
+}
+
+[numthreads(8,8,8)]
+void Distance(uint3 id : SV_DispatchThreadID)
+{
+    float fx = TextureA[id];
+    float gx = TextureB[id];
+    float hx = abs(Kernel(fx) - Kernel(gx));
+    Result[id] = hx;
+}
+
+uint N;
+[numthreads(8,8,8)]
+void MaxReduce(uint3 id : SV_DispatchThreadID)
+{
+    uint rw, rh, rd;
+    Result.GetDimensions(rw, rh, rd);
+
+    if (id.x >= rw || id.y >= rh || id.z >= rd)
+        return;
+
+    float maxValue = -1000000.0;
+    for (uint x = 0; x <= 1; ++x)
+    for (uint y = 0; y <= 1; ++y)
+    for (uint z = 0; z <= 1; ++z)
+    {
+        uint3 src = id + uint3(x, y, z) * N;
+        if (src.x < rw && src.y < rh && src.z < rd)
+        {
+            float v = Result[src];
+            maxValue = max(maxValue, v);
+        }
+    }
+    Result[id] = maxValue;
+
+    if(id.x == 0 && id.y == 0 && id.z == 0) {
+        OutputBuffer[0] = Result[id];
+    }
+}
