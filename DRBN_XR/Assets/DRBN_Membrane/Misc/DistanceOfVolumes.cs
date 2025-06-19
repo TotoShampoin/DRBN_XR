@@ -3,7 +3,8 @@ using UnityEngine;
 public class DistanceOfVolumes : MonoBehaviour
 {
     [SerializeField] ComputeShader shader;
-    [Range(0, 100), SerializeField] float distanceSensitivity = 3f;
+    [Range(1, 100), SerializeField] float attenuation = 1f;
+    [Range(0, 300), SerializeField] float distanceSensitivity = 3f;
 
     public float Distance(RenderTexture a, RenderTexture b, RenderTexture output = null)
     {
@@ -27,6 +28,7 @@ public class DistanceOfVolumes : MonoBehaviour
         shader.SetTexture(kernel, "TextureA", a);
         shader.SetTexture(kernel, "TextureB", b);
         shader.SetTexture(kernel, "Result", result);
+        shader.SetFloat("A", attenuation);
         shader.SetFloat("D", distanceSensitivity);
 
         shader.GetKernelThreadGroupSizes(kernel, out uint tgx, out uint tgy, out uint tgz);

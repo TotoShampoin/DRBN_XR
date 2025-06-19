@@ -21,6 +21,8 @@ public class VolumeRenderer : MonoBehaviour
 
     void Update()
     {
+        if (texture == null)
+            return;
         if (meshCountTrack != texture.width * texture.height * texture.volumeDepth)
             Initialize();
 

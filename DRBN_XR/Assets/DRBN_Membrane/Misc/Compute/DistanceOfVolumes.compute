@@ -6,10 +6,10 @@ Texture3D<float> TextureB;
 RWTexture3D<float> Result;
 RWStructuredBuffer<float> OutputBuffer;
 
-float D;
+float D, A;
 float Kernel(float value)
 {
-    return exp(-D * value * value);
+    return exp(-D * value * value) / A;
 }
 
 [numthreads(8,8,8)]
