@@ -9,13 +9,14 @@ namespace SpringSim.V3
         public Mesh massMesh;
         public Mesh linkMesh;
         public Material material;
+        public Material highlightMaterial;
         public float thickness = 0.05f;
 
         static readonly ProfilerMarker rendering = new("Membrane.SpringSim.Rendering");
 
         Matrix4x4[] massBuffer;
         Matrix4x4[] linkBuffer;
-        public void Render(SpringSimulatorState state, Matrix4x4 localToWorld = default)
+        public void Render(SpringSimulatorState state, Matrix4x4 localToWorld = default, bool highlight = false)
         {
             if (state == null || state.masses.Count == 0)
                 return;
@@ -55,8 +56,16 @@ namespace SpringSim.V3
                         new Vector3(thickness / 4f, thickness / 4f, length) / 2f
                     );
             });
-            Graphics.DrawMeshInstanced(massMesh, 0, material, massBuffer);
-            Graphics.DrawMeshInstanced(linkMesh, 0, material, linkBuffer);
+            if (highlight)
+            {
+                Graphics.DrawMeshInstanced(massMesh, 0, highlightMaterial, massBuffer);
+                Graphics.DrawMeshInstanced(linkMesh, 0, highlightMaterial, linkBuffer);
+            }
+            else
+            {
+                Graphics.DrawMeshInstanced(massMesh, 0, material, massBuffer);
+                Graphics.DrawMeshInstanced(linkMesh, 0, material, linkBuffer);
+            }
             rendering.End();
         }
 

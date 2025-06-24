@@ -11,6 +11,8 @@ public class MeshMod
     static readonly ProfilerMarker dedupeVerticesMarker = new("Membrane.MeshMod.DeduplicateVertices.ProcessVertices");
     static readonly ProfilerMarker dedupeTrianglesMarker = new("Membrane.MeshMod.DeduplicateVertices.FillTriangles");
     static readonly ProfilerMarker distGroupMarker = new("Membrane.MeshMod.DistanceOfGroups");
+    static readonly ProfilerMarker triRayMarker = new("Membrane.MeshMod.RayTriangleIntersection");
+    static readonly ProfilerMarker meshRayMarker = new("Membrane.MeshMod.RayMeshIntersection");
 
     /// <summary>
     /// Takes a mesh, and merges vertices that are too close to each other
@@ -241,35 +243,77 @@ public class MeshMod
     /// <returns></returns>
     static public bool RayTriangleIntersection(Vector3 rayOrigin, Vector3 rayDir, (Vector3 v0, Vector3 v1, Vector3 v2) triangle, out Vector3 hit, out float t)
     {
-        hit = Vector3.zero;
-        t = 0f;
-        const float EPSILON = 1e-6f;
-        Vector3 edge1 = triangle.v1 - triangle.v0;
-        Vector3 edge2 = triangle.v2 - triangle.v0;
-        Vector3 h = Vector3.Cross(rayDir, edge2);
-        float a = Vector3.Dot(edge1, h);
-        if (a > -EPSILON && a < EPSILON)
-            return false;
-
-        float f = 1.0f / a;
-        Vector3 s = rayOrigin - triangle.v0;
-        float u = f * Vector3.Dot(s, h);
-        if (u < 0.0f || u > 1.0f)
-            return false;
-
-        Vector3 q = Vector3.Cross(s, edge1);
-        float v = f * Vector3.Dot(rayDir, q);
-        if (v < 0.0f || u + v > 1.0f)
-            return false;
-
-        t = f * Vector3.Dot(edge2, q);
-        if (t > EPSILON)
+        using (triRayMarker.Auto())
         {
-            hit = rayOrigin + rayDir * t;
-            return true;
+            hit = Vector3.zero;
+            t = 0f;
+            const float EPSILON = 1e-6f;
+            Vector3 edge1 = triangle.v1 - triangle.v0;
+            Vector3 edge2 = triangle.v2 - triangle.v0;
+            Vector3 h = Vector3.Cross(rayDir, edge2);
+            float a = Vector3.Dot(edge1, h);
+            if (a > -EPSILON && a < EPSILON)
+                return false;
+
+            float f = 1.0f / a;
+            Vector3 s = rayOrigin - triangle.v0;
+            float u = f * Vector3.Dot(s, h);
+            if (u < 0.0f || u > 1.0f)
+                return false;
+
+            Vector3 q = Vector3.Cross(s, edge1);
+            float v = f * Vector3.Dot(rayDir, q);
+            if (v < 0.0f || u + v > 1.0f)
+                return false;
+
+            t = f * Vector3.Dot(edge2, q);
+            if (t > EPSILON)
+            {
+                hit = rayOrigin + rayDir * t;
+                return true;
+            }
+            else
+                return false;
         }
-        else
-            return false;
     }
 
+    /// <summary>
+    /// Ray to mesh intersection using RayTriangleIntersection
+    /// </summary>
+    public static Vector3? RayMeshIntersection(Mesh mesh, Ray ray)
+    {
+        using (meshRayMarker.Auto())
+        {
+            var rayOrigin = ray.origin;
+            var rayDirection = ray.direction;
+            float closestDist = float.MaxValue;
+            Vector3 hitPoint = Vector3.zero;
+            bool hit = false;
+
+            var vertices = mesh.vertices;
+            var triangles = mesh.triangles;
+
+            if (!mesh.bounds.IntersectRay(ray)) return null;
+
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                Vector3 v0 = vertices[triangles[i + 0]];
+                Vector3 v1 = vertices[triangles[i + 1]];
+                Vector3 v2 = vertices[triangles[i + 2]];
+
+                if (RayTriangleIntersection(
+                        rayOrigin, rayDirection, (v0, v1, v2),
+                        out Vector3 tempHit, out float dist
+                    ) && dist < closestDist
+                )
+                {
+                    closestDist = dist;
+                    hitPoint = tempHit;
+                    hit = true;
+                }
+            }
+
+            return hit ? hitPoint : null;
+        }
+    }
 }

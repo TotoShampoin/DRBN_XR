@@ -25,6 +25,7 @@ namespace SpringSim.V3
 
         public void Iterate(SpringSimulatorState state, float deltaTime)
         {
+            Mass.mass = particleMass;
             iteration.Begin();
             var masses = state.masses;
             var links = state.links;
@@ -76,12 +77,24 @@ namespace SpringSim.V3
             var dampingForce = viscosity * (v2 - v1);
             return springForce + dampingForce;
         }
+        static public Vector3 SpringPull(Vector3 p1, Vector3 p2, float length, float stiffness = 1500f)
+        {
+            var l0 = length;
+            var k = stiffness;
+            var d = Vector3.Distance(p1, p2);
+
+            if (d == 0) return Vector3.zero;
+            var dir = (p2 - p1).normalized;
+            var springForce = k * (d - l0) * dir;
+            return springForce;
+        }
     }
 
 
     public class SpringSimulatorState
     {
         public Vector3 origin = Vector3.zero;
+        public float offsetFactor = 2f;
         public List<Mass> masses = new();
         public List<SpringLink> links = new();
         public List<(int p1, int p2, int p3)> triangles = new();
@@ -92,6 +105,9 @@ namespace SpringSim.V3
 
         readonly static ProfilerMarker generateLut = new("Membrane.SpringSim.GenerateLUT");
         readonly static ProfilerMarker updateLut = new("Membrane.SpringSim.UpdateLUT");
+
+        public Vector3 LocalToGlobalPosition(Vector3 position) => (position + origin) / offsetFactor;
+        public Vector3 GlobalToLocalPosition(Vector3 position) => position * offsetFactor - origin;
 
         public void UpdateLUT()
         {
@@ -119,9 +135,9 @@ namespace SpringSim.V3
             generateLut.End();
         }
 
-        public void ApplyForce(Vector3 force, Vector3 origin, float radius)
+        public void AddExternalForce(Vector3 force, Vector3 from, float radius)
         {
-            externalForces.Add((force, origin, radius));
+            externalForces.Add((force, from, radius));
         }
 
         public IEnumerable<(Mass m, float d, int i)> NearbyMasses(Vector3 position, float distance)
@@ -133,35 +149,36 @@ namespace SpringSim.V3
                     yield return (masses[i], d, i);
             }
         }
-        public List<Mass> GetSurrounding(Vector3 position, float distance) => lutMasses.GetSurrounding(position, distance);
-
-        public Mass ClosestMass(Vector3 position)
+        // public List<Mass> GetSurrounding(Vector3 position, float distance) => lutMasses.GetSurrounding(position, distance); // This doesn't work :(
+        public List<Mass> GetSurrounding(Vector3 position, float distance)
         {
-            float[] distance = masses.Select(m => Vector3.Distance(m.position, position)).ToArray();
+            var result = new List<Mass>();
+            foreach (var mass in masses)
+            {
+                if (Vector3.Distance(mass.position, position) <= distance)
+                    result.Add(mass);
+            }
+            return result;
+        }
+
+        public Mass ClosestMassLocal(Vector3 position)
+        {
             float minDist = float.MaxValue;
             int minIdx = -1;
-            Parallel.For(
-                0, distance.Length,
-                () => (dist: float.MaxValue, idx: -1),
-                (i, state, local) =>
+            for (int i = 0; i < masses.Count; i++)
+            {
+                var dist = Vector3.Distance(masses[i].position, position);
+                if (dist < minDist)
                 {
-                    if (distance[i] < local.idx)
-                        local = (distance[i], i);
-                    return local;
-                },
-                local =>
-                {
-                    lock (distance)
-                    {
-                        if (local.dist < minDist)
-                        {
-                            minDist = local.dist;
-                            minIdx = local.idx;
-                        }
-                    }
+                    minDist = dist;
+                    minIdx = i;
                 }
-            );
+            }
             return minIdx >= 0 ? masses[minIdx] : null;
+        }
+        public Mass ClosestMassGlobal(Vector3 position)
+        {
+            return ClosestMassLocal(GlobalToLocalPosition(position));
         }
     }
 

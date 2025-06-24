@@ -7,31 +7,24 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Floor
-  m_Shader: {fileID: 4800000, guid: 253fc693e4329de4480412ba4090a179, type: 3}
+  m_Name: Beads white
+  m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _NORMALMAP
-  m_InvalidKeywords:
-  - _METALLICGLOSSMAP
-  - _PARALLAXMAP
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties: _SmoothnessTextureChannel
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _ARMMap:
-        m_Texture: {fileID: 2800000, guid: 10819ee2ae8012d4f8087663ac4fe351, type: 3}
-        m_Scale: {x: 10, y: 10}
-        m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 2800000, guid: 0807e8b17f97fab48b68b30291359c98, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
@@ -46,36 +39,24 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _DisplacementMap:
-        m_Texture: {fileID: 2800000, guid: 51f9e3c9db471754d9891018b579e001, type: 3}
-        m_Scale: {x: 10, y: 10}
-        m_Offset: {x: 0, y: 0}
     - _EmissionMap:
         m_Texture: {fileID: 0}
-        m_Scale: {x: 10, y: 10}
-        m_Offset: {x: 0, y: 0}
-    - _HeightMap:
-        m_Texture: {fileID: 2800000, guid: 51f9e3c9db471754d9891018b579e001, type: 3}
-        m_Scale: {x: 10, y: 10}
-        m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 9acb0400ee38f1a498465cbdc0dfd384, type: 3}
-        m_Scale: {x: 10, y: 10}
-        m_Offset: {x: 0, y: 0}
-    - _MetallicGlossMap:
-        m_Texture: {fileID: 2800000, guid: 884d6813a15ae9144969f0dfee940102, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _NormalMap:
-        m_Texture: {fileID: 2800000, guid: 0807e8b17f97fab48b68b30291359c98, type: 3}
-        m_Scale: {x: 10, y: 10}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
-        m_Texture: {fileID: 2800000, guid: 5e25a6b49acba8843b2b93f363091330, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ParallaxMap:
-        m_Texture: {fileID: 2800000, guid: 51f9e3c9db471754d9891018b579e001, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -83,17 +64,14 @@ Material:
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
-    - _DisplacementScale: 0.006
     - _DstBlend: 0
-    - _GlossMapScale: 0.6
-    - _Glossiness: 0.35
+    - _GlossMapScale: 1
+    - _Glossiness: 0.25
     - _GlossyReflections: 1
-    - _HeightScale: 0.015
-    - _Metallic: 1
+    - _Metallic: 0.5
     - _Mode: 0
     - _OcclusionStrength: 1
-    - _Parallax: 0.014
-    - _Roughness: 1
+    - _Parallax: 0.02
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1

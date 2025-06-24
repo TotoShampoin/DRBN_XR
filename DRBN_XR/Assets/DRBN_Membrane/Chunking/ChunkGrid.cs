@@ -13,6 +13,7 @@ using WeightGeneration;
 using WeightPainting;
 using Voxelization;
 using System;
+using UnityEngine.Events;
 
 public class ChunkGrid : MonoBehaviour
 {
@@ -36,6 +37,7 @@ public class ChunkGrid : MonoBehaviour
     public Transform cursor;
     public InputActionReference primary;
     public InputActionReference secondary;
+    public UnityEvent<Vector3> onCursorRayHit;
 
     [Header("Components")]
     public WeightGenerator weightGenerator;
@@ -54,6 +56,7 @@ public class ChunkGrid : MonoBehaviour
     float cycle = 0f;
 
     Vector3 CursorPos => transform.InverseTransformPoint(cursor.transform.position);
+    Vector3 CursorDir => transform.InverseTransformDirection(cursor.transform.forward);
 
     public enum RenderMode
     {
@@ -72,6 +75,18 @@ public class ChunkGrid : MonoBehaviour
         public bool highlight;
     };
     readonly Dictionary<Vector3Int, ChunkData> grid = new();
+    public (Vector3Int, ChunkData)? GetChunk(Vector3 at)
+    {
+        Vector3 local = transform.InverseTransformPoint(at);
+        Vector3Int chunkPos = Vector3Int.RoundToInt(local / offsetFactor);
+        if (grid.TryGetValue(chunkPos, out var chunk))
+            return (chunkPos, chunk);
+        return null;
+    }
+    public Vector3 WorldToGridPosition(Vector3 worldPos) =>
+        transform.InverseTransformPoint(worldPos) / offsetFactor;
+    public Vector3 GridToWorldPosition(Vector3 gridPos) =>
+        transform.TransformPoint(gridPos * offsetFactor);
 
     void Start()
     {
@@ -94,34 +109,61 @@ public class ChunkGrid : MonoBehaviour
         secondary.action.performed += _ => eraseMode = true;
         primary.action.canceled += _ => isPainting = false;
         secondary.action.canceled += _ => eraseMode = false;
+
+        Time.fixedDeltaTime = 1f / 120f;
     }
 
     void Update()
     {
-        PrepareModules();
-
         Render();
-
-        if (isPainting) ForEachChunk(pos => PaintChunk(pos, eraseMode));
-        if (updateSprings) ForEachChunk(pos => UpdateSpringsDirty(pos, Time.deltaTime));
-        if (cycle >= CycleInterval) ForEachChunk(VoxelizeChunk);
-
-        if (!updateSprings) ForEachChunk(pos => MarchChunkDirty(pos, 0, false));
-
-        cycle %= CycleInterval;
-        cycle += Time.deltaTime;
+        ForEachPos(pos => grid[pos].highlight = false);
     }
 
-    // Mesh sphere;
+    void FixedUpdate()
+    {
+        PrepareModules();
+
+        if (isPainting) ForEachPos(pos => PaintChunk(pos, eraseMode));
+        if (updateSprings) ForEachPos(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
+        // if (updateSprings) ForEachPos(pos => UpdateSpringsInChunk(pos, Time.fixedDeltaTime));
+        if (cycle >= CycleInterval) ForEachPos(VoxelizeChunk);
+
+        if (!updateSprings) ForEachPos(pos => MarchChunkDirty(pos, 0, false));
+
+        ForEachPos(chunkPos =>
+        {
+            Vector3 offset = (Vector3)chunkPos * offsetFactor;
+            var cursorRay = new Ray(CursorPos - offset, CursorDir);
+            switch (renderMode)
+            {
+                case RenderMode.MarchedMesh:
+                    if (MeshMod.RayMeshIntersection(grid[chunkPos].mesh, cursorRay) is Vector3 hitMesh)
+                    {
+                        onCursorRayHit.Invoke(transform.TransformPoint(hitMesh + offset));
+                    }
+                    break;
+                case RenderMode.Springs:
+                case RenderMode.SpringsAsMesh:
+                    if (MeshMod.RayMeshIntersection(grid[chunkPos].springMesh, cursorRay) is Vector3 hitSpring)
+                    {
+                        onCursorRayHit.Invoke(transform.TransformPoint(hitSpring + offset));
+                    }
+                    break;
+            }
+        });
+
+        cycle %= CycleInterval;
+        cycle += Time.fixedDeltaTime;
+    }
+
     void Render()
     {
         RenderParams rp = new(material);
         RenderParams rph = new(highlightMaterial);
         foreach (var (pos, chunk) in grid)
         {
-            Vector3 posf = pos;
             var matrix = transform.localToWorldMatrix *
-                    Matrix4x4.TRS(posf * offsetFactor, Quaternion.identity, Vector3.one);
+                    Matrix4x4.TRS((Vector3)pos * offsetFactor, Quaternion.identity, Vector3.one);
 
             switch (renderMode)
             {
@@ -129,25 +171,13 @@ public class ChunkGrid : MonoBehaviour
                     Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.mesh, 0, matrix);
                     break;
                 case RenderMode.Springs:
-                    springsRenderer.Render(chunk.springs, matrix);
+                    springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
                     break;
                 case RenderMode.SpringsAsMesh:
                     Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.springMesh, 0, matrix);
                     break;
             }
         }
-
-        // if (sphere == null)
-        // {
-        //     GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        //     sphere = go.GetComponent<MeshFilter>().sharedMesh;
-        //     Destroy(go);
-        // }
-        // Graphics.RenderMesh(
-        //     rph, sphere, 0,
-        //     transform.localToWorldMatrix *
-        //         Matrix4x4.TRS(CursorPos, Quaternion.identity, Vector3.one * paintRadius)
-        // );
     }
 
     void PrepareModules()
@@ -171,10 +201,15 @@ public class ChunkGrid : MonoBehaviour
         return grid.ContainsKey(at) && grid[at] != null;
     }
 
-    public void ForEachChunk(Action<Vector3Int> predicate)
+    public void ForEachPos(Action<Vector3Int> predicate)
     {
         foreach (var pos in grid.Keys)
             predicate(pos);
+    }
+    public void ForEachChunk(Action<Vector3Int, ChunkData> predicate)
+    {
+        foreach (var (pos, chunk) in grid)
+            predicate(pos, chunk);
     }
 
     public void MarchChunkDirty(Vector3Int at, float threshold = 0, bool force = false)
@@ -210,8 +245,7 @@ public class ChunkGrid : MonoBehaviour
         if (!ChunkExists(at))
             return;
         var chunk = grid[at];
-        Vector3 atf = at;
-        weightGenerator.offset = atf * offsetFactor;
+        weightGenerator.offset = (Vector3)at * offsetFactor;
         weightGenerator.Generate(chunk.volume);
         chunk.isDirty = true;
     }
@@ -275,8 +309,7 @@ public class ChunkGrid : MonoBehaviour
         if (!ChunkExists(at))
             return;
         var chunk = grid[at];
-        Vector3 pos = at;
-        Vector3 chunkCenter = pos * offsetFactor;
+        Vector3 chunkCenter = (Vector3)at * offsetFactor;
         Bounds chunkBoundsMargin = new(chunkCenter, Vector3.one * offsetFactor);
         Bounds paintBounds = new(chunkCenter, Vector3.one * 2);
         chunkBoundsMargin.Expand(paintRadius * 4);
@@ -305,7 +338,11 @@ public class ChunkGrid : MonoBehaviour
         if (!ChunkExists(at)) return;
         var chunk = grid[at];
         var previousSprings = chunk.springs;
-        chunk.springs ??= new();
+        chunk.springs ??= new()
+        {
+            origin = (Vector3)at * offsetFactor,
+            offsetFactor = offsetFactor,
+        };
         chunk.springMesh = chunk.springMesh != null ? chunk.springMesh : new();
         SpringMeshConversion.MeshToSprings(chunk.mesh, mergeDistance, chunk.springs);
         SpringMeshConversion.SpringsToMesh(chunk.springs, chunk.springMesh);
@@ -364,15 +401,15 @@ public class ChunkGridEditor : Editor
         EditorGUILayout.LabelField("Function Calls", EditorStyles.boldLabel);
         if (GUILayout.Button("Regenerate"))
         {
-            grid.ForEachChunk(grid.RegenerateChunk);
+            grid.ForEachPos(grid.RegenerateChunk);
         }
         if (GUILayout.Button("Voxelize"))
         {
-            grid.ForEachChunk(grid.VoxelizeChunk);
+            grid.ForEachPos(grid.VoxelizeChunk);
         }
         if (GUILayout.Button("Generate Springs"))
         {
-            grid.ForEachChunk(grid.GenerateSpringsForChunk);
+            grid.ForEachPos(grid.GenerateSpringsForChunk);
         }
     }
 }

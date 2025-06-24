@@ -1,20 +1,29 @@
+using TMPro;
 using UnityEngine;
 
 public class ChunkGridShorthands : MonoBehaviour
 {
     public ChunkGrid grid;
+    public TMP_Dropdown renderModeUi;
+
+    public int RenderModeAsInt { get => (int)grid.renderMode; set => grid.renderMode = (ChunkGrid.RenderMode)value; }
+
+    public void Update()
+    {
+        renderModeUi.value = RenderModeAsInt;
+    }
 
     public void Regenerate()
     {
-        grid.ForEachChunk(grid.RegenerateChunk);
+        grid.ForEachPos(grid.RegenerateChunk);
     }
     public void Voxelize()
     {
-        grid.ForEachChunk(grid.VoxelizeChunk);
+        grid.ForEachPos(grid.VoxelizeChunk);
     }
     public void GenSprings()
     {
-        grid.ForEachChunk(grid.GenerateSpringsForChunk);
+        grid.ForEachPos(grid.GenerateSpringsForChunk);
         grid.updateSprings = true;
         grid.renderMode = ChunkGrid.RenderMode.SpringsAsMesh;
     }

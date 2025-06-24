@@ -1,0 +1,90 @@
+using UnityEngine;
+using SpringSim.V3;
+
+class ChunkGrabber : MonoBehaviour
+{
+    public ChunkGrid grid;
+    // public SpringSimulatorState selectedSprings;
+    public Vector3Int? selectedChunkIndex;
+    public ChunkGrid.ChunkData selectedChunk;
+    public Mass selectedMass;
+    public float radius = 0.25f;
+    public float force = 1500f;
+
+    public LineRenderer forceArrowDebug;
+    Vector3 F;
+
+    Mesh sphere;
+    Material mat;
+    void Start()
+    {
+        var sphereGO = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere = sphereGO.GetComponent<MeshFilter>().sharedMesh;
+        mat = new Material(Shader.Find("Standard"));
+        Destroy(sphereGO);
+    }
+
+    void Update()
+    {
+        if (selectedMass != null)
+        {
+            var selectedSprings = selectedChunk.springs;
+            var pos = grid.GridToWorldPosition(
+                selectedSprings
+                    .LocalToGlobalPosition(selectedMass.position));
+
+            if (forceArrowDebug != null)
+            {
+                forceArrowDebug.SetPosition(0, pos);
+                forceArrowDebug.SetPosition(1, pos + F / 1500f * 0.25f);
+            }
+
+            Graphics.RenderMesh(
+                new(mat), sphere, 0, Matrix4x4.TRS(
+                    pos, Quaternion.identity, Vector3.one * 0.05f
+                )
+            );
+        }
+    }
+
+    void FixedUpdate()
+    {
+        var (chunkPos, chunk) = grid.GetChunk(transform.position) ?? (Vector3Int.zero, null);
+        if (chunk != null)
+        {
+            // chunk.isDirty = true;
+        }
+
+        if (selectedMass == null || selectedChunk == null) return;
+        var selectedSprings = selectedChunk.springs;
+
+        var cursorPosGrid = grid.WorldToGridPosition(transform.position);
+        var cursorPosSprings = selectedSprings.GlobalToLocalPosition(cursorPosGrid);
+        F = SpringSimulatorNoBehaviour
+            .SpringPull(selectedMass.position, cursorPosSprings, 0f, force);
+
+        selectedSprings.AddExternalForce(F, selectedMass.position, radius);
+        selectedChunk.isDirty = true;
+
+
+    }
+
+    public void SetPosition(Vector3 position)
+    {
+        if (selectedMass != null) return;
+        transform.position = position;
+    }
+    public void StartGrab()
+    {
+        var globalPosition = grid.WorldToGridPosition(transform.position);
+        var (chunkPos, chunk) = grid.GetChunk(transform.position) ?? (Vector3Int.zero, null);
+        if (chunk == null || chunk.springs == null) return;
+        selectedChunk = chunk;
+        selectedChunkIndex = chunkPos;
+        selectedMass = selectedChunk.springs.ClosestMassGlobal(globalPosition);
+    }
+    public void EndGrab()
+    {
+        selectedMass = null;
+    }
+}
