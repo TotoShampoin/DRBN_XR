@@ -6,12 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
     path: Assets/SteamVR/InteractionSystem/Samples/Interactions_Example.unity
     guid: e3b77830391f10343929883b18f4d5ae
   - enabled: 1
@@ -22,7 +16,12 @@ EditorBuildSettings:
       type: 2}
     Unity.XR.WindowsMR.Settings: {fileID: 11400000, guid: 67577e238679c144fbec3862ca864ec2,
       type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 21a3ed847958c6143b139b28e621aa20,
+      type: 2}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: e40c0f2f5f6c5c546af6e402288bed10,
       type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: b36c89244ba802e49b6d5e90803c6714,
       type: 2}
+    xr.sdk.mock-hmd.settings: {fileID: 11400000, guid: 9c1411dc64712e5498018dcab8a65380,
+      type: 2}
+  m_UseUCBPForAssetBundles: 0

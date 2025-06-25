@@ -15,7 +15,7 @@ public class SphereColliderPopulate : MonoBehaviour
     {
         VertList = ExtractVert(PopulateGO);
         NormList = ExtractNorm(PopulateGO);
-        Debug.Log(VertList.Length + " Length");
+        //Debug.Log(VertList.Length + " Length");
 
         Populate(VertList, NormList);
     }
@@ -29,7 +29,7 @@ public class SphereColliderPopulate : MonoBehaviour
     Vector3[] ExtractVert(GameObject PopulateGO) 
     {
         Mesh PopulateMesh = PopulateGO.GetComponent<MeshFilter>().mesh;
-        Debug.Log(PopulateMesh);
+        //Debug.Log(PopulateMesh);
         VertList = PopulateMesh.vertices;
 
         Vector3[] vworld = new Vector3[VertList.Length];

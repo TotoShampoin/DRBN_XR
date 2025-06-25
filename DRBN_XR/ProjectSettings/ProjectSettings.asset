@@ -141,7 +141,11 @@ PlayerSettings:
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
   bundleVersion: 0.1
-  preloadedAssets: []
+  preloadedAssets:
+  - {fileID: 6946061687805497292, guid: e40c0f2f5f6c5c546af6e402288bed10, type: 2}
+  - {fileID: 11400000, guid: 9c1411dc64712e5498018dcab8a65380, type: 2}
+  - {fileID: 865659825061417963, guid: b36c89244ba802e49b6d5e90803c6714, type: 2}
+  - {fileID: 11400000, guid: 21a3ed847958c6143b139b28e621aa20, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -162,7 +166,12 @@ PlayerSettings:
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
   androidMinAspectRatio: 1
-  applicationIdentifier: {}
+  applicationIdentifier:
+<<<<<<< HEAD
+=======
+    Android: com.DefaultCompany.DRBN_STEAMVR2
+>>>>>>> 4c4c0c80b436dad8fe25fddbe36362f2dae19357
+    Standalone: com.DefaultCompany.DRBN-STEAMVR2
   buildNumber:
     Standalone: 0
     VisionOS: 0
@@ -171,8 +180,8 @@ PlayerSettings:
   overrideDefaultApplicationIdentifier: 0
   AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 23
-  AndroidTargetSdkVersion: 0
-  AndroidPreferredInstallLocation: 1
+  AndroidTargetSdkVersion: 34
+  AndroidPreferredInstallLocation: 0
   aotOptions: 
   stripEngineCode: 1
   iPhoneStrippingLevel: 0
@@ -462,7 +471,10 @@ PlayerSettings:
   m_BuildTargetGroupLightmapSettings: []
   m_BuildTargetGroupLoadStoreDebugModeSettings: []
   m_BuildTargetNormalMapEncoding: []
-  m_BuildTargetDefaultTextureCompressionFormat: []
+  m_BuildTargetDefaultTextureCompressionFormat:
+  - serializedVersion: 3
+    m_BuildTarget: Android
+    m_Formats: 01000000
   playModeTestRunnerEnabled: 0
   runPlayModeTestAsEditModeTest: 0
   actionOnDotNetUnhandledException: 1
@@ -851,7 +863,7 @@ PlayerSettings:
   qnxGraphicConfPath: 
   apiCompatibilityLevel: 6
   captureStartupLogs: {}
-  activeInputHandler: 1
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
   cloudProjectId: aeb9f6db-048d-40ab-a548-01ca44231b44
   framebufferDepthMemorylessMode: 0
