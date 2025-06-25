@@ -109,8 +109,6 @@ public class ChunkGrid : MonoBehaviour
         secondary.action.performed += _ => eraseMode = true;
         primary.action.canceled += _ => isPainting = false;
         secondary.action.canceled += _ => eraseMode = false;
-
-        Time.fixedDeltaTime = 1f / 120f;
     }
 
     void Update()
@@ -125,7 +123,6 @@ public class ChunkGrid : MonoBehaviour
 
         if (isPainting) ForEachPos(pos => PaintChunk(pos, eraseMode));
         if (updateSprings) ForEachPos(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
-        // if (updateSprings) ForEachPos(pos => UpdateSpringsInChunk(pos, Time.fixedDeltaTime));
         if (cycle >= CycleInterval) ForEachPos(VoxelizeChunk);
 
         if (!updateSprings) ForEachPos(pos => MarchChunkDirty(pos, 0, false));
@@ -199,6 +196,21 @@ public class ChunkGrid : MonoBehaviour
     public bool ChunkExists(Vector3Int at)
     {
         return grid.ContainsKey(at) && grid[at] != null;
+    }
+
+    public List<(Vector3Int, ChunkData)> SurroundingChunks(Vector3Int at, int chunkRadius = 1)
+    {
+        List<(Vector3Int, ChunkData)> neighbors = new(26);
+        for (int x = -chunkRadius; x <= chunkRadius; x++)
+            for (int y = -chunkRadius; y <= chunkRadius; y++)
+                for (int z = -chunkRadius; z <= chunkRadius; z++)
+                {
+                    if (x == 0 && y == 0 && z == 0) continue;
+                    Vector3Int neighborPos = at + new Vector3Int(x, y, z);
+                    if (ChunkExists(neighborPos))
+                        neighbors.Add((neighborPos, grid[neighborPos]));
+                }
+        return neighbors;
     }
 
     public void ForEachPos(Action<Vector3Int> predicate)
@@ -358,6 +370,28 @@ public class ChunkGrid : MonoBehaviour
         if (chunk.springs == null) return;
         springSimulator.Iterate(chunk.springs, deltaTime);
         SpringMeshConversion.SpringsToMesh(chunk.springs, chunk.springMesh);
+    }
+    public void ApplyForceToSpringsInChunk(
+        Vector3Int at,
+        Vector3 force, Vector3 origin, float radius,
+        bool affectNeighbors = false)
+    {
+        if (!ChunkExists(at)) return;
+        var chunk = grid[at];
+        var springs = chunk.springs;
+
+        var forceLocal = transform.InverseTransformDirection(force);
+        var originLocal = springs.GlobalToLocalPosition(WorldToGridPosition(origin));
+        var radiusLocal = Vector3.Magnitude(transform.InverseTransformVector(Vector3.forward * radius));
+        springs.AddExternalForce(forceLocal, originLocal, radiusLocal);
+        chunk.isDirty = true;
+
+        if (affectNeighbors)
+        {
+            SurroundingChunks(at)
+                .ForEach(c => ApplyForceToSpringsInChunk(
+                    c.Item1, force, origin, radius, false));
+        }
     }
 
 #if UNITY_EDITOR

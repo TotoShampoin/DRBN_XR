@@ -22,41 +22,55 @@ namespace SpringSim.V3
         public float Drag { get => drag; set => drag = value; }
 
         static readonly ProfilerMarker iteration = new("Membrane.SpringSim.Iteration");
+        static readonly ProfilerMarker iterationLinks = new("Membrane.SpringSim.Iteration.SpringForces");
+        static readonly ProfilerMarker iterationExternals = new("Membrane.SpringSim.Iteration.ExternalForces");
+        static readonly ProfilerMarker iterationDrag = new("Membrane.SpringSim.Iteration.Drag");
+        static readonly ProfilerMarker iterationMasses = new("Membrane.SpringSim.Iteration.ApplyForces");
 
         public void Iterate(SpringSimulatorState state, float deltaTime)
         {
             Mass.mass = particleMass;
-            iteration.Begin();
-            var masses = state.masses;
-            var links = state.links;
-            var externalForces = state.externalForces;
-            Parallel.For(0, links.Count, i =>
+            using (iteration.Auto())
             {
-                var link = links[i];
-                var force = SpringForce(state, link);
-                lock (masses[link.a]) { masses[link.a].AddForce(force); }
-                lock (masses[link.b]) { masses[link.b].AddForce(-force); }
-            });
-            Parallel.ForEach(externalForces, ef =>
-            {
-                var (force, origin, radius) = ef;
-                var nearby = state.GetSurrounding(origin, radius);
-                Parallel.ForEach(nearby, mass =>
+                var masses = state.masses;
+                var links = state.links;
+                var externalForces = state.externalForces;
+                using (iterationLinks.Auto())
                 {
-                    var d = Vector3.Distance(mass.position, origin);
-                    mass.AddForce(force * (1 - d / radius));
-                });
-            });
-            externalForces.Clear();
-            Parallel.ForEach(masses, m =>
-            {
-                if (m.velocity == Vector3.zero) return;
-                var dir = Vector3.Normalize(m.velocity);
-                var mag = Vector3.Magnitude(m.velocity);
-                m.AddForce(-mag * mag * drag * dir);
-            });
-            Parallel.ForEach(masses, m => m.ApplyForce(deltaTime));
-            iteration.End();
+                    Parallel.For(0, links.Count, i =>
+                    {
+                        var link = links[i];
+                        var force = SpringForce(state, link);
+                        lock (masses[link.a]) { masses[link.a].AddForce(force); }
+                        lock (masses[link.b]) { masses[link.b].AddForce(-force); }
+                    });
+                }
+                using (iterationExternals.Auto())
+                {
+                    Parallel.ForEach(externalForces, ef =>
+                    {
+                        var (force, origin, radius) = ef;
+                        var nearby = state.GetSurrounding(origin, radius);
+                        foreach (var mass in nearby)
+                        {
+                            var d = Vector3.Distance(mass.position, origin);
+                            mass.AddForce(force * (1 - d / radius));
+                        }
+                    });
+                    externalForces.Clear();
+                }
+                using (iterationDrag.Auto())
+                {
+                    Parallel.ForEach(masses, m =>
+                    {
+                        if (m.velocity == Vector3.zero) return;
+                        var dir = Vector3.Normalize(m.velocity);
+                        var mag = Vector3.Magnitude(m.velocity);
+                        m.AddForce(-mag * mag * drag * dir);
+                    });
+                }
+                using (iterationMasses.Auto()) { Parallel.ForEach(masses, m => m.ApplyForce(deltaTime)); }
+            }
             state.UpdateLUT();
         }
 
@@ -105,6 +119,7 @@ namespace SpringSim.V3
 
         readonly static ProfilerMarker generateLut = new("Membrane.SpringSim.GenerateLUT");
         readonly static ProfilerMarker updateLut = new("Membrane.SpringSim.UpdateLUT");
+        readonly static ProfilerMarker surroundingFetching = new("Membrane.SpringSim.GetSurrounding");
 
         public Vector3 LocalToGlobalPosition(Vector3 position) => (position + origin) / offsetFactor;
         public Vector3 GlobalToLocalPosition(Vector3 position) => position * offsetFactor - origin;
@@ -152,13 +167,16 @@ namespace SpringSim.V3
         // public List<Mass> GetSurrounding(Vector3 position, float distance) => lutMasses.GetSurrounding(position, distance); // This doesn't work :(
         public List<Mass> GetSurrounding(Vector3 position, float distance)
         {
-            var result = new List<Mass>();
-            foreach (var mass in masses)
+            using (surroundingFetching.Auto())
             {
-                if (Vector3.Distance(mass.position, position) <= distance)
-                    result.Add(mass);
+                var result = new List<Mass>();
+                foreach (var mass in masses)
+                {
+                    if (Vector3.Distance(mass.position, position) <= distance)
+                        result.Add(mass);
+                }
+                return result;
             }
-            return result;
         }
 
         public Mass ClosestMassLocal(Vector3 position)

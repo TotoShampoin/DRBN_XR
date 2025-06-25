@@ -1886,13 +1886,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0359f813ad7d59c45a252360383ca0db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  massMesh: {fileID: 4602442571968631390, guid: 0932754df08ef5149b4e005c20de889e,
-    type: 3}
+  massMesh: {fileID: 289301614986012343, guid: 8c89b4252c95eb545acb2cd2fd5f9b44, type: 3}
   linkMesh: {fileID: 2534964839176971238, guid: 4447ec9c500e5d647aad7619c167a3b1,
     type: 3}
   material: {fileID: 2100000, guid: 93d13fb1d3a4e7b4390442ca9d34cfee, type: 2}
   highlightMaterial: {fileID: 2100000, guid: bcc97018a00dd7745bfdd2e8696978ef, type: 2}
-  thickness: 0.05
+  thickness: 0.25
 --- !u!114 &1233425683
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3897,7 +3896,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2085768954
 Transform:
   m_ObjectHideFlags: 0

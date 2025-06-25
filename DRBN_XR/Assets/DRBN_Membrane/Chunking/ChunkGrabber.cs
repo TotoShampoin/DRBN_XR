@@ -33,7 +33,7 @@ class ChunkGrabber : MonoBehaviour
                 selectedSprings
                     .LocalToGlobalPosition(selectedMass.position));
 
-            if (forceArrowDebug != null)
+            if (forceArrowDebug != null && forceArrowDebug.enabled)
             {
                 forceArrowDebug.SetPosition(0, pos);
                 forceArrowDebug.SetPosition(1, pos + F / 1500f * 0.25f);
@@ -44,6 +44,12 @@ class ChunkGrabber : MonoBehaviour
                     pos, Quaternion.identity, Vector3.one * 0.05f
                 )
             );
+
+            grid.SurroundingChunks(selectedChunkIndex ?? throw new System.Exception("Index unset"))
+                .ForEach(c =>
+                {
+                    c.Item2.highlight = true;
+                });
         }
     }
 
@@ -58,15 +64,11 @@ class ChunkGrabber : MonoBehaviour
         if (selectedMass == null || selectedChunk == null) return;
         var selectedSprings = selectedChunk.springs;
 
-        var cursorPosGrid = grid.WorldToGridPosition(transform.position);
-        var cursorPosSprings = selectedSprings.GlobalToLocalPosition(cursorPosGrid);
+        var massPos = grid.GridToWorldPosition(
+            selectedSprings.LocalToGlobalPosition(selectedMass.position));
         F = SpringSimulatorNoBehaviour
-            .SpringPull(selectedMass.position, cursorPosSprings, 0f, force);
-
-        selectedSprings.AddExternalForce(F, selectedMass.position, radius);
-        selectedChunk.isDirty = true;
-
-
+            .SpringPull(massPos, transform.position, 0f, force);
+        grid.ApplyForceToSpringsInChunk(selectedChunkIndex.Value, F, massPos, radius, true);
     }
 
     public void SetPosition(Vector3 position)
