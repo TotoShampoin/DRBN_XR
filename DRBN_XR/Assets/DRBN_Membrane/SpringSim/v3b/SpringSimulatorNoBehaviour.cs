@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Unity.Profiling;
 using UnityEngine;
@@ -123,6 +122,20 @@ namespace SpringSim.V3
 
         public Vector3 LocalToGlobalPosition(Vector3 position) => (position + origin) / offsetFactor;
         public Vector3 GlobalToLocalPosition(Vector3 position) => position * offsetFactor - origin;
+
+        public List<(Mass self, Mass other)> Join(SpringSimulatorState with, float tolerance = 0.0001f)
+        {
+            List<(Mass, Mass)> result = new();
+            masses.ForEach(mA =>
+            {
+                var mAp = LocalToGlobalPosition(mA.position);
+                var mB = with.ClosestMassGlobal(mAp);
+                if (mB == null) return;
+                var mBp = with.LocalToGlobalPosition(mB.position);
+                if (Vector3.Distance(mAp, mBp) < tolerance) result.Add((mA, mB));
+            });
+            return result;
+        }
 
         public void UpdateLUT()
         {

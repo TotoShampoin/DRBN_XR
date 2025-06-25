@@ -26,6 +26,7 @@ public class ChunkGrid : MonoBehaviour
     public float distanceThreshold = 0.75f;
     [Range(0, 1f)] public float mergeDistance = 0.0001f;
     public bool updateSprings = false;
+    public bool forceUpdate = false;
 
     [Header("Rendering")]
     public Material material;
@@ -70,7 +71,8 @@ public class ChunkGrid : MonoBehaviour
         public RenderTexture volume;        // True volume
         public RenderTexture volumeOfMesh;  // Volume that rendered the mesh
         public SpringSimulatorState springs;
-        public Mesh springMesh;
+        public Dictionary<ChunkData, List<(Mass self, Mass other)>> jointures;
+        public Mesh meshSprings;
         public bool isDirty;
         public bool highlight;
     };
@@ -122,10 +124,14 @@ public class ChunkGrid : MonoBehaviour
         PrepareModules();
 
         if (isPainting) ForEachPos(pos => PaintChunk(pos, eraseMode));
-        if (updateSprings) ForEachPos(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
+        if (updateSprings)
+        {
+            ForEachPos(pos => TieJointures(pos));
+            ForEachPos(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime, forceUpdate));
+        }
         if (cycle >= CycleInterval) ForEachPos(VoxelizeChunk);
 
-        if (!updateSprings) ForEachPos(pos => MarchChunkDirty(pos, 0, false));
+        if (!updateSprings) ForEachPos(pos => MarchChunkDirty(pos, 0, forceUpdate));
 
         ForEachPos(chunkPos =>
         {
@@ -141,7 +147,7 @@ public class ChunkGrid : MonoBehaviour
                     break;
                 case RenderMode.Springs:
                 case RenderMode.SpringsAsMesh:
-                    if (MeshMod.RayMeshIntersection(grid[chunkPos].springMesh, cursorRay) is Vector3 hitSpring)
+                    if (MeshMod.RayMeshIntersection(grid[chunkPos].meshSprings, cursorRay) is Vector3 hitSpring)
                     {
                         onCursorRayHit.Invoke(transform.TransformPoint(hitSpring + offset));
                     }
@@ -171,7 +177,7 @@ public class ChunkGrid : MonoBehaviour
                     springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
                     break;
                 case RenderMode.SpringsAsMesh:
-                    Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.springMesh, 0, matrix);
+                    Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.meshSprings, 0, matrix);
                     break;
             }
         }
@@ -345,7 +351,7 @@ public class ChunkGrid : MonoBehaviour
         var chunk = grid[at];
         return distanceOfVolumes.Distance(chunk.volume, chunk.volumeOfMesh, output);
     }
-    public void GenerateSpringsForChunk(Vector3Int at)
+    public void GenerateSpringsForChunk(Vector3Int at, bool joinNeighbors = false)
     {
         if (!ChunkExists(at)) return;
         var chunk = grid[at];
@@ -355,12 +361,60 @@ public class ChunkGrid : MonoBehaviour
             origin = (Vector3)at * offsetFactor,
             offsetFactor = offsetFactor,
         };
-        chunk.springMesh = chunk.springMesh != null ? chunk.springMesh : new();
+        chunk.jointures ??= new();
+        chunk.meshSprings = chunk.meshSprings != null ? chunk.meshSprings : new();
         SpringMeshConversion.MeshToSprings(chunk.mesh, mergeDistance, chunk.springs);
-        SpringMeshConversion.SpringsToMesh(chunk.springs, chunk.springMesh);
-        if (previousSprings != null)
+        SpringMeshConversion.SpringsToMesh(chunk.springs, chunk.meshSprings);
+
+        foreach (var (neighbor, _) in chunk.jointures)
         {
-            // Mark flags for cleanup
+            neighbor?.jointures?.Remove(chunk);
+        }
+        chunk.jointures.Clear();
+        if (joinNeighbors)
+            JoinChunkSpringsToNeighbors(at);
+    }
+    public void JoinChunkSpringsToNeighbors(Vector3Int at)
+    {
+        if (!ChunkExists(at)) return;
+        var chunk = grid[at];
+        if (chunk.springs == null) return;
+        SurroundingChunks(at)
+            .ForEach(c =>
+            {
+                var (npos, neighbor) = c;
+                if (neighbor.springs == null) return;
+                var jointure = chunk.springs.Join(neighbor.springs);
+                chunk.jointures.TryAdd(neighbor, jointure);
+                neighbor.jointures[chunk] = jointure.Select(j => (j.other, j.self)).ToList();
+            });
+    }
+    public void TieJointures(Vector3Int at)
+    {
+        if (!ChunkExists(at)) return;
+        var chunk = grid[at];
+        if (chunk.springs == null || chunk.jointures == null) return;
+        foreach (var (neighbor, joinList) in chunk.jointures)
+        {
+            foreach (var (self, other) in joinList)
+            {
+                var selfPos = chunk.springs.LocalToGlobalPosition(self.position);
+                var otherPos = neighbor.springs.LocalToGlobalPosition(other.position);
+
+                var pos = (selfPos + otherPos) / 2f;
+                var vel = (self.velocity + other.velocity) / 2f;
+                var force = (self.force + other.force) / 2f;
+                var normal = Vector3.Normalize(self.normal + other.normal);
+
+                self.position = chunk.springs.GlobalToLocalPosition(pos);
+                other.position = neighbor.springs.GlobalToLocalPosition(pos);
+                self.velocity = vel;
+                other.velocity = vel;
+                self.force = force;
+                other.force = force;
+                self.normal = normal;
+                other.normal = normal;
+            }
         }
     }
     public void UpdateSpringsInChunk(Vector3Int at, float deltaTime)
@@ -369,7 +423,7 @@ public class ChunkGrid : MonoBehaviour
         var chunk = grid[at];
         if (chunk.springs == null) return;
         springSimulator.Iterate(chunk.springs, deltaTime);
-        SpringMeshConversion.SpringsToMesh(chunk.springs, chunk.springMesh);
+        SpringMeshConversion.SpringsToMesh(chunk.springs, chunk.meshSprings);
     }
     public void ApplyForceToSpringsInChunk(
         Vector3Int at,
@@ -443,7 +497,7 @@ public class ChunkGridEditor : Editor
         }
         if (GUILayout.Button("Generate Springs"))
         {
-            grid.ForEachPos(grid.GenerateSpringsForChunk);
+            grid.ForEachPos(pos => grid.GenerateSpringsForChunk(pos, true));
         }
     }
 }
