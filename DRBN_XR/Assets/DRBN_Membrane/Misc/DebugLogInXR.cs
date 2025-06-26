@@ -13,6 +13,15 @@ public class DebugLogInXR : MonoBehaviour
     public bool errors = true;
     readonly Queue<TextMeshProUGUI> logQueue = new();
 
+    public void Clear()
+    {
+        while (logQueue.Count > 0)
+        {
+            var oldLine = logQueue.Dequeue();
+            Destroy(oldLine.gameObject);
+        }
+    }
+
     void Start()
     {
         linePrefab.gameObject.SetActive(false);
@@ -43,7 +52,7 @@ public class DebugLogInXR : MonoBehaviour
             LogType.Log => Color.white,
             _ => Color.gray,
         };
-        logLine.text = logString;
+        logLine.text = logString.Replace("\n", "  ");
         logQueue.Enqueue(logLine);
         logLine.gameObject.SetActive(true);
         while (logQueue.Count > maxLines)
@@ -52,4 +61,5 @@ public class DebugLogInXR : MonoBehaviour
             Destroy(oldLine.gameObject);
         }
     }
+
 }

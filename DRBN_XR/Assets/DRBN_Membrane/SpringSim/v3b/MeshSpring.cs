@@ -111,8 +111,13 @@ namespace SpringSim.V3
                 Vector3 p0 = masses[v0].position;
                 Vector3 p1 = masses[v1].position;
                 Vector3 p2 = masses[v2].position;
-                Vector3 normal = Vector3.Cross(p1 - p0, p2 - p0);
-                if (Vector3.Dot(normal, Vector3.up) < 0) (v1, v2) = (v2, v1);
+                Vector3 n0 = masses[v0].normal;
+                Vector3 n1 = masses[v1].normal;
+                Vector3 n2 = masses[v2].normal;
+                Vector3 massNormal = (n0 + n1 + n2).normalized;
+                Vector3 vertNormal = Vector3.Cross(p1 - p0, p2 - p0);
+                // if (Vector3.Dot(normal, Vector3.up) < 0) (v1, v2) = (v2, v1);
+                if (Vector3.Dot(vertNormal, massNormal) < 0) (v1, v2) = (v2, v1);
 
                 newTriangles[i] = (v0, v1, v2);
             });
@@ -129,9 +134,10 @@ namespace SpringSim.V3
         {
             mesh = mesh != null ? mesh : new Mesh();
             springToMesh.Begin();
+            mesh.Clear();
             mesh.SetVertices(springSimulator.masses.Select(m => m.position).ToArray());
             mesh.SetTriangles(springSimulator.triangles
-                .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
+                // .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
                 .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
                 .ToArray(), 0);
             mesh.RecalculateNormals();

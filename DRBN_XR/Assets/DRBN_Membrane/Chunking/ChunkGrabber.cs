@@ -55,12 +55,6 @@ class ChunkGrabber : MonoBehaviour
 
     void FixedUpdate()
     {
-        var (chunkPos, chunk) = grid.GetChunk(transform.position) ?? (Vector3Int.zero, null);
-        if (chunk != null)
-        {
-            // chunk.isDirty = true;
-        }
-
         if (selectedMass == null || selectedChunk == null) return;
         var selectedSprings = selectedChunk.springs;
 
