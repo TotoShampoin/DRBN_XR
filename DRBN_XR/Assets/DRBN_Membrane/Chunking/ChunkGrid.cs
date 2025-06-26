@@ -116,6 +116,7 @@ public class ChunkGrid : MonoBehaviour
                     RegenerateChunk(at);
                     MarchChunk(at, 0);
                 }
+        ForEachPos(pos => GenerateSpringsForChunk(pos, true));
 
         primary.action.Enable();
         secondary.action.Enable();
@@ -218,7 +219,6 @@ public class ChunkGrid : MonoBehaviour
     {
         grid.TryAdd(at, new ChunkData()
         {
-            // mesh = new Mesh(),
             volume = new RenderTexture(baseVolume),
             volumeOfMesh = new RenderTexture(baseVolume),
         });
@@ -324,7 +324,6 @@ public class ChunkGrid : MonoBehaviour
         weightGenerator.offset = (Vector3)at * offsetFactor;
         weightGenerator.Generate(chunk.volume);
         chunk.isDirtyForVoxels = false;
-        chunk.isDirtyForMesh = true;
     }
     public void VoxelizeChunk(Vector3Int at, bool fromSprings = false)
     {
