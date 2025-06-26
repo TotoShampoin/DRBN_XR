@@ -79,27 +79,16 @@ namespace SpringSim.V3
             var p2 = state.masses[link.b].position;
             var v1 = state.masses[link.a].velocity;
             var v2 = state.masses[link.b].velocity;
-
-            var l0 = link.length;
-            var k = stiffness;
-            var d = Vector3.Distance(p1, p2);
-
-            if (d == 0) return Vector3.zero;
-            var dir = (p2 - p1).normalized;
-            var springForce = k * (d - l0) * dir;
+            var springForce = SpringPull(p1, p2, link.length, stiffness);
             var dampingForce = viscosity * (v2 - v1);
             return springForce + dampingForce;
         }
         static public Vector3 SpringPull(Vector3 p1, Vector3 p2, float length, float stiffness = 1500f)
         {
-            var l0 = length;
-            var k = stiffness;
-            var d = Vector3.Distance(p1, p2);
-
-            if (d == 0) return Vector3.zero;
-            var dir = (p2 - p1).normalized;
-            var springForce = k * (d - l0) * dir;
-            return springForce;
+            var distance = Vector3.Distance(p1, p2);
+            if (distance == 0) return Vector3.zero;
+            var direction = (p2 - p1).normalized;
+            return stiffness * (distance - length) * direction;
         }
     }
 

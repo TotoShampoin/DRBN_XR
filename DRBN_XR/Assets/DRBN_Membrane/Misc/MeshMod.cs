@@ -19,13 +19,15 @@ public class MeshMod
     /// </summary>
     /// <param name="mesh"></param>
     /// <param name="epsilon">Distance beyond which vertices get merged</param>
+    /// <param name="result">The resulting new mesh if you don't want to reallocate</param>
     /// <returns>The resulting new mesh</returns>
-    static public Mesh DeduplicateVertices(Mesh mesh, float epsilon = 0.0001f)
+    static public Mesh DeduplicateVertices(Mesh mesh, float epsilon = 0.0001f, Mesh result = null)
     {
         using (dedupeMarker.Auto())
         {
             Vector3[] vertices = mesh.vertices;
             int[] triangles = mesh.triangles;
+            result = result != null ? result : new();
 
             dedupeAllocMarker.Begin();
             var grid = new Dictionary<(int, int, int), int>();
@@ -67,11 +69,14 @@ public class MeshMod
                 newTriangles[i] = map[triangles[i]];
             dedupeTrianglesMarker.End();
 
-            Mesh result = new()
-            {
-                vertices = newVertices.ToArray(),
-                triangles = newTriangles
-            };
+            // Mesh result = new()
+            // {
+            //     vertices = newVertices.ToArray(),
+            //     triangles = newTriangles
+            // };
+            result.Clear();
+            result.SetVertices(newVertices);
+            result.SetTriangles(newTriangles, 0);
             result.RecalculateNormals();
             result.RecalculateBounds();
 
