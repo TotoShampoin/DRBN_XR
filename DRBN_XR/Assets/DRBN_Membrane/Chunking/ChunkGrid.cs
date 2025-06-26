@@ -114,7 +114,7 @@ public class ChunkGrid : MonoBehaviour
                     var at = new Vector3Int(x, y, z);
                     CreateChunk(at);
                     RegenerateChunk(at);
-                    MarchChunkDirty(at, 0, true);
+                    MarchChunk(at, 0);
                 }
 
         primary.action.Enable();
@@ -142,8 +142,8 @@ public class ChunkGrid : MonoBehaviour
         {
             ForEachChunk((pos, chunk) =>
             {
-                chunk.isDirtyForVoxels |= chunk.isDirtyForSprings || forceUpdate;
-                UpdateSpringsDirty(pos, Time.fixedDeltaTime, forceUpdate);
+                chunk.isDirtyForVoxels |= chunk.isDirtyForSprings;
+                UpdateSpringsDirty(pos, Time.fixedDeltaTime);
             });
             ForEachPos(pos => TieJointures(pos));
             ForEachPos(pos => GenerateMeshSpringsInChunk(pos));
@@ -151,13 +151,13 @@ public class ChunkGrid : MonoBehaviour
             {
                 ForEachChunk((pos, chunk) =>
                 {
-                    chunk.isDirtyForMesh |= chunk.isDirtyForVoxels || forceUpdate;
+                    chunk.isDirtyForMesh |= chunk.isDirtyForVoxels;
                     VoxelizeChunkDirty(pos, true);
                 });
             }
             ForEachChunk((pos, chunk) =>
             {
-                chunk.isDirtyForSprings |= chunk.isDirtyForMesh || forceUpdate;
+                chunk.isDirtyForSprings |= chunk.isDirtyForMesh;
                 MarchChunkDirty(pos, 0);
             });
             ForEachPos(pos => GenerateSpringsDirty(pos, true));
@@ -168,11 +168,11 @@ public class ChunkGrid : MonoBehaviour
             {
                 ForEachChunk((pos, chunk) =>
                 {
-                    chunk.isDirtyForMesh |= chunk.isDirtyForVoxels || forceUpdate;
+                    chunk.isDirtyForMesh |= chunk.isDirtyForVoxels;
                     VoxelizeChunkDirty(pos);
                 });
             }
-            ForEachPos(pos => MarchChunkDirty(pos, 0, forceUpdate));
+            ForEachPos(pos => MarchChunkDirty(pos));
         }
 
         if (RayIntersection(GlobalCursorRay) is Vector3 hit)
@@ -279,39 +279,39 @@ public class ChunkGrid : MonoBehaviour
             predicate(pos, chunk);
     }
 
-    public void MarchChunkDirty(Vector3Int at, float threshold = 0, bool force = false)
+    public void MarchChunkDirty(Vector3Int at, float threshold = 0)
     {
         if (!ChunkExists(at))
             return;
         var chunk = grid[at];
-        if (!force && !chunk.isDirtyForMesh) return;
+        if (!forceUpdate && !chunk.isDirtyForMesh) return;
         MarchChunk(at, threshold);
         chunk.isDirtyForMesh = false;
     }
-    public void GenerateSpringsDirty(Vector3Int at, bool joinNeighbors = false, bool force = false)
+    public void GenerateSpringsDirty(Vector3Int at, bool joinNeighbors = false)
     {
         if (!ChunkExists(at))
             return;
         var chunk = grid[at];
-        if (!force && !chunk.isDirtyForSprings) return;
+        if (!forceUpdate && !chunk.isDirtyForSprings) return;
         GenerateSpringsForChunk(at, joinNeighbors);
         chunk.isDirtyForSprings = false;
     }
-    public void UpdateSpringsDirty(Vector3Int at, float deltaTime, bool force = false)
+    public void UpdateSpringsDirty(Vector3Int at, float deltaTime)
     {
         if (!ChunkExists(at))
             return;
         var chunk = grid[at];
-        if (!force && !chunk.isDirtyForSprings) return;
+        if (!forceUpdate && !chunk.isDirtyForSprings) return;
         UpdateSpringsInChunk(at, deltaTime);
         chunk.isDirtyForSprings = false;
     }
 
-    public void VoxelizeChunkDirty(Vector3Int at, bool fromSprings = false, bool force = false)
+    public void VoxelizeChunkDirty(Vector3Int at, bool fromSprings = false)
     {
         if (!ChunkExists(at)) return;
         var chunk = grid[at];
-        if (!force && !chunk.isDirtyForVoxels) return;
+        if (!forceUpdate && !chunk.isDirtyForVoxels) return;
         VoxelizeChunk(at, fromSprings);
         chunk.isDirtyForVoxels = false;
     }
