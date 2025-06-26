@@ -4,7 +4,6 @@ using SpringSim.V3;
 class ChunkGrabber : MonoBehaviour
 {
     public ChunkGrid grid;
-    // public SpringSimulatorState selectedSprings;
     public Vector3Int? selectedChunkIndex;
     public ChunkGrid.ChunkData selectedChunk;
     public Mass selectedMass;
