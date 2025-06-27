@@ -39,23 +39,6 @@ public class ChunkGridShorthands : MonoBehaviour
             chunk.isDirtyForMesh = true;
         });
     }
-    public void VoxelizeSprings()
-    {
-        grid.ForEachChunk((pos, chunk) =>
-        {
-            grid.VoxelizeChunk(pos, true);
-            chunk.isDirtyForMesh = true;
-        });
-    }
-    public void GenSprings()
-    {
-        grid.ForEachPos(pos =>
-        {
-            grid.GenerateSpringsForChunk(pos, true);
-        });
-        grid.updateSprings = true;
-        grid.renderMode = ChunkGrid.RenderMode.SpringsAsMesh;
-    }
 }
 
 #if UNITY_EDITOR
@@ -75,17 +58,9 @@ public class ChunkGridShorthandsEditor : Editor
         {
             grid.Regenerate();
         }
-        if (GUILayout.Button("Voxelize mass"))
+        if (GUILayout.Button("Voxelize"))
         {
             grid.Voxelize();
-        }
-        if (GUILayout.Button("Voxelize springs"))
-        {
-            grid.VoxelizeSprings();
-        }
-        if (GUILayout.Button("Generate Springs"))
-        {
-            grid.GenSprings();
         }
     }
 }
