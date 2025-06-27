@@ -108,7 +108,7 @@ public class ChunkGrid : MonoBehaviour
         PrepareModules();
         int N = initNbChunks / 2;
         for (int x = -N; x <= N; x++)
-            for (int y = -1; y <= 2; y++)
+            for (int y = -1; y <= 1; y++)
                 for (int z = -N; z <= N; z++)
                 {
                     var at = new Vector3Int(x, y, z);
@@ -138,6 +138,7 @@ public class ChunkGrid : MonoBehaviour
         PrepareModules();
         Cleanup();
 
+        if (forceUpdate) ForEach((pos, chunk) => chunk.dirtyMeshV = true);
         if (updateSprings)
         {
             ForEach(pos => VolumeToMeshDirty(pos, 0));
@@ -245,31 +246,31 @@ public class ChunkGrid : MonoBehaviour
 
     public bool VolumeToMeshDirty(Vector3Int at, float threshold = 0)
     {
-        if (!ChunkExists(at) || !grid[at].dirtyMeshV && !forceUpdate) return false;
+        if (!ChunkExists(at) || !grid[at].dirtyMeshV) return false;
         VolumeToMesh(at, threshold);
         return true;
     }
     public bool MeshToSpringsDirty(Vector3Int at, bool joinNeighbors = false)
     {
-        if (!ChunkExists(at) || !grid[at].dirtySpringsM && !forceUpdate) return false;
+        if (!ChunkExists(at) || !grid[at].dirtySpringsM) return false;
         MeshToSprings(at, joinNeighbors);
         return true;
     }
     public bool SpringsToMeshDirty(Vector3Int at)
     {
-        if (!ChunkExists(at) || !grid[at].dirtyMeshS && !forceUpdate) return false;
+        if (!ChunkExists(at) || !grid[at].dirtyMeshS) return false;
         SpringsToMesh(at);
         return true;
     }
     public bool UpdateSpringsDirty(Vector3Int at, float deltaTime)
     {
-        if (!ChunkExists(at) || !grid[at].dirtySpringsS && !forceUpdate) return false;
+        if (!ChunkExists(at) || !grid[at].dirtySpringsS) return false;
         UpdateSprings(at, deltaTime);
         return true;
     }
     public bool MeshToVolumeDirty(Vector3Int at)
     {
-        if (!ChunkExists(at) || !grid[at].dirtyVolume && !forceUpdate) return false;
+        if (!ChunkExists(at) || !grid[at].dirtyVolume) return false;
         MeshToVolume(at);
         return true;
     }
