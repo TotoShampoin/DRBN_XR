@@ -77,6 +77,7 @@ public class ChunkGrid : MonoBehaviour
         public bool dirtySpringsM;
         public bool dirtySpringsS;
         public bool dirtyVolume;
+        public bool dirtyJointure;
         public bool highlight;
     };
     readonly Dictionary<Vector3Int, ChunkData> grid = new();
@@ -144,7 +145,7 @@ public class ChunkGrid : MonoBehaviour
             ForEach(pos => VolumeToMeshDirty(pos, 0));
             ForEach(pos => MeshToSpringsDirty(pos, true));
             ForEach(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
-            ForEach(pos => TieJointures(pos));
+            ForEach(pos => TieJointuresDirty(pos));
             ForEach(pos => SpringsToMeshDirty(pos));
             if (cycle >= CycleInterval) ForEach(pos => MeshToVolumeDirty(pos));
         }
@@ -274,6 +275,12 @@ public class ChunkGrid : MonoBehaviour
         MeshToVolume(at);
         return true;
     }
+    public bool TieJointuresDirty(Vector3Int at)
+    {
+        if (!ChunkExists(at) || !grid[at].dirtyJointure) return false;
+        TieJointures(at);
+        return true;
+    }
 
 
     public void GenerateVolume(Vector3Int at)
@@ -395,6 +402,7 @@ public class ChunkGrid : MonoBehaviour
         if (joinNeighbors)
             JoinToNeighbors(at);
         grid[at].dirtySpringsM = false;
+        chunk.dirtyJointure = true;
     }
     public void SpringsToMesh(Vector3Int at)
     {
@@ -448,6 +456,7 @@ public class ChunkGrid : MonoBehaviour
                 other.normal = normal;
             }
         }
+        chunk.dirtyJointure = false;
     }
     public void UpdateSprings(Vector3Int at, float deltaTime)
     {
@@ -457,6 +466,7 @@ public class ChunkGrid : MonoBehaviour
         springSimulator.Iterate(chunk.springs, deltaTime);
         chunk.dirtySpringsS = false;
         chunk.dirtyMeshS = true;
+        chunk.dirtyJointure = true;
     }
     public void ApplyForceToSprings(
         Vector3Int at,
