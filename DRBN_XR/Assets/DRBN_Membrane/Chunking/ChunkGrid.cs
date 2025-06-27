@@ -140,23 +140,24 @@ public class ChunkGrid : MonoBehaviour
         Cleanup();
 
         if (forceUpdate) ForEach((pos, chunk) => chunk.dirtyMeshV = true);
+
         if (updateSprings)
         {
+            if (cycle >= CycleInterval) ForEach(pos => MeshToVolumeDirty(pos));
             ForEach(pos => VolumeToMeshDirty(pos, 0));
             ForEach(pos => MeshToSpringsDirty(pos, true));
             ForEach(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
             ForEach(pos => TieJointuresDirty(pos));
             ForEach(pos => SpringsToMeshDirty(pos));
-            if (cycle >= CycleInterval) ForEach(pos => MeshToVolumeDirty(pos));
         }
         else
         {
-            if (isPainting) ForEach(pos => PaintVolume(pos, GlobalCursorPos, eraseMode));
-            if (cycle >= CycleInterval)
+            if (isPainting)
             {
                 ForEach(pos => MeshToVolumeDirty(pos));
+                ForEach(pos => PaintVolume(pos, GlobalCursorPos, eraseMode));
+                ForEach(pos => VolumeToMeshDirty(pos, 0));
             }
-            ForEach(pos => VolumeToMeshDirty(pos));
         }
 
         if (RayIntersection(GlobalCursorRay) is Vector3 hit)

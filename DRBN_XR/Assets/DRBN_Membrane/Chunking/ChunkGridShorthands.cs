@@ -12,16 +12,19 @@ public class ChunkGridShorthands : MonoBehaviour
     public TMP_Dropdown renderModeUi;
     public Toggle forceUpdateUi;
     public Slider cycleRateUi;
+    public Toggle springsModeUi;
 
     public int RenderModeAsInt { get => (int)grid.renderMode; set => grid.renderMode = (ChunkGrid.RenderMode)value; }
     public bool ForceUpdate { get => grid.forceUpdate; set => grid.forceUpdate = value; }
     public float CycleRate { get => grid.cycleRate; set => grid.cycleRate = value; }
+    public bool SpringsMode { get => grid.updateSprings; set => grid.updateSprings = value; }
 
     public void Update()
     {
         renderModeUi.value = RenderModeAsInt;
         forceUpdateUi.isOn = ForceUpdate;
         cycleRateUi.value = CycleRate;
+        springsModeUi.isOn = SpringsMode;
     }
 
     public void Regenerate()
