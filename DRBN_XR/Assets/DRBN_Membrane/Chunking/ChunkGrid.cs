@@ -11,6 +11,7 @@ using SpringSim.V3;
 using WeightGeneration;
 using WeightPainting;
 using Voxelization;
+using System.Security.Cryptography;
 
 public class ChunkGrid : MonoBehaviour
 {
@@ -88,13 +89,6 @@ public class ChunkGrid : MonoBehaviour
         public bool highlight;
     };
     readonly Dictionary<Vector3Int, ChunkData> grid = new();
-    public (Vector3Int, ChunkData)? GetChunk(Vector3 at)
-    {
-        Vector3Int chunkPos = Vector3Int.RoundToInt(WorldToGridPosition(at));
-        if (grid.TryGetValue(chunkPos, out ChunkData chunk))
-            return (chunkPos, chunk);
-        return null;
-    }
 
     public Vector3 WorldToLocalPosition(Vector3 worldPos) =>
         objectTransform.inverse.MultiplyPoint(worldPos);
@@ -154,8 +148,16 @@ public class ChunkGrid : MonoBehaviour
             ForEach(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
             ForEach(pos => TieJointuresDirty(pos));
             ForEach(pos => SpringsToMeshDirty(pos));
-            if (cycle >= CycleInterval) ForEach(pos => MeshToVolumeDirty(pos));
-            ForEach(pos => VolumeToMeshDirty(pos, 0));
+            if (cycle >= CycleInterval)
+            {
+                ForEach((pos, chunk) => chunk.dirtyVolume |= MeshToVolumeDirty(pos));
+                ForEach((pos, chunk) =>
+                {
+                    if (chunk.dirtyVolume && DifferenceOfVolumeDirty(pos) > 0.5f)
+                        VolumeToMeshDirty(pos, 0);
+                    chunk.dirtyVolume = false;
+                });
+            }
         }
         else
         {
@@ -213,6 +215,12 @@ public class ChunkGrid : MonoBehaviour
     }
     public bool ChunkExists(Vector3Int at) => grid.ContainsKey(at) && grid[at] != null;
     public void Cleanup() => ForEach((pos, chunk) => { if (chunk == null) grid.Remove(pos); });
+    public (Vector3Int, ChunkData)? GetChunk(Vector3 at)
+    {
+        Vector3Int chunkPos = Vector3Int.RoundToInt(WorldToGridPosition(at));
+        return ChunkExists(chunkPos) ? (chunkPos, this[chunkPos]) : null;
+    }
+    public ChunkData this[Vector3Int at] => grid.TryGetValue(at, out ChunkData chunk) ? chunk : null;
 
     public List<(Vector3Int, ChunkData)> SurroundingChunks(Vector3Int at, int chunkRadius = 1)
     {
@@ -288,6 +296,11 @@ public class ChunkGrid : MonoBehaviour
         if (!ChunkExists(at) || !grid[at].dirtyJointure) return false;
         TieJointures(at);
         return true;
+    }
+    public float DifferenceOfVolumeDirty(Vector3Int at)
+    {
+        if (!ChunkExists(at) || !grid[at].dirtyVolume) return 0f;
+        return DifferenceOfVolume(at);
     }
 
 

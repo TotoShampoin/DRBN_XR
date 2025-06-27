@@ -29,10 +29,8 @@ public class ChunkGridShorthands : MonoBehaviour
 
     public void Regenerate()
     {
-        grid.ForEach(pos =>
-        {
-            grid.GenerateVolume(pos);
-        });
+        grid.ForEach(pos => grid.GenerateVolume(pos));
+        grid.ForEach(pos => grid.VolumeToMesh(pos));
     }
     public void Voxelize()
     {
