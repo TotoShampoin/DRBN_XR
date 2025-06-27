@@ -616,7 +616,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1810203739}
         m_TargetAssemblyTypeName: ChunkGridShorthands, Assembly-CSharp
-        m_MethodName: set_ForceUpdate
+        m_MethodName: set_SpringsMode
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4325,8 +4325,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1810203728}
-  - component: {fileID: 1810203727}
   - component: {fileID: 1810203739}
+  - component: {fileID: 1810203727}
   m_Layer: 0
   m_Name: Chunks
   m_TagString: Untagged
@@ -4416,6 +4416,7 @@ MonoBehaviour:
   renderModeUi: {fileID: 1865573666}
   forceUpdateUi: {fileID: 764041404}
   cycleRateUi: {fileID: 798917865}
+  springsModeUi: {fileID: 290843379}
 --- !u!1 &1865573664
 GameObject:
   m_ObjectHideFlags: 0

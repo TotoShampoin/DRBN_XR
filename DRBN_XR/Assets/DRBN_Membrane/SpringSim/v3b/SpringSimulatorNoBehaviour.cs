@@ -108,6 +108,8 @@ namespace SpringSim.V3
         readonly static ProfilerMarker generateLut = new("Membrane.SpringSim.GenerateLUT");
         readonly static ProfilerMarker updateLut = new("Membrane.SpringSim.UpdateLUT");
         readonly static ProfilerMarker surroundingFetching = new("Membrane.SpringSim.GetSurrounding");
+        readonly static ProfilerMarker closestFetching = new("Membrane.SpringSim.ClosestMass");
+        readonly static ProfilerMarker join = new("Membrane.SpringSim.Join");
 
         public Vector3 LocalToGlobalPosition(Vector3 position) => (position + origin) / offsetFactor;
         public Vector3 GlobalToLocalPosition(Vector3 position) => position * offsetFactor - origin;
@@ -115,14 +117,17 @@ namespace SpringSim.V3
         public List<(Mass self, Mass other)> Join(SpringSimulatorState with, float tolerance = 0.0001f)
         {
             List<(Mass, Mass)> result = new();
-            masses.ForEach(mA =>
+            using (join.Auto())
             {
-                var mAp = LocalToGlobalPosition(mA.position);
-                var mB = with.ClosestMassGlobal(mAp);
-                if (mB == null) return;
-                var mBp = with.LocalToGlobalPosition(mB.position);
-                if (Vector3.Distance(mAp, mBp) < tolerance) result.Add((mA, mB));
-            });
+                masses.ForEach(mA =>
+                {
+                    var mAp = LocalToGlobalPosition(mA.position);
+                    var mB = with.ClosestMassGlobal(mAp);
+                    if (mB == null) return;
+                    var mBp = with.LocalToGlobalPosition(mB.position);
+                    if (Vector3.Distance(mAp, mBp) < tolerance) result.Add((mA, mB));
+                });
+            }
             return result;
         }
 
@@ -137,6 +142,7 @@ namespace SpringSim.V3
             for (int i = 0; i < masses.Count; i++)
             {
                 lutMasses.Move(oldPositions[i], masses[i].position, masses[i]);
+                oldPositions[i] = masses[i].position;
             }
             updateLut.End();
         }
@@ -166,7 +172,6 @@ namespace SpringSim.V3
                     yield return (masses[i], d, i);
             }
         }
-        // public List<Mass> GetSurrounding(Vector3 position, float distance) => lutMasses.GetSurrounding(position, distance); // This doesn't work :(
         public List<Mass> GetSurrounding(Vector3 position, float distance)
         {
             using (surroundingFetching.Auto())
@@ -183,18 +188,21 @@ namespace SpringSim.V3
 
         public Mass ClosestMassLocal(Vector3 position)
         {
-            float minDist = float.MaxValue;
-            int minIdx = -1;
-            for (int i = 0; i < masses.Count; i++)
+            using (closestFetching.Auto())
             {
-                var dist = Vector3.Distance(masses[i].position, position);
-                if (dist < minDist)
+                float minDistSq = float.MaxValue;
+                int minIdx = -1;
+                for (int i = 0; i < masses.Count; i++)
                 {
-                    minDist = dist;
-                    minIdx = i;
+                    var distSq = Vector3.SqrMagnitude(masses[i].position - position);
+                    if (distSq < minDistSq)
+                    {
+                        minDistSq = distSq;
+                        minIdx = i;
+                    }
                 }
+                return minIdx >= 0 ? masses[minIdx] : null;
             }
-            return minIdx >= 0 ? masses[minIdx] : null;
         }
         public Mass ClosestMassGlobal(Vector3 position)
         {

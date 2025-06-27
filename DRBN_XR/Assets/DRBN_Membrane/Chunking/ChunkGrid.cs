@@ -60,6 +60,13 @@ public class ChunkGrid : MonoBehaviour
     Ray GlobalCursorRay => new(GlobalCursorPos, GlobalCursorDir);
     Vector3 LocalCursorPos => WorldToLocalPosition(cursor.transform.position);
 
+    // Profiler markers
+    static readonly Unity.Profiling.ProfilerMarker meshToVolumeMarker = new("Membrane.ChunkGrid.MeshToVolume");
+    static readonly Unity.Profiling.ProfilerMarker volumeToMeshMarker = new("Membrane.ChunkGrid.VolumeToMesh");
+    static readonly Unity.Profiling.ProfilerMarker meshToSpringsMarker = new("Membrane.ChunkGrid.MeshToSprings");
+    static readonly Unity.Profiling.ProfilerMarker springsToMeshMarker = new("Membrane.ChunkGrid.SpringsToMesh");
+    static readonly Unity.Profiling.ProfilerMarker tieJointuresMarker = new("Membrane.ChunkGrid.TieJointures");
+
     public enum RenderMode
     {
         MarchedMesh,
@@ -296,62 +303,66 @@ public class ChunkGrid : MonoBehaviour
     public void MeshToVolume(Vector3Int at)
     {
         if (!ChunkExists(at)) return;
-        var chunk = grid[at];
-        var vertices = chunk.mesh.vertices.ToList();
-        var triangles = chunk.mesh.triangles.ToList();
-        Vector3Int[] neighbors = {
-            new (1, 0, 0), new (-1, 0, 0),
-            new (0, 1, 0), new (0, -1, 0),
-            new (0, 0, 1), new (0, 0, -1),
-            new (1, 1, 0), new (1, -1, 0), new (-1, 1, 0), new (-1, -1, 0),
-            new (1, 0, 1), new (1, 0, -1), new (-1, 0, 1), new (-1, 0, -1),
-            new (0, 1, 1), new (0, 1, -1), new (0, -1, 1), new (0, -1, -1),
-            new (1, 1, 1), new (1, 1, -1), new (1, -1, 1), new (1, -1, -1),
-            new (-1, 1, 1), new (-1, 1, -1), new (-1, -1, 1), new (-1, -1, -1)
-        };
-
-        int vertexOffset = vertices.Count;
-        foreach (var neighbor in neighbors)
+        using (meshToVolumeMarker.Auto())
         {
-            Vector3Int neighborPos = at + neighbor;
-            if (!ChunkExists(neighborPos))
-                continue;
-            var neighborChunk = grid[neighborPos];
-            if (neighborChunk != null)
+            var chunk = grid[at];
+            var vertices = chunk.mesh.vertices.ToList();
+            var triangles = chunk.mesh.triangles.ToList();
+            Vector3Int[] neighbors = {
+                new (1, 0, 0), new (-1, 0, 0),
+                new (0, 1, 0), new (0, -1, 0),
+                new (0, 0, 1), new (0, 0, -1),
+                new (1, 1, 0), new (1, -1, 0), new (-1, 1, 0), new (-1, -1, 0),
+                new (1, 0, 1), new (1, 0, -1), new (-1, 0, 1), new (-1, 0, -1),
+                new (0, 1, 1), new (0, 1, -1), new (0, -1, 1), new (0, -1, -1),
+                new (1, 1, 1), new (1, 1, -1), new (1, -1, 1), new (1, -1, -1),
+                new (-1, 1, 1), new (-1, 1, -1), new (-1, -1, 1), new (-1, -1, -1)
+            };
+            int vertexOffset = vertices.Count;
+            foreach (var neighbor in neighbors)
             {
-                if (neighborChunk.mesh != null)
+                Vector3Int neighborPos = at + neighbor;
+                if (!ChunkExists(neighborPos))
+                    continue;
+                var neighborChunk = grid[neighborPos];
+                if (neighborChunk != null)
                 {
-                    var neighborVertices = neighborChunk.mesh.vertices;
-                    var neighborTriangles = neighborChunk.mesh.triangles;
-                    Vector3 delta = neighborPos - at;
-                    Vector3 offset = delta * offsetFactor;
-                    int baseIndex = vertices.Count;
-                    vertices.AddRange(neighborVertices.Select(v => v + offset));
-                    triangles.AddRange(neighborTriangles.Select(i => i + baseIndex));
+                    if (neighborChunk.mesh != null)
+                    {
+                        var neighborVertices = neighborChunk.mesh.vertices;
+                        var neighborTriangles = neighborChunk.mesh.triangles;
+                        Vector3 delta = neighborPos - at;
+                        Vector3 offset = delta * offsetFactor;
+                        int baseIndex = vertices.Count;
+                        vertices.AddRange(neighborVertices.Select(v => v + offset));
+                        triangles.AddRange(neighborTriangles.Select(i => i + baseIndex));
+                    }
                 }
             }
+            var mesh = new Mesh()
+            {
+                vertices = vertices.ToArray(),
+                triangles = triangles.ToArray(),
+            };
+            MeshMod.DeduplicateVertices(mesh, 0.01f, mesh);
+            voxelizer.Voxelize(mesh, chunk.volume);
+            chunk.dirtyVolume = false;
+            chunk.dirtyMeshV = true;
         }
-        var mesh = new Mesh()
-        {
-            vertices = vertices.ToArray(),
-            triangles = triangles.ToArray(),
-        };
-        MeshMod.DeduplicateVertices(mesh, 0.01f, mesh);
-
-        voxelizer.Voxelize(mesh, chunk.volume);
-        chunk.dirtyVolume = false;
-        chunk.dirtyMeshV = true;
     }
     public void VolumeToMesh(Vector3Int at, float threshold = 0)
     {
         if (!ChunkExists(at)) return;
-        var chunk = grid[at];
-        chunk.mesh = chunk.mesh != null ? chunk.mesh : new();
-        marchingCubes.GenerateMesh(chunk.volume, threshold, chunk.mesh);
-        MeshMod.DeduplicateVertices(chunk.mesh, mergeDistance, chunk.mesh);
-        Graphics.Blit(chunk.volume, chunk.volumeOfMesh);
-        grid[at].dirtyMeshV = false;
-        chunk.dirtySpringsM = true;
+        using (volumeToMeshMarker.Auto())
+        {
+            var chunk = grid[at];
+            chunk.mesh = chunk.mesh != null ? chunk.mesh : new();
+            marchingCubes.GenerateMesh(chunk.volume, threshold, chunk.mesh);
+            MeshMod.DeduplicateVertices(chunk.mesh, mergeDistance, chunk.mesh);
+            Graphics.Blit(chunk.volume, chunk.volumeOfMesh);
+            grid[at].dirtyMeshV = false;
+            chunk.dirtySpringsM = true;
+        }
     }
     public void PaintVolume(Vector3Int at, Vector3 brushPosition, bool eraseMode)
     {
@@ -385,33 +396,38 @@ public class ChunkGrid : MonoBehaviour
     public void MeshToSprings(Vector3Int at, bool joinNeighbors = false)
     {
         if (!ChunkExists(at)) return;
-        var chunk = grid[at];
-        var previousSprings = chunk.springs;
-        chunk.springs ??= new()
+        using (meshToSpringsMarker.Auto())
         {
-            origin = (Vector3)at * offsetFactor,
-            offsetFactor = offsetFactor,
-        };
-        chunk.jointures ??= new();
-        SpringMeshConversion.MeshToSprings(chunk.mesh, mergeDistance, chunk.springs);
-
-        foreach (var (neighbor, _) in chunk.jointures)
-        {
-            neighbor?.jointures?.Remove(chunk);
+            var chunk = grid[at];
+            var previousSprings = chunk.springs;
+            chunk.springs ??= new()
+            {
+                origin = (Vector3)at * offsetFactor,
+                offsetFactor = offsetFactor,
+            };
+            chunk.jointures ??= new();
+            SpringMeshConversion.MeshToSprings(chunk.mesh, mergeDistance, chunk.springs);
+            foreach (var (neighbor, _) in chunk.jointures)
+            {
+                neighbor?.jointures?.Remove(chunk);
+            }
+            chunk.jointures.Clear();
+            if (joinNeighbors)
+                JoinToNeighbors(at);
+            grid[at].dirtySpringsM = false;
+            chunk.dirtyJointure = true;
         }
-        chunk.jointures.Clear();
-        if (joinNeighbors)
-            JoinToNeighbors(at);
-        grid[at].dirtySpringsM = false;
-        chunk.dirtyJointure = true;
     }
     public void SpringsToMesh(Vector3Int at)
     {
         if (!ChunkExists(at)) return;
-        var chunk = grid[at];
-        SpringMeshConversion.SpringsToMesh(chunk.springs, chunk.mesh);
-        chunk.dirtyMeshS = false;
-        chunk.dirtyVolume = true;
+        using (springsToMeshMarker.Auto())
+        {
+            var chunk = grid[at];
+            SpringMeshConversion.SpringsToMesh(chunk.springs, chunk.mesh);
+            chunk.dirtyMeshS = false;
+            chunk.dirtyVolume = true;
+        }
     }
     public void JoinToNeighbors(Vector3Int at)
     {
@@ -431,33 +447,34 @@ public class ChunkGrid : MonoBehaviour
     public void TieJointures(Vector3Int at)
     {
         if (!ChunkExists(at)) return;
-        var chunk = grid[at];
-        if (chunk.springs == null || chunk.jointures == null) return;
-        chunk.dirtyMeshS = true;
-        foreach (var (neighbor, joinList) in chunk.jointures)
+        using (tieJointuresMarker.Auto())
         {
-            neighbor.dirtyMeshS = true;
-            foreach (var (self, other) in joinList)
+            var chunk = grid[at];
+            if (chunk.springs == null || chunk.jointures == null) return;
+            chunk.dirtyMeshS = true;
+            foreach (var (neighbor, joinList) in chunk.jointures)
             {
-                var selfPos = chunk.springs.LocalToGlobalPosition(self.position);
-                var otherPos = neighbor.springs.LocalToGlobalPosition(other.position);
-
-                var pos = (selfPos + otherPos) / 2f;
-                var vel = (self.velocity + other.velocity) / 2f;
-                var force = (self.force + other.force) / 2f;
-                var normal = Vector3.Normalize(self.normal + other.normal);
-
-                self.position = chunk.springs.GlobalToLocalPosition(pos);
-                other.position = neighbor.springs.GlobalToLocalPosition(pos);
-                self.velocity = vel;
-                other.velocity = vel;
-                self.force = force;
-                other.force = force;
-                self.normal = normal;
-                other.normal = normal;
+                neighbor.dirtyMeshS = true;
+                foreach (var (self, other) in joinList)
+                {
+                    var selfPos = chunk.springs.LocalToGlobalPosition(self.position);
+                    var otherPos = neighbor.springs.LocalToGlobalPosition(other.position);
+                    var pos = (selfPos + otherPos) / 2f;
+                    var vel = (self.velocity + other.velocity) / 2f;
+                    var force = (self.force + other.force) / 2f;
+                    var normal = Vector3.Normalize(self.normal + other.normal);
+                    self.position = chunk.springs.GlobalToLocalPosition(pos);
+                    other.position = neighbor.springs.GlobalToLocalPosition(pos);
+                    self.velocity = vel;
+                    other.velocity = vel;
+                    self.force = force;
+                    other.force = force;
+                    self.normal = normal;
+                    other.normal = normal;
+                }
             }
+            chunk.dirtyJointure = false;
         }
-        chunk.dirtyJointure = false;
     }
     public void UpdateSprings(Vector3Int at, float deltaTime)
     {
