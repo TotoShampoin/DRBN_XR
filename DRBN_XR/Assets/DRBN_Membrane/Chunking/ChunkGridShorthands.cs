@@ -36,7 +36,6 @@ public class ChunkGridShorthands : MonoBehaviour
         grid.ForEach((pos, chunk) =>
         {
             grid.MeshToVolume(pos);
-            chunk.dirtyMesh = true;
         });
     }
 }
