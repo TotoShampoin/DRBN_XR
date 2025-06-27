@@ -150,12 +150,12 @@ public class ChunkGrid : MonoBehaviour
 
         if (updateSprings)
         {
-            if (cycle >= CycleInterval) ForEach(pos => MeshToVolumeDirty(pos));
-            ForEach(pos => VolumeToMeshDirty(pos, 0));
             ForEach(pos => MeshToSpringsDirty(pos, true));
             ForEach(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
             ForEach(pos => TieJointuresDirty(pos));
             ForEach(pos => SpringsToMeshDirty(pos));
+            if (cycle >= CycleInterval) ForEach(pos => MeshToVolumeDirty(pos));
+            ForEach(pos => VolumeToMeshDirty(pos, 0));
         }
         else
         {
@@ -443,6 +443,7 @@ public class ChunkGrid : MonoBehaviour
                 chunk.jointures.TryAdd(neighbor, jointure);
                 neighbor.jointures[chunk] = jointure.Select(j => (j.other, j.self)).ToList();
             });
+        chunk.dirtyJointure = true;
     }
     public void TieJointures(Vector3Int at)
     {
