@@ -26,17 +26,17 @@ public class ChunkGridShorthands : MonoBehaviour
 
     public void Regenerate()
     {
-        grid.ForEachPos(pos =>
+        grid.ForEach(pos =>
         {
-            grid.RegenerateChunk(pos);
+            grid.GenerateVolume(pos);
         });
     }
     public void Voxelize()
     {
-        grid.ForEachChunk((pos, chunk) =>
+        grid.ForEach((pos, chunk) =>
         {
-            grid.VoxelizeChunk(pos);
-            chunk.isDirtyForMesh = true;
+            grid.MeshToVolume(pos);
+            chunk.dirtyMesh = true;
         });
     }
 }

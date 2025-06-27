@@ -61,7 +61,7 @@ class ChunkGrabber : MonoBehaviour
             selectedSprings.LocalToGlobalPosition(selectedMass.position));
         F = SpringSimulatorNoBehaviour
             .SpringPull(massPos, transform.position, 0f, force);
-        grid.ApplyForceToSpringsInChunk(selectedChunkIndex.Value, F, massPos, radius, true);
+        grid.ApplyForceToSprings(selectedChunkIndex.Value, F, massPos, radius, true);
     }
 
     public void SetPosition(Vector3 position)
