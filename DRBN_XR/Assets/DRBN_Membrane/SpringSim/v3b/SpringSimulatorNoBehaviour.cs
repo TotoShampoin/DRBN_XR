@@ -70,7 +70,7 @@ namespace SpringSim.V3
                 }
                 using (iterationMasses.Auto()) { Parallel.ForEach(masses, m => m.ApplyForce(deltaTime)); }
             }
-            state.UpdateLUT();
+            // state.UpdateLUT();
         }
 
         public Vector3 SpringForce(SpringSimulatorState state, SpringLink link)
@@ -103,10 +103,10 @@ namespace SpringSim.V3
         public List<(Vector3 f, Vector3 o, float r)> externalForces = new();
 
         public List<Vector3> oldPositions = new();
-        public SpatialHash<Mass> lutMasses;
+        // public SpatialHash<Mass> lutMasses;
 
-        readonly static ProfilerMarker generateLut = new("Membrane.SpringSim.GenerateLUT");
-        readonly static ProfilerMarker updateLut = new("Membrane.SpringSim.UpdateLUT");
+        // readonly static ProfilerMarker generateLut = new("Membrane.SpringSim.GenerateLUT");
+        // readonly static ProfilerMarker updateLut = new("Membrane.SpringSim.UpdateLUT");
         readonly static ProfilerMarker surroundingFetching = new("Membrane.SpringSim.GetSurrounding");
         readonly static ProfilerMarker closestFetching = new("Membrane.SpringSim.ClosestMass");
         readonly static ProfilerMarker join = new("Membrane.SpringSim.Join");
@@ -131,32 +131,32 @@ namespace SpringSim.V3
             return result;
         }
 
-        public void UpdateLUT()
-        {
-            if (lutMasses == null)
-            {
-                GenerateLUT();
-                return;
-            }
-            updateLut.Begin();
-            for (int i = 0; i < masses.Count; i++)
-            {
-                lutMasses.Move(oldPositions[i], masses[i].position, masses[i]);
-                oldPositions[i] = masses[i].position;
-            }
-            updateLut.End();
-        }
-        public void GenerateLUT(float cellSize = 0.125f)
-        {
-            generateLut.Begin();
-            lutMasses = new(cellSize);
-            masses.ForEach(mass =>
-            {
-                lutMasses.AddAt(mass.position, mass);
-                oldPositions.Add(mass.position);
-            });
-            generateLut.End();
-        }
+        // public void UpdateLUT()
+        // {
+        //     if (lutMasses == null)
+        //     {
+        //         GenerateLUT();
+        //         return;
+        //     }
+        //     updateLut.Begin();
+        //     for (int i = 0; i < masses.Count; i++)
+        //     {
+        //         lutMasses.Move(oldPositions[i], masses[i].position, masses[i]);
+        //         oldPositions[i] = masses[i].position;
+        //     }
+        //     updateLut.End();
+        // }
+        // public void GenerateLUT(float cellSize = 0.125f)
+        // {
+        //     generateLut.Begin();
+        //     lutMasses = new(cellSize);
+        //     masses.ForEach(mass =>
+        //     {
+        //         lutMasses.AddAt(mass.position, mass);
+        //         oldPositions.Add(mass.position);
+        //     });
+        //     generateLut.End();
+        // }
 
         public void AddExternalForce(Vector3 force, Vector3 from, float radius)
         {

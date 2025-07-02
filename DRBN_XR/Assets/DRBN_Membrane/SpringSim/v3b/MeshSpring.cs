@@ -122,7 +122,7 @@ namespace SpringSim.V3
                 newTriangles[i] = (v0, v1, v2);
             });
             triangles.AddRange(newTriangles.Where(t => t != default));
-            simulator.GenerateLUT();
+            // simulator.GenerateLUT();
             meshToSpring.End();
             return simulator;
         }

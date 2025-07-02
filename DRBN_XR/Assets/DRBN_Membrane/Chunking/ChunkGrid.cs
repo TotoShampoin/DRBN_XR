@@ -153,7 +153,7 @@ public class ChunkGrid : MonoBehaviour
                 ForEach((pos, chunk) => chunk.dirtyVolume |= MeshToVolumeDirty(pos));
                 ForEach((pos, chunk) =>
                 {
-                    if (chunk.dirtyVolume && DifferenceOfVolumeDirty(pos) > 0.5f)
+                    if (chunk.dirtyVolume && DifferenceOfVolumeDirty(pos) > 0.75f)
                         VolumeToMeshDirty(pos, 0);
                     chunk.dirtyVolume = false;
                 });
@@ -313,52 +313,87 @@ public class ChunkGrid : MonoBehaviour
         chunk.dirtyVolume = false;
         chunk.dirtyMeshV = true;
     }
+
+    static readonly Vector3Int[] neighborsMap = {
+        new (1, 0, 0), new (-1, 0, 0),
+        new (0, 1, 0), new (0, -1, 0),
+        new (0, 0, 1), new (0, 0, -1),
+        new (1, 1, 0), new (1, -1, 0), new (-1, 1, 0), new (-1, -1, 0),
+        new (1, 0, 1), new (1, 0, -1), new (-1, 0, 1), new (-1, 0, -1),
+        new (0, 1, 1), new (0, 1, -1), new (0, -1, 1), new (0, -1, -1),
+        new (1, 1, 1), new (1, 1, -1), new (1, -1, 1), new (1, -1, -1),
+        new (-1, 1, 1), new (-1, 1, -1), new (-1, -1, 1), new (-1, -1, -1)
+    };
+    Mesh meshToVolumeCache;
+    readonly List<Vector3> verticesCache = new();
+    readonly List<int> trianglesCache = new();
     public void MeshToVolume(Vector3Int at)
     {
+        if (meshToVolumeCache == null) meshToVolumeCache = new();
         if (!ChunkExists(at)) return;
         using (meshToVolumeMarker.Auto())
         {
             var chunk = grid[at];
-            var vertices = chunk.mesh.vertices.ToList();
-            var triangles = chunk.mesh.triangles.ToList();
-            Vector3Int[] neighbors = {
-                new (1, 0, 0), new (-1, 0, 0),
-                new (0, 1, 0), new (0, -1, 0),
-                new (0, 0, 1), new (0, 0, -1),
-                new (1, 1, 0), new (1, -1, 0), new (-1, 1, 0), new (-1, -1, 0),
-                new (1, 0, 1), new (1, 0, -1), new (-1, 0, 1), new (-1, 0, -1),
-                new (0, 1, 1), new (0, 1, -1), new (0, -1, 1), new (0, -1, -1),
-                new (1, 1, 1), new (1, 1, -1), new (1, -1, 1), new (1, -1, -1),
-                new (-1, 1, 1), new (-1, 1, -1), new (-1, -1, 1), new (-1, -1, -1)
-            };
-            int vertexOffset = vertices.Count;
-            foreach (var neighbor in neighbors)
+
+            // Reuse cached lists instead of creating new ones
+            verticesCache.Clear();
+            trianglesCache.Clear();
+
+            // Pre-calculate capacity to avoid list resizing
+            int estimatedVertexCount = chunk.mesh.vertexCount;
+            int estimatedTriangleCount = chunk.mesh.triangles.Length;
+
+            foreach (var neighbor in neighborsMap)
             {
                 Vector3Int neighborPos = at + neighbor;
-                if (!ChunkExists(neighborPos))
-                    continue;
-                var neighborChunk = grid[neighborPos];
-                if (neighborChunk != null)
+                if (ChunkExists(neighborPos) && grid[neighborPos]?.mesh != null)
                 {
-                    if (neighborChunk.mesh != null)
+                    estimatedVertexCount += grid[neighborPos].mesh.vertexCount;
+                    estimatedTriangleCount += grid[neighborPos].mesh.triangles.Length;
+                }
+            }
+
+            if (verticesCache.Capacity < estimatedVertexCount)
+                verticesCache.Capacity = estimatedVertexCount;
+            if (trianglesCache.Capacity < estimatedTriangleCount)
+                trianglesCache.Capacity = estimatedTriangleCount;
+
+            // Add current chunk vertices/triangles
+            verticesCache.AddRange(chunk.mesh.vertices);
+            trianglesCache.AddRange(chunk.mesh.triangles);
+
+            foreach (var neighbor in neighborsMap)
+            {
+                Vector3Int neighborPos = at + neighbor;
+                if (!ChunkExists(neighborPos)) continue;
+
+                var neighborChunk = grid[neighborPos];
+                if (neighborChunk?.mesh != null)
+                {
+                    var neighborVertices = neighborChunk.mesh.vertices;
+                    var neighborTriangles = neighborChunk.mesh.triangles;
+                    Vector3 delta = neighborPos - at;
+                    Vector3 offset = delta * offsetFactor;
+                    int baseIndex = verticesCache.Count;
+
+                    // Manual loops instead of LINQ to avoid allocations
+                    for (int i = 0; i < neighborVertices.Length; i++)
                     {
-                        var neighborVertices = neighborChunk.mesh.vertices;
-                        var neighborTriangles = neighborChunk.mesh.triangles;
-                        Vector3 delta = neighborPos - at;
-                        Vector3 offset = delta * offsetFactor;
-                        int baseIndex = vertices.Count;
-                        vertices.AddRange(neighborVertices.Select(v => v + offset));
-                        triangles.AddRange(neighborTriangles.Select(i => i + baseIndex));
+                        verticesCache.Add(neighborVertices[i] + offset);
+                    }
+
+                    for (int i = 0; i < neighborTriangles.Length; i++)
+                    {
+                        trianglesCache.Add(neighborTriangles[i] + baseIndex);
                     }
                 }
             }
-            var mesh = new Mesh()
-            {
-                vertices = vertices.ToArray(),
-                triangles = triangles.ToArray(),
-            };
-            MeshMod.DeduplicateVertices(mesh, 0.01f, mesh);
-            voxelizer.Voxelize(mesh, chunk.volume);
+
+            meshToVolumeCache.Clear();
+            meshToVolumeCache.SetVertices(verticesCache);
+            meshToVolumeCache.SetTriangles(trianglesCache, 0);
+            MeshMod.DeduplicateVertices(meshToVolumeCache, 0.01f, meshToVolumeCache);
+            voxelizer.Voxelize(meshToVolumeCache, chunk.volume);
             chunk.dirtyVolume = false;
             chunk.dirtyMeshV = true;
         }
@@ -464,10 +499,11 @@ public class ChunkGrid : MonoBehaviour
         using (tieJointuresMarker.Auto())
         {
             var chunk = grid[at];
-            if (chunk.springs == null || chunk.jointures == null) return;
+            if (chunk.springs == null || chunk.jointures == null || chunk.jointures.Count == 0) return;
             chunk.dirtyMeshS = true;
             foreach (var (neighbor, joinList) in chunk.jointures)
             {
+                if (joinList.Count == 0) continue;
                 neighbor.dirtyMeshS = true;
                 foreach (var (self, other) in joinList)
                 {
