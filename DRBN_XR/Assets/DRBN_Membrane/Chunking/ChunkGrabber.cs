@@ -1,6 +1,10 @@
 using UnityEngine;
 using SpringSim.V3;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 class ChunkGrabber : MonoBehaviour
 {
     public ChunkGrid grid;
@@ -83,3 +87,29 @@ class ChunkGrabber : MonoBehaviour
         selectedMass = null;
     }
 }
+
+#if UNITY_EDITOR
+[CustomEditor(typeof(ChunkGrabber))]
+public class ChunkGrabberEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        ChunkGrabber grabber = (ChunkGrabber)target;
+
+        if (!Application.isPlaying) return;
+        EditorGUILayout.Space(9);
+        EditorGUILayout.LabelField("Function Calls", EditorStyles.boldLabel);
+        if (GUILayout.Button("Start grab"))
+        {
+            grabber.StartGrab();
+        }
+        if (GUILayout.Button("End grab"))
+        {
+            grabber.EndGrab();
+        }
+    }
+}
+#endif
+
