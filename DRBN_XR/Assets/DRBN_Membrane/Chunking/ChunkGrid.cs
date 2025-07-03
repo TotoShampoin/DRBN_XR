@@ -11,7 +11,6 @@ using SpringSim.V3;
 using WeightGeneration;
 using WeightPainting;
 using Voxelization;
-using System.Security.Cryptography;
 
 public class ChunkGrid : MonoBehaviour
 {
@@ -250,6 +249,40 @@ public class ChunkGrid : MonoBehaviour
             }
         }
         return null;
+    }
+
+    public (Vector3Int, ChunkData, Mass) GetClosestMass(Vector3 position)
+    {
+        if (GetChunk(position) is (Vector3Int chunkIndex, ChunkData currentChunk)
+            && currentChunk.springs != null && currentChunk.springs.masses.Count > 0)
+        {
+            Vector3 gridPosition = WorldToGridPosition(position);
+            return (chunkIndex, currentChunk, currentChunk.springs.ClosestMassGlobal(gridPosition));
+        }
+
+        Vector3Int closestChunkPos = Vector3Int.zero;
+        float closestDistance = float.MaxValue;
+
+        foreach (var (pos, chunk) in grid)
+        {
+            if (chunk.springs == null || chunk.springs.masses.Count == 0)
+                continue;
+
+            float distance = Vector3.Distance(position, GridToWorldPosition(pos));
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestChunkPos = pos;
+            }
+        }
+
+        if (ChunkExists(closestChunkPos) && grid[closestChunkPos].springs != null)
+        {
+            Vector3 gridPosition = WorldToGridPosition(position);
+            return (closestChunkPos, grid[closestChunkPos], grid[closestChunkPos].springs.ClosestMassGlobal(gridPosition));
+        }
+
+        return (Vector3Int.zero, null, null);
     }
 
     public void ForEach(Action<Vector3Int> predicate) => ForEach((pos, _) => predicate(pos));

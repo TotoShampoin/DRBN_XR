@@ -8,11 +8,15 @@ using UnityEditor;
 class ChunkGrabber : MonoBehaviour
 {
     public ChunkGrid grid;
-    public Vector3Int? selectedChunkIndex;
+    public Vector3Int selectedChunkIndex;
     public ChunkGrid.ChunkData selectedChunk;
+    public SpringSimulatorState selectedSpring;
     public Mass selectedMass;
     public float radius = 0.25f;
     public float force = 1500f;
+    public bool previewClosestMass = true;
+    public bool useInEditor = false;
+    public bool regrabNext = false;
 
     public LineRenderer forceArrowDebug;
     Vector3 F;
@@ -29,6 +33,22 @@ class ChunkGrabber : MonoBehaviour
 
     void Update()
     {
+        if (previewClosestMass)
+        {
+            var (_, chunk, closest) = grid.GetClosestMass(transform.position);
+            if (chunk != null)
+            {
+                var closestGlobal = grid.GridToWorldPosition(
+                    chunk.springs.LocalToGlobalPosition(closest.position));
+                Graphics.RenderMesh(
+                    new(mat), sphere, 0,
+                    Matrix4x4.TRS(
+                        closestGlobal, Quaternion.identity,
+                        Vector3.one * 0.025f)
+                );
+            }
+        }
+
         if (selectedMass != null)
         {
             var selectedSprings = selectedChunk.springs;
@@ -47,44 +67,54 @@ class ChunkGrabber : MonoBehaviour
                     pos, Quaternion.identity, Vector3.one * 0.05f
                 )
             );
+        }
 
-            grid.SurroundingChunks(selectedChunkIndex ?? throw new System.Exception("Index unset"))
-                .ForEach(c =>
-                {
-                    c.Item2.highlight = true;
-                });
+        if (regrabNext)
+        {
+            StartGrab();
+            regrabNext = false;
         }
     }
 
     void FixedUpdate()
     {
-        if (selectedMass == null || selectedChunk == null) return;
+        if (selectedChunk == null) return;
+        if (selectedChunk.dirtySpringsM)
+        {
+            EndGrab();
+            regrabNext = true;
+            return;
+        }
+
         var selectedSprings = selectedChunk.springs;
 
         var massPos = grid.GridToWorldPosition(
             selectedSprings.LocalToGlobalPosition(selectedMass.position));
         F = SpringSimulatorNoBehaviour
             .SpringPull(massPos, transform.position, 0f, force);
-        grid.ApplyForceToSprings(selectedChunkIndex.Value, F, massPos, radius, true);
+        grid.ApplyForceToSprings(selectedChunkIndex, F, massPos, radius, true);
     }
 
     public void SetPosition(Vector3 position)
     {
-        if (selectedMass != null) return;
+        if (useInEditor || selectedMass != null) return;
         transform.position = position;
     }
     public void StartGrab()
     {
-        var globalPosition = grid.WorldToGridPosition(transform.position);
-        var (chunkPos, chunk) = grid.GetChunk(transform.position) ?? (Vector3Int.zero, null);
-        if (chunk == null || chunk.springs == null) return;
+        var (idx, chunk, mass) = grid.GetClosestMass(transform.position);
+        if (chunk == null || mass == null) return;
+        selectedMass = mass;
         selectedChunk = chunk;
-        selectedChunkIndex = chunkPos;
-        selectedMass = selectedChunk.springs.ClosestMassGlobal(globalPosition);
+        selectedChunkIndex = idx;
+        selectedSpring = chunk.springs;
     }
     public void EndGrab()
     {
         selectedMass = null;
+        selectedChunk = null;
+        selectedChunkIndex = Vector3Int.zero;
+        selectedSpring = null;
     }
 }
 
