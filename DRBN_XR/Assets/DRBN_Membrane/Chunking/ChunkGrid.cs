@@ -45,6 +45,7 @@ public class ChunkGrid : MonoBehaviour
     public WeightPainterNobehaviour weightPainter;
     public DistanceOfVolumes distanceOfVolumes;
     public SpringsRenderer springsRenderer;
+    public VolumeRenderer volumeRenderer;
 
     float offsetFactor;
     bool isPainting = false;
@@ -71,6 +72,7 @@ public class ChunkGrid : MonoBehaviour
     {
         MarchedMesh,
         Springs,
+        Volumes,
     }
     public class ChunkData
     {
@@ -191,6 +193,9 @@ public class ChunkGrid : MonoBehaviour
                     break;
                 case RenderMode.Springs:
                     springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
+                    break;
+                case RenderMode.Volumes:
+                    volumeRenderer.DrawVolume(chunk.volume, marchingCubes.bounds, matrix);
                     break;
             }
         }

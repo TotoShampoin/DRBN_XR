@@ -281,6 +281,7 @@ GameObject:
   - component: {fileID: 131963347}
   - component: {fileID: 131963346}
   - component: {fileID: 131963345}
+  - component: {fileID: 131963348}
   m_Layer: 0
   m_Name: Voxelizer
   m_TagString: Untagged
@@ -336,6 +337,26 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1933234253}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &131963348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 131963344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e69537c8c694908469eb420f3e36df49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  texture: {fileID: 8400000, guid: 1a7caa3c72642e64bafc6dac8f214c6c, type: 2}
+  normals: {fileID: 8400000, guid: 1a7caa3c72642e64bafc6dac8f214c6c, type: 2}
+  voxelMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  voxelMaterial: {fileID: 2100000, guid: d9917b699ba2f5c47b4b4eac44f0714d, type: 2}
+  bounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0.5, y: 0.5, z: 0.5}
+  renderOnUpdate: 0
 --- !u!1 &142754289
 GameObject:
   m_ObjectHideFlags: 0
@@ -2463,8 +2484,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grid: {fileID: 1810203727}
+  selectedChunkIndex: {x: 0, y: 0, z: 0}
   radius: 0.25
   force: 1500
+  previewClosestMass: 1
+  useInEditor: 1
+  regrabNext: 0
   forceArrowDebug: {fileID: 2085768955}
 --- !u!135 &920726287
 SphereCollider:
@@ -4349,17 +4374,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   marchResolution: 8
   initNbChunks: 5
-  cycleRate: 0
+  cycleRate: 2
   paintRadius: 0.5
   paintWeight: 2
-  distanceThreshold: 0.8
+  distanceThreshold: 0.9
   mergeDistance: 0.1
   updateSprings: 1
   forceUpdate: 0
   material: {fileID: 2100000, guid: ae4e451939af45c4ebe152c2845fc678, type: 2}
   highlightMaterial: {fileID: 2100000, guid: e0bd6264bc3b99e4db1c73232d4da363, type: 2}
   baseVolume: {fileID: 8400000, guid: 1a7caa3c72642e64bafc6dac8f214c6c, type: 2}
-  renderMode: 0
+  renderMode: 2
   cursor: {fileID: 1189709270}
   primary: {fileID: 3279264004350380116, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   secondary: {fileID: -8979920020589327954, guid: c348712bda248c246b8c49b3db54643f,
@@ -4386,6 +4411,7 @@ MonoBehaviour:
   weightPainter: {fileID: 642982282}
   distanceOfVolumes: {fileID: 131963345}
   springsRenderer: {fileID: 1233425682}
+  volumeRenderer: {fileID: 131963348}
 --- !u!4 &1810203728
 Transform:
   m_ObjectHideFlags: 0
@@ -4514,6 +4540,9 @@ MonoBehaviour:
       m_Image: {fileID: 0}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
     - m_Text: Springs
+      m_Image: {fileID: 0}
+      m_Color: {r: 1, g: 1, b: 1, a: 1}
+    - m_Text: Volume
       m_Image: {fileID: 0}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_OnValueChanged:

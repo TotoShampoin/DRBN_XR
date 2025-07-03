@@ -70,30 +70,18 @@ Shader "Instanced/VoxelCube"
                 v2f o;
                 o.uv = v.uv;
                 o.instanceID = v.instanceID;
-
-                // Map instanceID to 3D grid coordinates
+                
                 int z = v.instanceID / (_Width * _Height);
                 int y = (v.instanceID / _Width) % _Height;
                 int x = v.instanceID % _Width;
 
-                // Compute normalized position in [0,1] range for sampling
                 float3 normalizedPos = float3(x, y, z) / float3(_Width - 1, _Height - 1, _Depth - 1);
 
-                // Map normalized position to bounds
+                float value = tex3Dlod(_Texture, float4(normalizedPos, 0)).r;
+
                 float3 instancePosition = lerp(_BoundsMin, _BoundsMax, normalizedPos);
                 
-                // // Calculate billboard vertices based on particle size
-                // float3 cameraRight = normalize(UNITY_MATRIX_IT_MV[0].xyz);
-                // float3 cameraUp = normalize(UNITY_MATRIX_IT_MV[1].xyz);
-                
-                // float3 vertex = v.vertex.xyz * _VoxelSize;
-                // float4 worldPos = mul(_LocalToWorld, float4(instancePosition, 1))
-                //                + float4(cameraRight, 0) * vertex.x 
-                //                + float4(cameraUp, 0) * vertex.y;
-                // o.pos = mul(UNITY_MATRIX_VP, worldPos);
-
-                // Standard transform (no billboard)
-                float4 worldPos = mul(_LocalToWorld, float4(instancePosition + v.vertex.xyz * _VoxelSize, 1));
+                float4 worldPos = mul(_LocalToWorld, float4(instancePosition + v.vertex.xyz * _VoxelSize * abs(value), 1));
                 o.pos = mul(UNITY_MATRIX_VP, worldPos);
 
                 UNITY_TRANSFER_FOG(o, o.pos);
@@ -102,26 +90,20 @@ Shader "Instanced/VoxelCube"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                // Map instanceID to 3D grid coordinates
                 int z = i.instanceID / (_Width * _Height);
                 int y = (i.instanceID / _Width) % _Height;
                 int x = i.instanceID % _Width;
 
-                // Compute normalized position in [0,1] range for sampling
                 float3 normalizedPos = float3(x, y, z) / float3(_Width - 1, _Height - 1, _Depth - 1);
 
-                // Sample the 3D texture at this position
                 float value = tex3D(_Texture, normalizedPos).r;
 
-                // COLOR MODE
                 float t = saturate((value - _MinValue) / (_MaxValue - _MinValue));
-                // Sample color ramp using t
-                fixed4 rampColor = tex2D(_ColorRamp, float2(t, 0.5));
-                fixed4 col = rampColor * value;
+                fixed4 rampColor = tex2D(_ColorRamp, float2(1 - t, 0.5));
+                fixed4 col = rampColor;
                 col.a = 1;
                 if(value < 0) discard;
 
-                // fixed4 col = fixed4(norm, 1);
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
             }
