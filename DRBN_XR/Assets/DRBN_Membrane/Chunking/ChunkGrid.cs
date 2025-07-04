@@ -181,6 +181,7 @@ public class ChunkGrid : MonoBehaviour
     {
         RenderParams rp = new(material);
         RenderParams rph = new(highlightMaterial);
+        var bounds = new Bounds(Vector3.zero, Vector3.one * (2f - (float)2 / marchResolution));
         foreach (var (pos, chunk) in grid)
         {
             var matrix = objectTransform *
@@ -195,7 +196,7 @@ public class ChunkGrid : MonoBehaviour
                     springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
                     break;
                 case RenderMode.Volumes:
-                    volumeRenderer.DrawVolume(chunk.volume, marchingCubes.bounds, matrix);
+                    volumeRenderer.DrawVolume(chunk.volume, bounds, matrix);
                     break;
             }
         }
