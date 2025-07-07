@@ -26,12 +26,14 @@ public class MeshMod
         using (dedupeMarker.Auto())
         {
             Vector3[] vertices = mesh.vertices;
+            Vector3[] normals = mesh.normals;
             int[] triangles = mesh.triangles;
             result = result != null ? result : new();
 
             dedupeAllocMarker.Begin();
             var grid = new Dictionary<(int, int, int), int>();
             var newVertices = new List<Vector3>();
+            var newNormals = new List<Vector3>();
             var vertexCumul = new List<int>();
             var map = new int[vertices.Length];
             dedupeAllocMarker.End();
@@ -40,6 +42,7 @@ public class MeshMod
             for (int i = 0; i < vertices.Length; i++)
             {
                 var v = vertices[i];
+                var n = normals[i];
                 var key = (
                     Mathf.RoundToInt(v.x / epsilon),
                     Mathf.RoundToInt(v.y / epsilon),
@@ -48,8 +51,8 @@ public class MeshMod
 
                 if (grid.TryGetValue(key, out int idx))
                 {
-                    // Merge
                     newVertices[idx] = (newVertices[idx] * vertexCumul[idx] + v) / (vertexCumul[idx] + 1);
+                    newNormals[idx] = (newNormals[idx] * vertexCumul[idx] + n) / (vertexCumul[idx] + 1);
                     vertexCumul[idx]++;
                     map[i] = idx;
                 }
@@ -57,6 +60,7 @@ public class MeshMod
                 {
                     grid[key] = newVertices.Count;
                     newVertices.Add(v);
+                    newNormals.Add(n);
                     vertexCumul.Add(1);
                     map[i] = newVertices.Count - 1;
                 }
@@ -69,15 +73,11 @@ public class MeshMod
                 newTriangles[i] = map[triangles[i]];
             dedupeTrianglesMarker.End();
 
-            // Mesh result = new()
-            // {
-            //     vertices = newVertices.ToArray(),
-            //     triangles = newTriangles
-            // };
             result.Clear();
             result.SetVertices(newVertices);
+            result.SetNormals(newNormals);
             result.SetTriangles(newTriangles, 0);
-            result.RecalculateNormals();
+            // result.RecalculateNormals();
             result.RecalculateBounds();
 
             return result;

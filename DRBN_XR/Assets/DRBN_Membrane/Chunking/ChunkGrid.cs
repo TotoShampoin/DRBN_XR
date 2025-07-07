@@ -365,6 +365,7 @@ public class ChunkGrid : MonoBehaviour
     };
     Mesh meshToVolumeCache;
     readonly List<Vector3> verticesCache = new();
+    readonly List<Vector3> normalsCache = new();
     readonly List<int> trianglesCache = new();
     public void MeshToVolume(Vector3Int at)
     {
@@ -376,6 +377,7 @@ public class ChunkGrid : MonoBehaviour
 
             // Reuse cached lists instead of creating new ones
             verticesCache.Clear();
+            normalsCache.Clear();
             trianglesCache.Clear();
 
             // Pre-calculate capacity to avoid list resizing
@@ -394,11 +396,14 @@ public class ChunkGrid : MonoBehaviour
 
             if (verticesCache.Capacity < estimatedVertexCount)
                 verticesCache.Capacity = estimatedVertexCount;
+            if (normalsCache.Capacity < estimatedVertexCount)
+                normalsCache.Capacity = estimatedVertexCount;
             if (trianglesCache.Capacity < estimatedTriangleCount)
                 trianglesCache.Capacity = estimatedTriangleCount;
 
             // Add current chunk vertices/triangles
             verticesCache.AddRange(chunk.mesh.vertices);
+            normalsCache.AddRange(chunk.mesh.normals);
             trianglesCache.AddRange(chunk.mesh.triangles);
 
             foreach (var neighbor in neighborsMap)
@@ -410,6 +415,7 @@ public class ChunkGrid : MonoBehaviour
                 if (neighborChunk?.mesh != null)
                 {
                     var neighborVertices = neighborChunk.mesh.vertices;
+                    var neighborNormals = neighborChunk.mesh.normals;
                     var neighborTriangles = neighborChunk.mesh.triangles;
                     Vector3 delta = neighborPos - at;
                     Vector3 offset = delta * offsetFactor;
@@ -419,6 +425,7 @@ public class ChunkGrid : MonoBehaviour
                     for (int i = 0; i < neighborVertices.Length; i++)
                     {
                         verticesCache.Add(neighborVertices[i] + offset);
+                        normalsCache.Add(neighborNormals[i]);
                     }
 
                     for (int i = 0; i < neighborTriangles.Length; i++)
@@ -430,6 +437,7 @@ public class ChunkGrid : MonoBehaviour
 
             meshToVolumeCache.Clear();
             meshToVolumeCache.SetVertices(verticesCache);
+            meshToVolumeCache.SetNormals(normalsCache);
             meshToVolumeCache.SetTriangles(trianglesCache, 0);
             MeshMod.DeduplicateVertices(meshToVolumeCache, 0.01f, meshToVolumeCache);
             voxelizer.Voxelize(meshToVolumeCache, chunk.volume);
