@@ -4,10 +4,19 @@ using Voxelization;
 
 public class TestVoxel3D : MonoBehaviour
 {
+    public enum RenderMode
+    {
+        Original,
+        BeforeMarch,
+        AfterMarch,
+    };
+
+
     public RenderTexture volume;
     public Mesh mesh;
     public NormalArrow normalArrow;
     public NormalArrow normalArrow2;
+    public RenderMode renderMode = RenderMode.Original;
     Voxelizer voxelizer;
     // VolumeRenderer volumeRenderer;
     MarchingCubesRef marchingCubes;
@@ -43,13 +52,11 @@ public class TestVoxel3D : MonoBehaviour
             voxelizerCPU.voxelBound = voxelizer.voxelBounds;
             voxelizerCPU.meshBound = new(Vector3.zero, 2 * Vector3.one);
 
-            MeshMod.DeduplicateVertices(mesh, result: toVoxelize);
             // toVoxelize = mesh;
-            // voxelizer.Voxelize(toVoxelize, volume);
-            // marchingCubes.GenerateMesh(volume, 0, toRender);
-            // meshFilter.sharedMesh = toRender;
-            meshFilter.sharedMesh = toVoxelize;
+            MeshMod.DeduplicateVertices(mesh, result: toVoxelize);
             voxelizerCPU.mesh = toVoxelize;
+            voxelizer.Voxelize(toVoxelize, volume);
+            marchingCubes.GenerateMesh(volume, 0, toRender);
 
             remarch = false;
         }
@@ -64,6 +71,19 @@ public class TestVoxel3D : MonoBehaviour
 
             normalArrow2.Origin = data.projectedPoint;
             normalArrow2.Direction = data.projectedNormal;
+        }
+
+        switch (renderMode)
+        {
+            case RenderMode.Original:
+                meshFilter.sharedMesh = mesh;
+                break;
+            case RenderMode.BeforeMarch:
+                meshFilter.sharedMesh = toVoxelize;
+                break;
+            case RenderMode.AfterMarch:
+                meshFilter.sharedMesh = toRender;
+                break;
         }
 
         // volumeRenderer.DrawVolume(volume, new Bounds(Vector3.zero, Vector3.one), transform.localToWorldMatrix);
