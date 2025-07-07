@@ -12,10 +12,10 @@ Shader "Instanced/VoxelCube"
     SubShader
     {
         Tags {
-            "RenderType"="Opaque"
-            "Queue"="Transparent"
+            "RenderType" = "Opaque"
 			"IgnoreProjector" = "True"
 			"DisableBatching" = "True"
+            "LightMode" = "ForwardBase"
         }
         LOD 100
 		Blend SrcAlpha OneMinusSrcAlpha
@@ -33,6 +33,7 @@ Shader "Instanced/VoxelCube"
             struct appdata
             {
                 float4 vertex : POSITION;
+                float3 normal : NORMAL;
                 float2 uv : TEXCOORD0;
                 uint instanceID : SV_InstanceID;
             };
@@ -59,9 +60,11 @@ Shader "Instanced/VoxelCube"
 
             struct v2f
             {
-                float2 uv : TEXCOORD0;
                 UNITY_FOG_COORDS(1)
                 float4 pos : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float4 posWorld : TEXCOORD1;
+                float3 normalDir : TEXCOORD2;
                 uint instanceID : SV_InstanceID;
             };
 
@@ -78,10 +81,12 @@ Shader "Instanced/VoxelCube"
                 float3 normalizedPos = float3(x, y, z) / float3(_Width - 1, _Height - 1, _Depth - 1);
 
                 float value = tex3Dlod(_Texture, float4(normalizedPos, 0)).r;
+                float t = saturate((value - _MinValue) / (_MaxValue - _MinValue));
+                t = clamp(t * 2.0 - 1.0, -1, 1);
 
                 float3 instancePosition = lerp(_BoundsMin, _BoundsMax, normalizedPos);
                 
-                float4 worldPos = mul(_LocalToWorld, float4(instancePosition + v.vertex.xyz * _VoxelSize * abs(value), 1));
+                float4 worldPos = mul(_LocalToWorld, float4(instancePosition + v.vertex.xyz * _VoxelSize * abs(t), 1));
                 o.pos = mul(UNITY_MATRIX_VP, worldPos);
 
                 UNITY_TRANSFER_FOG(o, o.pos);

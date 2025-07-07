@@ -81,15 +81,15 @@ public class VolumeRenderer : MonoBehaviour
             DrawVolume(texture, bounds, transform.localToWorldMatrix);
     }
 
-#if UNITY_EDITOR
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.cyan;
-        Gizmos.matrix = transform.localToWorldMatrix;
-        Gizmos.DrawWireCube(
-            bounds.center,
-            bounds.size
-        );
-    }
-#endif
+    // #if UNITY_EDITOR
+    //     void OnDrawGizmosSelected()
+    //     {
+    //         Gizmos.color = Color.cyan;
+    //         Gizmos.matrix = transform.localToWorldMatrix;
+    //         Gizmos.DrawWireCube(
+    //             bounds.center,
+    //             bounds.size
+    //         );
+    //     }
+    // #endif
 }
