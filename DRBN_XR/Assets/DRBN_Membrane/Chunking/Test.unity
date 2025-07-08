@@ -6283,13 +6283,13 @@ MonoBehaviour:
   distanceThreshold: 0.9
   mergeDistance: 0.1
   joinDistance: 0.1
-  volumeThreshold: 0.9
+  volumeThreshold: 0.1
   updateSprings: 1
   forceUpdate: 0
   material: {fileID: 2100000, guid: ae4e451939af45c4ebe152c2845fc678, type: 2}
   highlightMaterial: {fileID: 2100000, guid: e0bd6264bc3b99e4db1c73232d4da363, type: 2}
   baseVolume: {fileID: 8400000, guid: 1a7caa3c72642e64bafc6dac8f214c6c, type: 2}
-  renderMode: 2
+  renderMode: 0
   cursor: {fileID: 1189709270}
   primary: {fileID: 3279264004350380116, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   secondary: {fileID: -8979920020589327954, guid: c348712bda248c246b8c49b3db54643f,
