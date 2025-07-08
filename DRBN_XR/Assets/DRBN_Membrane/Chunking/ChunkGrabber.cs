@@ -1,5 +1,11 @@
 using UnityEngine;
 using SpringSim.V3;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
+using System.Collections.Generic;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
+
+
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -11,12 +17,17 @@ class ChunkGrabber : MonoBehaviour
     public Vector3Int selectedChunkIndex;
     public ChunkGrid.ChunkData selectedChunk;
     public SpringSimulatorState selectedSpring;
+    public XRGrabInteractable xrGrabInteractable;
     public Mass selectedMass;
     public float radius = 0.25f;
     public float force = 1500f;
     public bool previewClosestMass = true;
     public bool useInEditor = false;
     public bool regrabNext = false;
+
+    HashSet<IXRSelectInteractor> trackedInteractors = new();
+    List<IXRSelectInteractor> interactorsToRemove = new();
+
 
     public LineRenderer forceArrowDebug;
     Vector3 F;
@@ -29,6 +40,9 @@ class ChunkGrabber : MonoBehaviour
         sphere = sphereGO.GetComponent<MeshFilter>().sharedMesh;
         mat = new Material(Shader.Find("Standard"));
         Destroy(sphereGO);
+
+        xrGrabInteractable.selectEntered.AddListener(e => trackedInteractors.Add(e.interactorObject));
+        xrGrabInteractable.selectExited.AddListener(e => trackedInteractors.Remove(e.interactorObject));
     }
 
     void Update()
@@ -79,6 +93,19 @@ class ChunkGrabber : MonoBehaviour
     void FixedUpdate()
     {
         if (selectedChunk == null) return;
+
+        interactorsToRemove.Clear();
+        foreach (var trackedInteractor in trackedInteractors)
+            if (!xrGrabInteractable.interactorsSelecting.Contains(trackedInteractor))
+                interactorsToRemove.Add(trackedInteractor);
+        if (interactorsToRemove.Count > 0)
+        {
+            EndGrab();
+            foreach (var interactor in interactorsToRemove)
+                trackedInteractors.Remove(interactor);
+            return;
+        }
+
         if (selectedChunk.dirtySpringsM)
         {
             EndGrab();
