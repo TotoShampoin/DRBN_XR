@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using MarchingCubing.V2;
 using UnityEngine;
 using Voxelization;
+using UnityEditor;
 
 public class TestVoxel3D : MonoBehaviour
 {
@@ -67,6 +68,14 @@ public class TestVoxel3D : MonoBehaviour
             voxelizerCPU.mesh = toVoxelize;
             voxelizer.Voxelize(toVoxelize, volume);
             marchingCubes.GenerateMesh(volume, 0, toRender);
+            // Log all triangles as an array of triplets in one log
+            var tris = toVoxelize.triangles;
+            var triplets = new List<string>();
+            for (int i = 0; i < tris.Length; i += 3)
+            {
+                triplets.Add($"({tris[i]}, {tris[i + 1]}, {tris[i + 2]})");
+            }
+            Debug.Log($"Triangles: [{string.Join(", ", triplets)}]");
 
             remarch = false;
         }
@@ -101,5 +110,26 @@ public class TestVoxel3D : MonoBehaviour
         }
 
         // volumeRenderer.DrawVolume(volume, new Bounds(Vector3.zero, Vector3.one), transform.localToWorldMatrix);
+    }
+}
+
+[CustomEditor(typeof(TestVoxel3D))]
+public class TestVoxel3DEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        TestVoxel3D script = (TestVoxel3D)target;
+
+        GUILayout.Space(10);
+        GUILayout.Label("Custom Controls", EditorStyles.boldLabel);
+
+        if (GUILayout.Button("Save mesh"))
+        {
+            MeshLoader.SaveMesh(
+                script.GetComponent<MeshFilter>().sharedMesh,
+                $"Assets/DRBN_Membrane/Testing3d/mesh.asset");
+        }
     }
 }

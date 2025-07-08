@@ -31,10 +31,10 @@ public class MeshMod
             result = result != null ? result : new();
 
             dedupeAllocMarker.Begin();
-            var grid = new Dictionary<(int, int, int), int>();
-            var newVertices = new List<Vector3>();
-            var newNormals = new List<Vector3>();
-            var vertexCumul = new List<int>();
+            var grid = new Dictionary<(int, int, int), int>(vertices.Length);
+            var newVertices = new List<Vector3>(vertices.Length);
+            var newNormals = new List<Vector3>(vertices.Length);
+            var vertexCumul = new List<int>(vertices.Length);
             var map = new int[vertices.Length];
             dedupeAllocMarker.End();
 
@@ -68,16 +68,28 @@ public class MeshMod
             dedupeVerticesMarker.End();
 
             dedupeTrianglesMarker.Begin();
-            var newTriangles = new int[triangles.Length];
-            for (int i = 0; i < triangles.Length; i++)
-                newTriangles[i] = map[triangles[i]];
+            var triangleSet = new HashSet<(int, int, int)>(triangles.Length / 3);
+            var newTriangles = new List<int[]>(triangles.Length);
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                var triangle = new int[3] {
+                    map[triangles[i + 0]],
+                    map[triangles[i + 1]],
+                    map[triangles[i + 2]]
+                };
+                if (triangle[0] == triangle[1] || triangle[1] == triangle[2] || triangle[2] == triangle[0])
+                    continue;
+                var triangleTuple = (triangle[0], triangle[1], triangle[2]);
+                if (triangleSet.Add(triangleTuple))
+                    newTriangles.Add(triangle);
+                newTriangles.Add(triangle);
+            }
             dedupeTrianglesMarker.End();
 
             result.Clear();
             result.SetVertices(newVertices);
             result.SetNormals(newNormals);
-            result.SetTriangles(newTriangles, 0);
-            // result.RecalculateNormals();
+            result.SetTriangles(newTriangles.SelectMany(t => t).ToArray(), 0);
             result.RecalculateBounds();
 
             return result;

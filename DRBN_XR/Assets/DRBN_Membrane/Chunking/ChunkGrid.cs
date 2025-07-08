@@ -137,9 +137,6 @@ public class ChunkGrid : MonoBehaviour
         ForEach((pos, chunk) => chunk.highlight = false);
     }
 
-    // int counter = 0;
-    // int lastGroupCount = 0;
-    // Mesh lastGlobalMesh;
     void FixedUpdate()
     {
         PrepareModules();
@@ -150,6 +147,7 @@ public class ChunkGrid : MonoBehaviour
         if (updateSprings)
         {
             ForEach(pos => MeshToSpringsDirty(pos, true));
+            ForEach(pos => TieJointuresDirty(pos));
             ForEach(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
             ForEach(pos => TieJointuresDirty(pos));
             ForEach(pos => SpringsToMeshDirty(pos));
@@ -177,19 +175,6 @@ public class ChunkGrid : MonoBehaviour
         if (RayIntersection(GlobalCursorRay) is Vector3 hit)
             onCursorRayHit.Invoke(hit);
 
-        // Mesh globalMesh = ToMesh();
-        // int groupCount = MeshMod.GroupVertices(globalMesh).groups.Length;
-        // if (lastGroupCount != groupCount)
-        // {
-        //     if (lastGlobalMesh)
-        //         MeshLoader.SaveMesh(lastGlobalMesh, $"Assets/DRBN_Membrane/Chunking/_SavedMeshes/{counter}.asset");
-        //     else
-        //         MeshLoader.SaveMesh(globalMesh, $"Assets/DRBN_Membrane/Chunking/_SavedMeshes/{counter}.asset");
-        //     lastGroupCount = groupCount;
-        //     counter += 1;
-        // }
-        // lastGlobalMesh = globalMesh;
-
 
         cycle %= CycleInterval;
         cycle += Time.fixedDeltaTime;
@@ -205,20 +190,18 @@ public class ChunkGrid : MonoBehaviour
             var matrix = objectTransform *
                     Matrix4x4.TRS((Vector3)pos * offsetFactor, Quaternion.identity, Vector3.one);
 
-            Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.mesh, 0, matrix);
-            volumeRenderer.DrawVolume(chunk.volume, bounds, matrix);
-            // switch (renderMode)
-            // {
-            //     case RenderMode.MarchedMesh:
-            //         Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.mesh, 0, matrix);
-            //         break;
-            //     case RenderMode.Springs:
-            //         springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
-            //         break;
-            //     case RenderMode.Volumes:
-            //         volumeRenderer.DrawVolume(chunk.volume, bounds, matrix);
-            //         break;
-            // }
+            switch (renderMode)
+            {
+                case RenderMode.MarchedMesh:
+                    Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.mesh, 0, matrix);
+                    break;
+                case RenderMode.Springs:
+                    springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
+                    break;
+                case RenderMode.Volumes:
+                    volumeRenderer.DrawVolume(chunk.volume, bounds, matrix);
+                    break;
+            }
         }
     }
 

@@ -4379,7 +4379,7 @@ MonoBehaviour:
   paintWeight: 2
   distanceThreshold: 0.9
   mergeDistance: 0.1
-  joinDistance: 0.01
+  joinDistance: 0.1
   updateSprings: 1
   forceUpdate: 0
   material: {fileID: 2100000, guid: ae4e451939af45c4ebe152c2845fc678, type: 2}
