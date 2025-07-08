@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using MarchingCubing.V2;
 using UnityEngine;
 using Voxelization;
@@ -17,6 +18,9 @@ public class TestVoxel3D : MonoBehaviour
     public NormalArrow normalArrow;
     public NormalArrow normalArrow2;
     public RenderMode renderMode = RenderMode.Original;
+    public Vector3 offset = Vector3.zero;
+    public GameObject debugSphere;
+    public float mergeDistance = 0.0001f;
     Voxelizer voxelizer;
     // VolumeRenderer volumeRenderer;
     MarchingCubesRef marchingCubes;
@@ -24,6 +28,7 @@ public class TestVoxel3D : MonoBehaviour
     Mesh toVoxelize;
     Mesh toRender;
     readonly VoxelizerCPU voxelizerCPU = new();
+    readonly GameObject[] triangle = new GameObject[3];
 
     public bool remarch = true;
     bool normalArrowDirty = true;
@@ -37,6 +42,10 @@ public class TestVoxel3D : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
         toVoxelize = new();
         toRender = new();
+
+        triangle[0] = Instantiate(debugSphere);
+        triangle[1] = Instantiate(debugSphere);
+        triangle[2] = Instantiate(debugSphere);
     }
 
     void Update()
@@ -53,7 +62,8 @@ public class TestVoxel3D : MonoBehaviour
             voxelizerCPU.meshBound = new(Vector3.zero, 2 * Vector3.one);
 
             // toVoxelize = mesh;
-            MeshMod.DeduplicateVertices(mesh, result: toVoxelize);
+            MeshMod.DeduplicateVertices(mesh, mergeDistance, result: toVoxelize);
+            MeshMod.OffsetMesh(toVoxelize, offset, toVoxelize);
             voxelizerCPU.mesh = toVoxelize;
             voxelizer.Voxelize(toVoxelize, volume);
             marchingCubes.GenerateMesh(volume, 0, toRender);
@@ -71,6 +81,10 @@ public class TestVoxel3D : MonoBehaviour
 
             normalArrow2.Origin = data.projectedPoint;
             normalArrow2.Direction = data.projectedNormal;
+
+            triangle[0].transform.position = data.vertices.Item1;
+            triangle[1].transform.position = data.vertices.Item2;
+            triangle[2].transform.position = data.vertices.Item3;
         }
 
         switch (renderMode)

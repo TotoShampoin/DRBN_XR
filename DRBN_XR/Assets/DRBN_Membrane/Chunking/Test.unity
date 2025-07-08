@@ -2488,7 +2488,7 @@ MonoBehaviour:
   radius: 0.25
   force: 1500
   previewClosestMass: 1
-  useInEditor: 1
+  useInEditor: 0
   regrabNext: 0
   forceArrowDebug: {fileID: 2085768955}
 --- !u!135 &920726287
@@ -2950,7 +2950,7 @@ MonoBehaviour:
     type: 3}
   material: {fileID: 2100000, guid: 93d13fb1d3a4e7b4390442ca9d34cfee, type: 2}
   highlightMaterial: {fileID: 2100000, guid: bcc97018a00dd7745bfdd2e8696978ef, type: 2}
-  thickness: 0.25
+  thickness: 0.05
 --- !u!114 &1233425683
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4379,6 +4379,7 @@ MonoBehaviour:
   paintWeight: 2
   distanceThreshold: 0.9
   mergeDistance: 0.1
+  joinDistance: 0.01
   updateSprings: 1
   forceUpdate: 0
   material: {fileID: 2100000, guid: ae4e451939af45c4ebe152c2845fc678, type: 2}

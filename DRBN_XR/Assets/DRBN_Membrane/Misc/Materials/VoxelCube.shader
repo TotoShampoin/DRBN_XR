@@ -104,10 +104,10 @@ Shader "Instanced/VoxelCube"
                 float value = tex3D(_Texture, normalizedPos).r;
 
                 float t = saturate((value - _MinValue) / (_MaxValue - _MinValue));
-                fixed4 rampColor = tex2D(_ColorRamp, float2(1 - t, 0.5));
+                fixed4 rampColor = tex2D(_ColorRamp, float2(1 - t*t, 0.5));
                 fixed4 col = rampColor;
                 col.a = 1;
-                if(value < 0) discard;
+                // if(value < 0) discard;
 
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;

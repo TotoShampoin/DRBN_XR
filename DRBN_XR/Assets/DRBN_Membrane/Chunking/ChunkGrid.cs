@@ -22,6 +22,7 @@ public class ChunkGrid : MonoBehaviour
     public float paintWeight = 0.5f;
     public float distanceThreshold = 0.75f;
     [Range(0, 1f)] public float mergeDistance = 0.0001f;
+    [Range(0, 0.1f)] public float joinDistance = 0.01f;
     public bool updateSprings = false;
     public bool forceUpdate = false;
 
@@ -136,6 +137,9 @@ public class ChunkGrid : MonoBehaviour
         ForEach((pos, chunk) => chunk.highlight = false);
     }
 
+    // int counter = 0;
+    // int lastGroupCount = 0;
+    // Mesh lastGlobalMesh;
     void FixedUpdate()
     {
         PrepareModules();
@@ -173,6 +177,20 @@ public class ChunkGrid : MonoBehaviour
         if (RayIntersection(GlobalCursorRay) is Vector3 hit)
             onCursorRayHit.Invoke(hit);
 
+        // Mesh globalMesh = ToMesh();
+        // int groupCount = MeshMod.GroupVertices(globalMesh).groups.Length;
+        // if (lastGroupCount != groupCount)
+        // {
+        //     if (lastGlobalMesh)
+        //         MeshLoader.SaveMesh(lastGlobalMesh, $"Assets/DRBN_Membrane/Chunking/_SavedMeshes/{counter}.asset");
+        //     else
+        //         MeshLoader.SaveMesh(globalMesh, $"Assets/DRBN_Membrane/Chunking/_SavedMeshes/{counter}.asset");
+        //     lastGroupCount = groupCount;
+        //     counter += 1;
+        // }
+        // lastGlobalMesh = globalMesh;
+
+
         cycle %= CycleInterval;
         cycle += Time.fixedDeltaTime;
     }
@@ -187,18 +205,20 @@ public class ChunkGrid : MonoBehaviour
             var matrix = objectTransform *
                     Matrix4x4.TRS((Vector3)pos * offsetFactor, Quaternion.identity, Vector3.one);
 
-            switch (renderMode)
-            {
-                case RenderMode.MarchedMesh:
-                    Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.mesh, 0, matrix);
-                    break;
-                case RenderMode.Springs:
-                    springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
-                    break;
-                case RenderMode.Volumes:
-                    volumeRenderer.DrawVolume(chunk.volume, bounds, matrix);
-                    break;
-            }
+            Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.mesh, 0, matrix);
+            volumeRenderer.DrawVolume(chunk.volume, bounds, matrix);
+            // switch (renderMode)
+            // {
+            //     case RenderMode.MarchedMesh:
+            //         Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.mesh, 0, matrix);
+            //         break;
+            //     case RenderMode.Springs:
+            //         springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
+            //         break;
+            //     case RenderMode.Volumes:
+            //         volumeRenderer.DrawVolume(chunk.volume, bounds, matrix);
+            //         break;
+            // }
         }
     }
 
@@ -226,6 +246,41 @@ public class ChunkGrid : MonoBehaviour
         return ChunkExists(chunkPos) ? (chunkPos, this[chunkPos]) : null;
     }
     public ChunkData this[Vector3Int at] => grid.TryGetValue(at, out ChunkData chunk) ? chunk : null;
+    public Mesh ToMesh()
+    {
+        var combinedVertices = new List<Vector3>();
+        var combinedNormals = new List<Vector3>();
+        var combinedTriangles = new List<int>();
+        int vertexOffset = 0;
+
+        foreach (var (pos, chunk) in grid)
+        {
+            if (chunk.mesh == null) continue;
+            var verts = chunk.mesh.vertices;
+            var norms = chunk.mesh.normals;
+            var tris = chunk.mesh.triangles;
+
+            // Transform vertices to world space
+            var matrix = objectTransform * Matrix4x4.TRS((Vector3)pos * offsetFactor, Quaternion.identity, Vector3.one);
+            for (int i = 0; i < verts.Length; i++)
+            {
+                combinedVertices.Add(matrix.MultiplyPoint3x4(verts[i]));
+                combinedNormals.Add(matrix.MultiplyVector(norms[i]).normalized);
+            }
+            for (int i = 0; i < tris.Length; i++)
+            {
+                combinedTriangles.Add(tris[i] + vertexOffset);
+            }
+            vertexOffset += verts.Length;
+        }
+
+        var mesh = new Mesh();
+        mesh.SetVertices(combinedVertices);
+        mesh.SetNormals(combinedNormals);
+        mesh.SetTriangles(combinedTriangles, 0);
+        // MeshMod.DeduplicateVertices(mesh, mergeDistance, mesh);
+        return mesh;
+    }
 
     public List<(Vector3Int, ChunkData)> SurroundingChunks(Vector3Int at, int chunkRadius = 1)
     {
@@ -439,7 +494,7 @@ public class ChunkGrid : MonoBehaviour
             meshToVolumeCache.SetVertices(verticesCache);
             meshToVolumeCache.SetNormals(normalsCache);
             meshToVolumeCache.SetTriangles(trianglesCache, 0);
-            MeshMod.DeduplicateVertices(meshToVolumeCache, 0.01f, meshToVolumeCache);
+            MeshMod.DeduplicateVertices(meshToVolumeCache, mergeDistance, meshToVolumeCache);
             voxelizer.Voxelize(meshToVolumeCache, chunk.volume);
             chunk.dirtyVolume = false;
             chunk.dirtyMeshV = true;
@@ -534,7 +589,7 @@ public class ChunkGrid : MonoBehaviour
             {
                 var (npos, neighbor) = c;
                 if (neighbor.springs == null) return;
-                var jointure = chunk.springs.Join(neighbor.springs, 0.01f);
+                var jointure = chunk.springs.Join(neighbor.springs, joinDistance);
                 chunk.jointures.TryAdd(neighbor, jointure);
                 neighbor.jointures[chunk] = jointure.Select(j => (j.other, j.self)).ToList();
             });

@@ -84,6 +84,21 @@ public class MeshMod
         }
     }
 
+    static public Mesh OffsetMesh(Mesh mesh, Vector3 offset, Mesh result = null)
+    {
+        result = result != null ? result : new();
+        var vertices = mesh.vertices;
+        var normals = mesh.normals;
+        var triangles = mesh.triangles;
+        Parallel.For(0, vertices.Length, i => vertices[i] = vertices[i] + offset);
+        result.Clear();
+        result.SetVertices(vertices);
+        result.SetNormals(normals);
+        result.SetTriangles(triangles, 0);
+        result.RecalculateBounds();
+        return result;
+    }
+
     /// <summary>
     /// Resizes the mesh at the vertex level
     /// </summary>
