@@ -25,12 +25,9 @@ class ChunkGrabber : MonoBehaviour
     public bool useInEditor = false;
     public bool regrabNext = false;
 
-    HashSet<IXRSelectInteractor> trackedInteractors = new();
-    List<IXRSelectInteractor> interactorsToRemove = new();
-
-
     public LineRenderer forceArrowDebug;
     Vector3 F;
+    bool isGrabbing;
 
     Mesh sphere;
     Material mat;
@@ -40,9 +37,6 @@ class ChunkGrabber : MonoBehaviour
         sphere = sphereGO.GetComponent<MeshFilter>().sharedMesh;
         mat = new Material(Shader.Find("Standard"));
         Destroy(sphereGO);
-
-        xrGrabInteractable.selectEntered.AddListener(e => trackedInteractors.Add(e.interactorObject));
-        xrGrabInteractable.selectExited.AddListener(e => trackedInteractors.Remove(e.interactorObject));
     }
 
     void Update()
@@ -92,19 +86,7 @@ class ChunkGrabber : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (selectedChunk == null) return;
-
-        interactorsToRemove.Clear();
-        foreach (var trackedInteractor in trackedInteractors)
-            if (!xrGrabInteractable.interactorsSelecting.Contains(trackedInteractor))
-                interactorsToRemove.Add(trackedInteractor);
-        if (interactorsToRemove.Count > 0)
-        {
-            EndGrab();
-            foreach (var interactor in interactorsToRemove)
-                trackedInteractors.Remove(interactor);
-            return;
-        }
+        if (!isGrabbing) return;
 
         if (selectedChunk.dirtySpringsM)
         {
@@ -135,6 +117,7 @@ class ChunkGrabber : MonoBehaviour
         selectedChunk = chunk;
         selectedChunkIndex = idx;
         selectedSpring = chunk.springs;
+        isGrabbing = true;
     }
     public void EndGrab()
     {
@@ -142,6 +125,7 @@ class ChunkGrabber : MonoBehaviour
         selectedChunk = null;
         selectedChunkIndex = Vector3Int.zero;
         selectedSpring = null;
+        isGrabbing = false;
     }
 }
 
