@@ -120,9 +120,18 @@ public class ChunkGrid : MonoBehaviour
                     var at = new Vector3Int(x, y, z);
                     CreateChunk(at);
                     GenerateVolume(at);
+                    // dirty: Mv
                     VolumeToMesh(at, 0);
+                    // dirty: Sm
                 }
         ForEach(pos => MeshToSprings(pos, true));
+        // dirty: J
+        ForEach(pos => TieJointuresDirty(pos));
+        // dirty: Ms
+        ForEach(pos => SpringsToMeshDirty(pos));
+        // dirty: V
+        ForEach((pos, chunk) => chunk.dirtyVolume = false);
+        // dirty: 0
 
         primary.action.Enable();
         secondary.action.Enable();
@@ -149,19 +158,24 @@ public class ChunkGrid : MonoBehaviour
         if (updateSprings)
         {
             ForEach(pos => MeshToSpringsDirty(pos, true));
-            ForEach(pos => TieJointuresDirty(pos));
+            // dirty: J
             ForEach(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
+            // dirty: Ms, J
             ForEach(pos => TieJointuresDirty(pos));
+            // dirty: Ms
             ForEach(pos => SpringsToMeshDirty(pos));
+            // dirty: V
             if (cycle >= CycleInterval)
             {
                 ForEach((pos, chunk) => chunk.dirtyVolume |= MeshToVolumeDirty(pos));
+                // dirty: Mv, V
                 ForEach((pos, chunk) =>
                 {
                     if (chunk.dirtyVolume && DifferenceOfVolumeDirty(pos) > volumeThreshold)
                         VolumeToMeshDirty(pos, 0);
                     chunk.dirtyVolume = false;
                 });
+                // dirty: Sm
             }
         }
         else
@@ -278,7 +292,7 @@ public class ChunkGrid : MonoBehaviour
         return mesh;
     }
 
-    public List<(Vector3Int, ChunkData)> SurroundingChunks(Vector3Int at, int chunkRadius = 1)
+    public List<(Vector3Int npos, ChunkData chunk)> SurroundingChunks(Vector3Int at, int chunkRadius = 1)
     {
         List<(Vector3Int, ChunkData)> neighbors = new(26);
         for (int x = -chunkRadius; x <= chunkRadius; x++)
@@ -653,7 +667,7 @@ public class ChunkGrid : MonoBehaviour
         {
             SurroundingChunks(at)
                 .ForEach(c => ApplyForceToSprings(
-                    c.Item1, force, origin, radius, false));
+                    c.npos, force, origin, radius, false));
         }
     }
 
