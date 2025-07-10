@@ -77,21 +77,20 @@ class ChunkGrabber : MonoBehaviour
             );
         }
 
-        if (regrabNext)
+        if (regrabNext && isGrabbing)
         {
             StartGrab();
-            regrabNext = false;
         }
+        regrabNext = false;
     }
 
     void FixedUpdate()
     {
-        if (!isGrabbing) return;
+        if (!isGrabbing || selectedChunk == null) return;
 
         if (selectedChunk.dirtySpringsM)
         {
-            EndGrab();
-            regrabNext = true;
+            EndGrab(true);
             return;
         }
 
@@ -119,13 +118,14 @@ class ChunkGrabber : MonoBehaviour
         selectedSpring = chunk.springs;
         isGrabbing = true;
     }
-    public void EndGrab()
+    public void EndGrab(bool regrab = false)
     {
         selectedMass = null;
         selectedChunk = null;
         selectedChunkIndex = Vector3Int.zero;
         selectedSpring = null;
-        isGrabbing = false;
+        isGrabbing &= regrab;
+        regrabNext = regrab;
     }
 }
 
