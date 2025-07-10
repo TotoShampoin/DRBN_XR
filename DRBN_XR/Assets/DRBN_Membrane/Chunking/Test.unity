@@ -4409,7 +4409,7 @@ MonoBehaviour:
   stiffness: 1500
   viscosity: 2
   comeback: 1500
-  drag: 0
+  drag: 10
 --- !u!4 &1233425684
 Transform:
   m_ObjectHideFlags: 0
