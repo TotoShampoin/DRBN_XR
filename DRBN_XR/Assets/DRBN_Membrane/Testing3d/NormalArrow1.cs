@@ -2,7 +2,7 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 
-public class NormalArrow : MonoBehaviour
+public class NormalArrow1 : MonoBehaviour
 {
     public LineRenderer lineRenderer;
     public TextMeshPro textMeshPro;

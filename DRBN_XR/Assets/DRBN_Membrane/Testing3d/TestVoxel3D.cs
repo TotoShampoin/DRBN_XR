@@ -16,8 +16,8 @@ public class TestVoxel3D : MonoBehaviour
 
     public RenderTexture volume;
     public Mesh mesh;
-    public NormalArrow normalArrow;
-    public NormalArrow normalArrow2;
+    public NormalArrow1 NormalArrow1;
+    public NormalArrow1 NormalArrow12;
     public RenderMode renderMode = RenderMode.Original;
     public Vector3 offset = Vector3.zero;
     public GameObject debugSphere;
@@ -32,7 +32,7 @@ public class TestVoxel3D : MonoBehaviour
     readonly GameObject[] triangle = new GameObject[3];
 
     public bool remarch = true;
-    bool normalArrowDirty = true;
+    bool NormalArrow1Dirty = true;
     Vector3 arrowPos;
 
     void Start()
@@ -51,9 +51,9 @@ public class TestVoxel3D : MonoBehaviour
 
     void Update()
     {
-        if (normalArrow.Origin != arrowPos)
+        if (NormalArrow1.Origin != arrowPos)
         {
-            normalArrowDirty = true;
+            NormalArrow1Dirty = true;
         }
 
         if (remarch)
@@ -80,16 +80,16 @@ public class TestVoxel3D : MonoBehaviour
             remarch = false;
         }
 
-        if (normalArrowDirty)
+        if (NormalArrow1Dirty)
         {
-            var data = voxelizerCPU.VoxelizeAtPositionDebug(normalArrow.Origin);
-            normalArrow.Direction = Vector3.Normalize(data.projectedPoint - normalArrow.Origin);
-            normalArrow.Distance = data.signedDistance;
-            arrowPos = normalArrow.Origin;
-            normalArrowDirty = false;
+            var data = voxelizerCPU.VoxelizeAtPositionDebug(NormalArrow1.Origin);
+            NormalArrow1.Direction = Vector3.Normalize(data.projectedPoint - NormalArrow1.Origin);
+            NormalArrow1.Distance = data.signedDistance;
+            arrowPos = NormalArrow1.Origin;
+            NormalArrow1Dirty = false;
 
-            normalArrow2.Origin = data.projectedPoint;
-            normalArrow2.Direction = data.projectedNormal;
+            NormalArrow12.Origin = data.projectedPoint;
+            NormalArrow12.Direction = data.projectedNormal;
 
             triangle[0].transform.position = data.vertices.Item1;
             triangle[1].transform.position = data.vertices.Item2;
