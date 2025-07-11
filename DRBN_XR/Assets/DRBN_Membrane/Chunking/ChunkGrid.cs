@@ -17,13 +17,13 @@ public class ChunkGrid : MonoBehaviour
     [Header("Parameters")]
     public int marchResolution = 8;
     public int initNbChunks = 15;
-    public float cycleRate = 0f;
+    [Range(0, 5f)] public float cycleRate = 2f;
     public float paintRadius = 0.2f;
     public float paintWeight = 0.5f;
     public float distanceThreshold = 0.75f;
     [Range(0, 1f)] public float mergeDistance = 0.0001f;
     [Range(0, 0.1f)] public float joinDistance = 0.01f;
-    [Range(0, 0.1f)] public float volumeThreshold = 0.9f;
+    [Range(0, 1f)] public float volumeThreshold = 0.9f;
     public bool updateSprings = false;
     public bool forceUpdate = false;
 
@@ -153,8 +153,6 @@ public class ChunkGrid : MonoBehaviour
         PrepareModules();
         Cleanup();
 
-        if (forceUpdate) ForEach((pos, chunk) => chunk.dirtyMeshV = true);
-
         if (updateSprings)
         {
             ForEach(pos => MeshToSpringsDirty(pos, true));
@@ -176,6 +174,12 @@ public class ChunkGrid : MonoBehaviour
                     chunk.dirtyVolume = false;
                 });
                 // dirty: Sm
+            }
+            if (forceUpdate)
+            {
+                ForEach((pos, chunk) => MeshToVolume(pos));
+                ForEach((pos, chunk) => VolumeToMesh(pos));
+                forceUpdate = false;
             }
         }
         else

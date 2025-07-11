@@ -10,7 +10,6 @@ public class ChunkGridShorthands : MonoBehaviour
 {
     public ChunkGrid grid;
     public TMP_Dropdown renderModeUi;
-    public Toggle forceUpdateUi;
     public Slider cycleRateUi;
     public Toggle springsModeUi;
     public Slider mergeDistanceUi;
@@ -28,7 +27,6 @@ public class ChunkGridShorthands : MonoBehaviour
     public void Update()
     {
         renderModeUi.value = RenderModeAsInt;
-        forceUpdateUi.isOn = ForceUpdate;
         cycleRateUi.value = CycleRate;
         springsModeUi.isOn = SpringsMode;
         mergeDistanceUi.value = MergeDistance;
@@ -41,12 +39,9 @@ public class ChunkGridShorthands : MonoBehaviour
         grid.ForEach(pos => grid.GenerateVolume(pos));
         grid.ForEach(pos => grid.VolumeToMesh(pos));
     }
-    public void Voxelize()
+    public void ForceVolumeUpdate()
     {
-        grid.ForEach((pos, chunk) =>
-        {
-            grid.MeshToVolume(pos);
-        });
+        grid.forceUpdate = true;
     }
 }
 
@@ -64,13 +59,9 @@ public class ChunkGridShorthandsEditor : Editor
         EditorGUILayout.Space(9);
         EditorGUILayout.LabelField("Function Calls", EditorStyles.boldLabel);
         if (GUILayout.Button("Regenerate"))
-        {
             grid.Regenerate();
-        }
-        if (GUILayout.Button("Voxelize"))
-        {
-            grid.Voxelize();
-        }
+        if (GUILayout.Button("Force Volume Update"))
+            grid.ForceVolumeUpdate();
     }
 }
 #endif
