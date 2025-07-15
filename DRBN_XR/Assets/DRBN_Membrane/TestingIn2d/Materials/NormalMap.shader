@@ -1,9 +1,9 @@
-Shader "Unlit/TextureRender"
+Shader "Custom/NormalRender"
 {
     Properties
     {
         _MainTex ("Texture", 3D) = "white" {}
-        _ValueTex ("Texture", 3D) = "white" {}
+        _ValueTex ("Value", 3D) = "white" {}
         _Z ("Z", Range(0, 1)) = 0.5
     }
     SubShader
