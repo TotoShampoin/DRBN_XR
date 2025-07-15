@@ -116,13 +116,11 @@ namespace SpringSim.V3
                 Vector3 n2 = masses[v2].normal;
                 Vector3 massNormal = (n0 + n1 + n2).normalized;
                 Vector3 vertNormal = Vector3.Cross(p1 - p0, p2 - p0);
-                // if (Vector3.Dot(normal, Vector3.up) < 0) (v1, v2) = (v2, v1);
                 if (Vector3.Dot(vertNormal, massNormal) < 0) (v1, v2) = (v2, v1);
 
                 newTriangles[i] = (v0, v1, v2);
             });
             triangles.AddRange(newTriangles.Where(t => t != default));
-            // simulator.GenerateLUT();
             meshToSpring.End();
             return simulator;
         }
@@ -134,14 +132,26 @@ namespace SpringSim.V3
         {
             mesh = mesh != null ? mesh : new Mesh();
             springToMesh.Begin();
+            var vertices = new Vector3[springSimulator.masses.Count];
+            var triangles = new int[springSimulator.triangles.Count * 3];
+            Parallel.For(0, Mathf.Max(springSimulator.masses.Count, springSimulator.triangles.Count), i =>
+            {
+                if (i < springSimulator.masses.Count)
+                {
+                    vertices[i] = springSimulator.masses[i].position;
+                }
+                if (i < springSimulator.triangles.Count)
+                {
+                    triangles[i * 3 + 0] = springSimulator.triangles[i].p1;
+                    triangles[i * 3 + 1] = springSimulator.triangles[i].p2;
+                    triangles[i * 3 + 2] = springSimulator.triangles[i].p3;
+                }
+            });
             mesh.Clear();
-            mesh.SetVertices(springSimulator.masses.Select(m => m.position).ToArray());
-            mesh.SetTriangles(springSimulator.triangles
-                // .Where(tri => tri.p1 != tri.p2 && tri.p2 != tri.p3 && tri.p3 != tri.p1)
-                .SelectMany(tri => new[] { tri.p1, tri.p2, tri.p3 })
-                .ToArray(), 0);
-            mesh.RecalculateNormals();
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
             mesh.RecalculateBounds();
+            mesh.RecalculateNormals();
             var normals = mesh.normals;
             Parallel.For(0, normals.Length, i =>
             {

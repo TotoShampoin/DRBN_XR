@@ -40,7 +40,7 @@ public class SpatialHash<T>
         return cell;
     }
 
-    public Vector3Int GetCell(Vector3 at) => Vector3Int.FloorToInt(at / cellSize);
+    public Vector3Int GetCell(Vector3 at) => Vector3Int.RoundToInt(at / cellSize);
 
     public void AddAt(Vector3 at, T value) => Add(GetCell(at), value);
 
