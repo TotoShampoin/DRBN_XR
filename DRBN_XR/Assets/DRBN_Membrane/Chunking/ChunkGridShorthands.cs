@@ -6,6 +6,9 @@ using UnityEngine.UI;
 using UnityEditor;
 #endif
 
+/// <summary>
+/// A separate class to handle the membrane with UI
+/// </summary>
 public class ChunkGridShorthands : MonoBehaviour
 {
     public ChunkGrid grid;

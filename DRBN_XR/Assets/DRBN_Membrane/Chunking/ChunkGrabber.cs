@@ -1,16 +1,14 @@
 using UnityEngine;
 using SpringSim.V3;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
-using System.Collections.Generic;
-using UnityEngine.XR.Interaction.Toolkit.Interactors;
-
-
-
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
+/// <summary>
+/// A little ball that can be grabbed in VR to pull the membrane
+/// </summary>
 class ChunkGrabber : MonoBehaviour
 {
     public ChunkGrid grid;
