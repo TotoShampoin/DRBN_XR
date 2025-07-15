@@ -12,6 +12,9 @@ using WeightGeneration;
 using WeightPainting;
 using Voxelization;
 
+/// <summary>
+/// Membrane for extracellular matrix, divided in chunks.
+/// </summary>
 public class ChunkGrid : MonoBehaviour
 {
     [Header("Parameters")]
@@ -259,6 +262,7 @@ public class ChunkGrid : MonoBehaviour
         return ChunkExists(chunkPos) ? (chunkPos, this[chunkPos]) : null;
     }
     public ChunkData this[Vector3Int at] => grid.TryGetValue(at, out ChunkData chunk) ? chunk : null;
+
     public Mesh ToMesh()
     {
         var combinedVertices = new List<Vector3>();
@@ -273,7 +277,6 @@ public class ChunkGrid : MonoBehaviour
             var norms = chunk.mesh.normals;
             var tris = chunk.mesh.triangles;
 
-            // Transform vertices to world space
             var matrix = Matrix4x4.TRS((Vector3)pos * offsetFactor, Quaternion.identity, Vector3.one);
             for (int i = 0; i < verts.Length; i++)
             {
@@ -326,6 +329,11 @@ public class ChunkGrid : MonoBehaviour
         return null;
     }
 
+    /// <summary>
+    /// Fetch the closest mass from position, along with the chunk that contains it and the chunk's position in grid.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
     public (Vector3Int, ChunkData, Mass) GetClosestMass(Vector3 position)
     {
         if (GetChunk(position) is (Vector3Int chunkIndex, ChunkData currentChunk)
@@ -369,42 +377,63 @@ public class ChunkGrid : MonoBehaviour
 
     // DIRTY METHODS
 
+    /// <summary>
+    /// Called if <c>dirtyMeshV</c>, sets <c>dirtySpringsM</c>
+    /// </summary>
     public bool VolumeToMeshDirty(Vector3Int at, float threshold = 0)
     {
         if (!ChunkExists(at) || !grid[at].dirtyMeshV) return false;
         VolumeToMesh(at, threshold);
         return true;
     }
+    /// <summary>
+    /// Called if <c>dirtySpringsM</c>, sets <c>dirtyJointure</c>
+    /// </summary>
     public bool MeshToSpringsDirty(Vector3Int at, bool joinNeighbors = false)
     {
         if (!ChunkExists(at) || !grid[at].dirtySpringsM) return false;
         MeshToSprings(at, joinNeighbors);
         return true;
     }
+    /// <summary>
+    /// Called if <c>dirtyMeshS</c>, sets <c>dirtyVolume</c>
+    /// </summary>
     public bool SpringsToMeshDirty(Vector3Int at)
     {
         if (!ChunkExists(at) || !grid[at].dirtyMeshS) return false;
         SpringsToMesh(at);
         return true;
     }
+    /// <summary>
+    /// Called if <c>dirtySpringsS</c>, sets <c>dirtyMeshS</c> and <c>dirtyJointure</c>
+    /// </summary>
     public bool UpdateSpringsDirty(Vector3Int at, float deltaTime)
     {
         if (!ChunkExists(at) || !grid[at].dirtySpringsS) return false;
         UpdateSprings(at, deltaTime);
         return true;
     }
+    /// <summary>
+    /// Called if <c>dirtyVolume</c>, sets <c>dirtyMeshV</c>
+    /// </summary>
     public bool MeshToVolumeDirty(Vector3Int at)
     {
         if (!ChunkExists(at) || !grid[at].dirtyVolume) return false;
         MeshToVolume(at);
         return true;
     }
+    /// <summary>
+    /// Called if <c>dirtyJointure</c>, sets <c>dirtyMeshS</c>
+    /// </summary>
     public bool TieJointuresDirty(Vector3Int at)
     {
         if (!ChunkExists(at) || !grid[at].dirtyJointure) return false;
         TieJointures(at);
         return true;
     }
+    /// <summary>
+    /// Called if <c>dirtyVolume</c>, sets nothing
+    /// </summary>
     public float DifferenceOfVolumeDirty(Vector3Int at)
     {
         if (!ChunkExists(at) || !grid[at].dirtyVolume) return 0f;
@@ -412,6 +441,9 @@ public class ChunkGrid : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// Sets <c>dirtyMeshV</c>
+    /// </summary>
     public void GenerateVolume(Vector3Int at)
     {
         if (!ChunkExists(at)) return;
@@ -436,6 +468,9 @@ public class ChunkGrid : MonoBehaviour
     readonly List<Vector3> verticesCache = new();
     readonly List<Vector3> normalsCache = new();
     readonly List<int> trianglesCache = new();
+    /// <summary>
+    /// Sets <c>dirtyMeshV</c>
+    /// </summary>
     public void MeshToVolume(Vector3Int at)
     {
         if (meshToVolumeCache == null) meshToVolumeCache = new();
@@ -514,6 +549,9 @@ public class ChunkGrid : MonoBehaviour
             chunk.dirtyMeshV = true;
         }
     }
+    /// <summary>
+    /// Sets <c>dirtySpringsM</c>
+    /// </summary>
     public void VolumeToMesh(Vector3Int at, float threshold = 0)
     {
         if (!ChunkExists(at)) return;
@@ -528,6 +566,9 @@ public class ChunkGrid : MonoBehaviour
             chunk.dirtySpringsM = true;
         }
     }
+    /// <summary>
+    /// Sets <c>dirtyMeshV</c>
+    /// </summary>
     public void PaintVolume(Vector3Int at, Vector3 brushPosition, bool eraseMode)
     {
         if (!ChunkExists(at)) return;
@@ -557,6 +598,9 @@ public class ChunkGrid : MonoBehaviour
         var chunk = grid[at];
         return distanceOfVolumes.Distance(chunk.volume, chunk.volumeOfMesh, output);
     }
+    /// <summary>
+    /// Sets <c>dirtyJointure</c>
+    /// </summary>
     public void MeshToSprings(Vector3Int at, bool joinNeighbors = false)
     {
         if (!ChunkExists(at)) return;
@@ -582,6 +626,9 @@ public class ChunkGrid : MonoBehaviour
             chunk.dirtyJointure = true;
         }
     }
+    /// <summary>
+    /// Sets <c>dirtyVolume</c>
+    /// </summary>
     public void SpringsToMesh(Vector3Int at)
     {
         if (!ChunkExists(at)) return;
@@ -593,6 +640,9 @@ public class ChunkGrid : MonoBehaviour
             chunk.dirtyVolume = true;
         }
     }
+    /// <summary>
+    /// Sets <c>dirtyJointure</c>
+    /// </summary>
     public void JoinToNeighbors(Vector3Int at)
     {
         if (!ChunkExists(at)) return;
@@ -609,6 +659,9 @@ public class ChunkGrid : MonoBehaviour
             });
         chunk.dirtyJointure = true;
     }
+    /// <summary>
+    /// Sets <c>dirtyMeshS</c>
+    /// </summary>
     public void TieJointures(Vector3Int at)
     {
         if (!ChunkExists(at)) return;
@@ -642,6 +695,9 @@ public class ChunkGrid : MonoBehaviour
             chunk.dirtyJointure = false;
         }
     }
+    /// <summary>
+    /// Sets <c>dirtyMeshS</c> and <c>dirtyJointure</c>
+    /// </summary>
     public void UpdateSprings(Vector3Int at, float deltaTime)
     {
         if (!ChunkExists(at)) return;
@@ -652,6 +708,9 @@ public class ChunkGrid : MonoBehaviour
         chunk.dirtyMeshS = true;
         chunk.dirtyJointure = true;
     }
+    /// <summary>
+    /// Sets <c>dirtySpringsS</c>
+    /// </summary>
     public void ApplyForceToSprings(
         Vector3Int at,
         Vector3 force, Vector3 origin, float radius,
