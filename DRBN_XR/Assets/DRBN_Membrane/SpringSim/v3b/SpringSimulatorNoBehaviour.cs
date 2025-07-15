@@ -26,6 +26,11 @@ namespace SpringSim.V3
         static readonly ProfilerMarker iterationDrag = new("Membrane.SpringSim.Iteration.Drag");
         static readonly ProfilerMarker iterationMasses = new("Membrane.SpringSim.Iteration.ApplyForces");
 
+        /// <summary>
+        /// Applies Hooke's law to the masses, as well as the external forces
+        /// </summary>
+        /// <param name="state"></param>
+        /// <param name="deltaTime"></param>
         public void Iterate(SpringSimulatorState state, float deltaTime)
         {
             Mass.mass = particleMass;
@@ -92,6 +97,9 @@ namespace SpringSim.V3
     }
 
 
+    /// <summary>
+    /// The data held by a spring simulator. Knows its masses and springs, as well as an offset, designed for a chunk system.
+    /// </summary>
     public class SpringSimulatorState
     {
         public Vector3 origin = Vector3.zero;
@@ -110,6 +118,12 @@ namespace SpringSim.V3
         public Vector3 LocalToGlobalPosition(Vector3 position) => (position + origin) / offsetFactor;
         public Vector3 GlobalToLocalPosition(Vector3 position) => position * offsetFactor - origin;
 
+        /// <summary>
+        /// Pairs this state's masses with the next state's masses that have pretty much the same position (in global space)
+        /// </summary>
+        /// <param name="with"></param>
+        /// <param name="tolerance"></param>
+        /// <returns></returns>
         public List<(Mass self, Mass other)> Join(SpringSimulatorState with, float tolerance = 0.0001f)
         {
             List<(Mass, Mass)> result = new();
@@ -127,11 +141,23 @@ namespace SpringSim.V3
             return result;
         }
 
+        /// <summary>
+        /// Adds a force that will impact masses surrounding its origin within a fixed radius on the next springsim iteration
+        /// </summary>
+        /// <param name="force"></param>
+        /// <param name="from"></param>
+        /// <param name="radius"></param>
         public void AddExternalForce(Vector3 force, Vector3 from, float radius)
         {
             externalForces.Add((force, from, radius));
         }
 
+        /// <summary>
+        /// Yields all masses within a radius from a poisition (in local space)
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="distance"></param>
+        /// <returns></returns>
         public IEnumerable<(Mass m, float d, int i)> NearbyMasses(Vector3 position, float distance)
         {
             for (int i = 0; i < masses.Count; i++)
@@ -141,6 +167,13 @@ namespace SpringSim.V3
                     yield return (masses[i], d, i);
             }
         }
+
+        /// <summary>
+        /// Find all masses within a radius from a poisition (in local space)
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="distance"></param>
+        /// <returns></returns>
         public List<Mass> GetSurrounding(Vector3 position, float distance)
         {
             using (surroundingFetching.Auto())
@@ -155,6 +188,11 @@ namespace SpringSim.V3
             }
         }
 
+        /// <summary>
+        /// Find the closest mass from position (in local space)
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public Mass ClosestMassLocal(Vector3 position)
         {
             using (closestFetching.Auto())
@@ -173,6 +211,11 @@ namespace SpringSim.V3
                 return minIdx >= 0 ? masses[minIdx] : null;
             }
         }
+        /// <summary>
+        /// Find the closest mass from position (in global space)
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public Mass ClosestMassGlobal(Vector3 position)
         {
             return ClosestMassLocal(GlobalToLocalPosition(position));

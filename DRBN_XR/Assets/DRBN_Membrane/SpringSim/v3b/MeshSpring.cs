@@ -11,6 +11,13 @@ namespace SpringSim.V3
         readonly static ProfilerMarker meshToSpring = new("Membrane.SpringMeshConversion.MeshToSprings");
         readonly static ProfilerMarker springToMesh = new("Membrane.SpringMeshConversion.SpringsToMesh");
 
+        /// <summary>
+        /// Takes a mesh and converts it into a spring-mass. Will also merge vertices that are too close to one another.
+        /// </summary>
+        /// <param name="mesh"></param>
+        /// <param name="extractionEpsilon"></param>
+        /// <param name="simulator"></param>
+        /// <returns></returns>
         public static SpringSimulatorState MeshToSprings(
             Mesh mesh, float extractionEpsilon = 0.005f,
             SpringSimulatorState simulator = null
@@ -125,6 +132,12 @@ namespace SpringSim.V3
             return simulator;
         }
 
+        /// <summary>
+        /// Converts a mass-springs simulation and converts it into a mesh. Assumes the mass-springs have triangles (which will be the case if generated from MeshToSprings)
+        /// </summary>
+        /// <param name="springSimulator"></param>
+        /// <param name="mesh"></param>
+        /// <returns></returns>
         public static Mesh SpringsToMesh(
             SpringSimulatorState springSimulator,
             Mesh mesh = null
