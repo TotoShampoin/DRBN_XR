@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// Component to render a voxel grid.
+/// </summary>
 public class VolumeRenderer : MonoBehaviour
 {
     public RenderTexture texture;

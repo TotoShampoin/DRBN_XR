@@ -1,6 +1,9 @@
 using Unity.Profiling;
 using UnityEngine;
 
+/// <summary>
+/// Function that takes two volumes and outputs a number between 0 and 1 corresponding to how different the two volumes are near zeros.
+/// </summary>
 public class DistanceOfVolumes : MonoBehaviour
 {
     [SerializeField] ComputeShader shader;

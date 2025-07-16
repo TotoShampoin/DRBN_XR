@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
 
+/// <summary>
+/// A structure for storing items in a hashmap based on positional data, for quick look-ups.
+/// </summary>
 public class SpatialHash<T>
 {
     private readonly Dictionary<Vector3Int, List<T>> hashmap;
@@ -98,6 +101,9 @@ public class SpatialHash<T>
     }
 }
 
+/// <summary>
+/// A thread-safe structure for storing items in a hashmap based on positional data, for quick look-ups.
+/// </summary>
 public class ConcurrentSpatialHash<T>
 {
     private readonly ConcurrentDictionary<Vector3Int, ConcurrentBag<T>> hashmap;

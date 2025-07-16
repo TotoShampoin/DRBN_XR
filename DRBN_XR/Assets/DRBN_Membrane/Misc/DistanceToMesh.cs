@@ -2,19 +2,52 @@ using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
+/// <summary>
+/// Functions to evaluate the distance between a point and a Mesh.
+/// </summary>
 public class DistanceToMesh
 {
+    /// <summary>
+    /// Unsigned distance to a mesh
+    /// </summary>
+    /// <param name="mesh"></param>
+    /// <param name="point"></param>
+    /// <param name="distanceThreshold">Tolerance for when detecting triangles that share the same vertex</param>
+    /// <returns></returns>
     public static float UnsignedDistanceFunction(Mesh mesh, Vector3 point, float distanceThreshold = 0.0001f)
         => DistanceFunctionData(mesh, point, distanceThreshold).distance;
-    public static float SignedDistanceFunction(Mesh mesh, Vector3 point, float distanceThreshold = 0.0001f)
-        => SignedDistanceFunction(DistanceFunctionData(mesh, point, distanceThreshold));
 
-    public static float SignedDistanceFunction((float distance, float dot, int triangle) data)
+    /// <summary>
+    /// Signed distance to a mesh. The "inside" is tied to the mesh's normals.
+    /// </summary>
+    /// <param name="mesh"></param>
+    /// <param name="point"></param>
+    /// <param name="distanceThreshold">Tolerance for when detecting triangles that share the same vertex</param>
+    /// <returns></returns>
+    public static float SignedDistanceFunctionVolume(Mesh mesh, Vector3 point, float distanceThreshold = 0.0001f)
+        => SignedDistanceFunctionVolume(DistanceFunctionData(mesh, point, distanceThreshold));
+    public static float SignedDistanceFunctionVolume((float distance, float dot, int triangle) data)
     {
         var (distance, dot, _) = data;
         return distance * Mathf.Sign(dot);
     }
+    /// <summary>
+    /// Signed distance to a mesh. The "inside" is tied to the mesh's surface.
+    /// </summary>
+    /// <param name="mesh"></param>
+    /// <param name="point"></param>
+    /// <param name="distanceThreshold">Tolerance for when detecting triangles that share the same vertex</param>
+    /// <returns></returns>
+    public static float SignedDistanceFunctionSurface(Mesh mesh, Vector3 point, float thickness = 0.1f, float distanceThreshold = 0.0001f)
+        => DistanceFunctionData(mesh, point, distanceThreshold).distance - thickness;
 
+    /// <summary>
+    /// Unsigned Distance Function to a mesh, with some additional useful informations.
+    /// </summary>
+    /// <param name="mesh"></param>
+    /// <param name="point"></param>
+    /// <param name="distanceThreshold"></param>
+    /// <returns>The distance, the facing coefficient (dot product) and the triangle's index</returns>
     public static (float distance, float dot, int triangle) DistanceFunctionData(
         Mesh mesh, Vector3 point, float distanceThreshold = 0.0001f
     )
@@ -74,6 +107,12 @@ public class DistanceToMesh
         return (distances[minIndex], dots[minIndex], minIndex);
     }
 
+    /// <summary>
+    /// Find the closest point to a vector on a triangle
+    /// </summary>
+    /// <param name="triangle"></param>
+    /// <param name="position"></param>
+    /// <returns></returns>
     public static Vector3 ClosestOnTriangle((Vector3, Vector3, Vector3) triangle, Vector3 position)
     {
         var (a, b, c) = triangle;
@@ -127,6 +166,13 @@ public class DistanceToMesh
         return a + ab * vFinal + ac * wFinal;
     }
 
+    /// <summary>
+    /// Get the triangle's normal interpolated at a given point on said triangle
+    /// </summary>
+    /// <param name="positions"></param>
+    /// <param name="normals"></param>
+    /// <param name="mVertex"></param>
+    /// <returns></returns>
     public static Vector3 TriangleNormal(
         (Vector3, Vector3, Vector3) positions,
         (Vector3, Vector3, Vector3) normals,

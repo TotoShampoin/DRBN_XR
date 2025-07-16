@@ -12,6 +12,11 @@ namespace Voxelization
         public Bounds meshBound;
         public float distanceThreshold = 0.0001f;
 
+        /// <summary>
+        /// Gets a triangle's vertices and normals from the mesh using the triangle index
+        /// </summary>
+        /// <param name="idx"></param>
+        /// <returns></returns>
         public ((Vector3, Vector3, Vector3) vertices, (Vector3, Vector3, Vector3) normals) GetTriangle(int idx)
         {
             var vertices = mesh.vertices;
@@ -27,8 +32,19 @@ namespace Voxelization
             ));
         }
 
+        /// <summary>
+        /// The square magnitude of this vector
+        /// </summary>
+        /// <param name="v"></param>
+        /// <returns></returns>
         public static float Dot2(Vector3 v) => Vector3.Dot(v, v);
 
+        /// <summary>
+        /// Unsigned Distance Function of a triangle. See https://iquilezles.org/articles/distfunctions/
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="triangle"></param>
+        /// <returns></returns>
         public static float TriangleDistance(Vector3 position, (Vector3, Vector3, Vector3) triangle)
         {
             Vector3 a = triangle.Item1;
@@ -64,6 +80,13 @@ namespace Voxelization
             return Mathf.Sqrt(d);
         }
 
+        /// <summary>
+        /// Get the triangle's normal interpolated at a given point on said triangle
+        /// </summary>
+        /// <param name="positions"></param>
+        /// <param name="normals"></param>
+        /// <param name="mVertex"></param>
+        /// <returns></returns>
         public static Vector3 TriangleNormal(
             (Vector3, Vector3, Vector3) positions,
             (Vector3, Vector3, Vector3) normals,
@@ -91,6 +114,12 @@ namespace Voxelization
             return normal;
         }
 
+        /// <summary>
+        /// Project a vector onto a triangle's plane
+        /// </summary>
+        /// <param name="vertices"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public static Vector3 ProjectionOnTriangle((Vector3, Vector3, Vector3) vertices, Vector3 position)
         {
             Vector3 v0 = vertices.Item1;
@@ -103,6 +132,12 @@ namespace Voxelization
             return proj;
         }
 
+        /// <summary>
+        /// Find the closest point to a vector on a triangle
+        /// </summary>
+        /// <param name="triangle"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public static Vector3 ClosestOnTriangle((Vector3, Vector3, Vector3) triangle, Vector3 position)
         {
             Vector3 a = triangle.Item1;
@@ -158,7 +193,11 @@ namespace Voxelization
             return a + ab * vFinal + ac * wFinal;
         }
 
-        // Returns (signed distance, normal) for the given position
+        /// <summary>
+        /// Returns (signed distance, normal) for the given position
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public (float, Vector3) VoxelizeAtPosition(Vector3 position)
         {
             var debug = VoxelizeAtPositionDebug(position);
@@ -175,7 +214,11 @@ namespace Voxelization
             public Vector3 projectedNormal;
         }
 
-        // Debug version: returns detailed info in a struct
+        /// <summary>
+        /// Debug version: returns detailed info in a struct
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public VoxelizeDebugResult VoxelizeAtPositionDebug(Vector3 position)
         {
             float minUDist = float.MaxValue;

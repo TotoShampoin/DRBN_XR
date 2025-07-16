@@ -96,6 +96,13 @@ public class MeshMod
         }
     }
 
+    /// <summary>
+    /// Shift all vertices of a mesh by an offset.
+    /// </summary>
+    /// <param name="mesh"></param>
+    /// <param name="offset"></param>
+    /// <param name="result"></param>
+    /// <returns></returns>
     static public Mesh OffsetMesh(Mesh mesh, Vector3 offset, Mesh result = null)
     {
         result = result != null ? result : new();
@@ -312,6 +319,9 @@ public class MeshMod
     /// <summary>
     /// Ray to mesh intersection using RayTriangleIntersection
     /// </summary>
+    /// <param name="mesh"></param>
+    /// <param name="ray"></param>
+    /// <returns></returns>
     public static Vector3? RayMeshIntersection(Mesh mesh, Ray ray)
     {
         using (meshRayMarker.Auto())

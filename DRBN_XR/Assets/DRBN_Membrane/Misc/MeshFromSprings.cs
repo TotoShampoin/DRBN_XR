@@ -6,6 +6,9 @@ using UnityEngine;
 using MarchingCubing.V2;
 using Unity.Profiling;
 
+/// <summary>
+/// Helper functions to help conversions between a mesh and the spring simulator v3
+/// </summary>
 public class MeshFromSprings : MonoBehaviour
 {
     MeshFilter meshFilter;

@@ -39,7 +39,7 @@ public class NormalArrow2 : MonoBehaviour
     }
 
     // float DF(Mesh mesh, Vector3 point) => DistanceToMesh.UnsignedDistanceFunction(mesh, point);
-    static float DF(Mesh mesh, Vector3 point) => DistanceToMesh.SignedDistanceFunction(mesh, point);
+    static float DF(Mesh mesh, Vector3 point) => DistanceToMesh.SignedDistanceFunctionVolume(mesh, point);
 }
 
 [CustomEditor(typeof(NormalArrow2))]

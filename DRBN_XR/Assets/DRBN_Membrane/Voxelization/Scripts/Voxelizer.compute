@@ -17,6 +17,7 @@ float3 _MeshMaxBound;
 float _Multiplier;
 float _DistanceThreshold;
 
+// Gets a triangle's vertices and normals from the buffers using the triangle index
 void GetTriangle(int index, out float3 vertices[3], out float3 normals[3])
 {
     vertices[0] = _Vertices[_Triangles[index].x];
@@ -27,16 +28,19 @@ void GetTriangle(int index, out float3 vertices[3], out float3 normals[3])
     normals[2] = _Normals[_Triangles[index].z];
 }
 
+// The square magnitude of this vector
 float dot2(float3 v)
 {
     return dot(v, v);
 }
 
+// Inverse lerp from input, lerp to output
 float3 remap(float3 value, float3 inMin, float3 inMax, float3 outMin, float3 outMax)
 {
     return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
 }
 
+// Unsigned Distance Function of a triangle
 // https://iquilezles.org/articles/distfunctions/
 float TriangleDistance(float3 position, float3 vertices[3])
 {
@@ -72,6 +76,7 @@ float TriangleDistance(float3 position, float3 vertices[3])
     return sqrt(d);
 }
 
+// Get the triangle's normal interpolated at a given point on said triangle
 float3 TriangleNormal(in float3 positions[3], in float3 normals[3], in float3 mVertex)
 {
     float3 v0 = positions[1] - positions[0];
@@ -95,6 +100,7 @@ float3 TriangleNormal(in float3 positions[3], in float3 normals[3], in float3 mV
     return normal;
 }
 
+// Project a vector onto a triangle's plane
 float3 ProjectionOnTriangle(in float3 vertices[3], in float3 position)
 {
     float3 v0 = vertices[0];
@@ -107,6 +113,7 @@ float3 ProjectionOnTriangle(in float3 vertices[3], in float3 position)
     return proj;
 }
 
+// Find the closest point to a vector on a triangle
 float3 ClosestOnTriangle(in float3 vertices[3], in float3 position)
 {
     float3 a = vertices[0];

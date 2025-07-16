@@ -3,6 +3,9 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
 
+/// <summary>
+/// A component that displays Unity's Log console directly in game, useful for debugging in VR.
+/// </summary>
 public class DebugLogInXR : MonoBehaviour
 {
     public LayoutGroup console;
