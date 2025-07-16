@@ -49,16 +49,27 @@ namespace MarchingCubing.V2
             triangleCountBuffer?.Release();
         }
 
+        /// <summary>
+        /// Clears the component's own mesh
+        /// </summary>
         public void ClearMesh()
         {
             meshFilter.mesh = new();
         }
 
+        /// <summary>
+        /// Calls GenerateMesh onto the component's own mesh
+        /// </summary>
+        /// <param name="renderTexture"></param>
+        /// <param name="threshold"></param>
         public void GenerateAndApplyMesh(RenderTexture renderTexture, float threshold)
         {
             GenerateMesh(renderTexture, threshold, meshFilter.mesh);
         }
 
+        /// <summary>
+        /// Allocates the buffers for the marching cube
+        /// </summary>
         public void PrepareBuffer()
         {
             using (prepareMarker.Auto())
@@ -71,6 +82,12 @@ namespace MarchingCubing.V2
                 }
             }
         }
+
+        /// <summary>
+        /// Calls the marching cubes
+        /// </summary>
+        /// <param name="renderTexture"></param>
+        /// <param name="threshold"></param>
         public void March(RenderTexture renderTexture, float threshold)
         {
             using (marchMarker.Auto())
@@ -94,6 +111,11 @@ namespace MarchingCubing.V2
                     Mathf.CeilToInt((float)resolution / 8));
             }
         }
+
+        /// <summary>
+        /// Fetches the result of the marching cubes as an array of triangles
+        /// </summary>
+        /// <returns></returns>
         public Triangle[] ReadbackTriangles()
         {
             using (readbackMarker.Auto())
@@ -105,6 +127,12 @@ namespace MarchingCubing.V2
                 return tempTriangles;
             }
         }
+
+        /// <summary>
+        /// Converts an array of triangles into a mesh, with either smooth of sharp faces.
+        /// </summary>
+        /// <param name="triangles"></param>
+        /// <param name="mesh"></param>
         public void ParseTrianglesIntoMesh(Triangle[] triangles, Mesh mesh)
         {
             using (parseMarker.Auto())
@@ -116,6 +144,12 @@ namespace MarchingCubing.V2
             }
         }
 
+        /// <summary>
+        /// Calls the marching cube and returns the generated mesh
+        /// </summary>
+        /// <param name="renderTexture"></param>
+        /// <param name="threshold"></param>
+        /// <param name="mesh"></param>
         public void GenerateMesh(RenderTexture renderTexture, float threshold, Mesh mesh)
         {
             PrepareBuffer();
@@ -124,6 +158,11 @@ namespace MarchingCubing.V2
             ParseTrianglesIntoMesh(triangles, mesh);
         }
 
+        /// <summary>
+        /// Converts triangles into a mesh with sharp faces
+        /// </summary>
+        /// <param name="triangles"></param>
+        /// <param name="mesh"></param>
         void SharpMeshFromTriangles(IList<Triangle> triangles, Mesh mesh)
         {
             cachedVerts.Clear();
@@ -149,6 +188,11 @@ namespace MarchingCubing.V2
             mesh.RecalculateBounds();
         }
 
+        /// <summary>
+        /// Converts triangles into a mesh with smooth faces
+        /// </summary>
+        /// <param name="triangles"></param>
+        /// <param name="mesh"></param>
         void SmoothMeshFromTriangles(IList<Triangle> triangles, Mesh mesh)
         {
             cachedVerts.Clear();

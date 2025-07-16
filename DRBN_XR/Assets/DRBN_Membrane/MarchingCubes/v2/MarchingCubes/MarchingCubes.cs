@@ -52,20 +52,38 @@ namespace MarchingCubing.V2
             Gizmos.DrawWireCube(bounds.center, bounds.size);
         }
 
+        /// <summary>
+        /// Clears the component's own mesh
+        /// </summary>
         public void ClearMesh()
         {
             meshFilter.mesh = new();
         }
 
+        /// <summary>
+        /// Calls GenerateMesh and ApplyMesh
+        /// </summary>
+        /// <param name="renderTexture"></param>
+        /// <param name="threshold"></param>
         public void GenerateAndApplyMesh(RenderTexture renderTexture, float threshold)
         {
             ApplyMesh(GenerateMesh(renderTexture, threshold));
         }
+        /// <summary>
+        /// Sets the component's mesh
+        /// </summary>
+        /// <param name="mesh"></param>
         public void ApplyMesh(Mesh mesh)
         {
             meshFilter.mesh = mesh;
         }
 
+        /// <summary>
+        /// Calls the marching cube and returns the generated mesh
+        /// </summary>
+        /// <param name="renderTexture"></param>
+        /// <param name="threshold"></param>
+        /// <param name="mesh"></param>
         public Mesh GenerateMesh(RenderTexture renderTexture, float threshold)
         {
             using (prepareMarker.Auto())
@@ -109,6 +127,11 @@ namespace MarchingCubing.V2
             }
         }
 
+        /// <summary>
+        /// Converts triangles into a mesh with sharp faces
+        /// </summary>
+        /// <param name="triangles"></param>
+        /// <param name="mesh"></param>
         Mesh SharpMeshFromTriangles(Triangle[] triangles)
         {
             Vector3[] verts = new Vector3[triangles.Length * 3];
@@ -133,6 +156,12 @@ namespace MarchingCubing.V2
             mesh.RecalculateBounds();
             return mesh;
         }
+
+        /// <summary>
+        /// Converts triangles into a mesh with smooth faces
+        /// </summary>
+        /// <param name="triangles"></param>
+        /// <param name="mesh"></param>
         Mesh SmoothMeshFromTriangles(Triangle[] triangles)
         {
             List<Vector3> verts = new(triangles.Length * 3);

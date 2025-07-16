@@ -5,7 +5,7 @@ using MarchingCubing.V2;
 namespace WeightPainting
 {
     /// <summary>
-    /// An object that observes another object, listens to user inputs, and paints in a volume (a 1-channel 3D texture) accordingly.
+    /// A component that observes another object, listens to user inputs, and paints in a volume (a 1-channel 3D texture) accordingly.
     /// </summary>
     public class WeightPainter : MonoBehaviour
     {

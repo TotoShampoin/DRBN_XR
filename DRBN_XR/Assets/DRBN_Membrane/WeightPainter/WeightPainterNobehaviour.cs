@@ -2,12 +2,15 @@ using UnityEngine;
 
 namespace WeightPainting
 {
+    /// <summary>
+    /// Same as the WeightPainter component, but with no automatic behaviour.
+    /// </summary>
     public class WeightPainterNobehaviour : MonoBehaviour
     {
         [SerializeField] ComputeShader weightPainterShader;
 
         /// <summary>
-        /// Empties the volume
+        /// Empties the volume.
         /// </summary>
         /// <param name="renderTexture"></param>
         public void Clear(RenderTexture renderTexture)
@@ -22,7 +25,7 @@ namespace WeightPainting
         }
 
         /// <summary>
-        /// Applies the weight painting. This is automatically called accordingly to the user's inputs.
+        /// Applies the weight painting.
         /// </summary>
         public void Paint(
             RenderTexture renderTexture, Vector3 position, Bounds bounds,
