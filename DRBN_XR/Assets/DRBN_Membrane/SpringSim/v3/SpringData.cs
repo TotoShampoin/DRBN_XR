@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace SpringSim.V3
 {
+    /// <summary>
+    /// A mass in the spring simulator.
+    /// </summary>
     public class Mass
     {
         public Vector3 position;
@@ -34,6 +37,9 @@ namespace SpringSim.V3
         }
     };
 
+    /// <summary>
+    /// A link tied to a spring simulator.
+    /// </summary>
     public struct SpringLink
     {
         public int a;

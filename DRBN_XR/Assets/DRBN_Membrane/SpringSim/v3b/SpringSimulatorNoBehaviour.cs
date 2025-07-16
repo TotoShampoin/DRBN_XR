@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace SpringSim.V3
 {
+    /// <summary>
+    /// Component for a spring simulator, but it does nothing on its own and everything is done in function calls.
+    /// </summary>
     public class SpringSimulatorNoBehaviour : MonoBehaviour
     {
         [Header("Parameters")]

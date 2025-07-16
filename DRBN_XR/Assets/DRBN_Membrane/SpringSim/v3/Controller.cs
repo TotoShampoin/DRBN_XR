@@ -6,6 +6,9 @@ using System;
 
 namespace SpringSim.V3
 {
+    /// <summary>
+    /// Controller class for the membrane.
+    /// </summary>
     public class SpringController : MonoBehaviour
     {
         public SpringSimulator simulator;

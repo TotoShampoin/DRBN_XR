@@ -3,6 +3,9 @@ using UnityEngine.InputSystem;
 
 namespace Particles3D
 {
+    /// <summary>
+    /// A component that attracts particles towards it, to "grab" them.
+    /// </summary>
     class ParticleGrabber : MonoBehaviour
     {
         [SerializeField] ParticleSimulator simulator;

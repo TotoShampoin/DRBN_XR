@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace SpringSim.V3
 {
+    /// <summary>
+    /// Component to render masses and springs in a spring simulation.
+    /// </summary>
     public class SpringsRenderer : MonoBehaviour
     {
         public Mesh massMesh;
