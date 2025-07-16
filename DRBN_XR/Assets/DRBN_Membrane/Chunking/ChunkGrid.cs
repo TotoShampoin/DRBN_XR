@@ -66,6 +66,22 @@ public class ChunkGrid : MonoBehaviour
     Ray GlobalCursorRay => new(GlobalCursorPos, GlobalCursorDir);
     Vector3 LocalCursorPos => WorldToLocalPosition(cursor.transform.position);
 
+    // Caches
+    static readonly Vector3Int[] neighborsMap = {
+        new (1, 0, 0), new (-1, 0, 0),
+        new (0, 1, 0), new (0, -1, 0),
+        new (0, 0, 1), new (0, 0, -1),
+        new (1, 1, 0), new (1, -1, 0), new (-1, 1, 0), new (-1, -1, 0),
+        new (1, 0, 1), new (1, 0, -1), new (-1, 0, 1), new (-1, 0, -1),
+        new (0, 1, 1), new (0, 1, -1), new (0, -1, 1), new (0, -1, -1),
+        new (1, 1, 1), new (1, 1, -1), new (1, -1, 1), new (1, -1, -1),
+        new (-1, 1, 1), new (-1, 1, -1), new (-1, -1, 1), new (-1, -1, -1)
+    };
+    Mesh meshToVolumeCache;
+    readonly List<Vector3> verticesCache = new();
+    readonly List<Vector3> normalsCache = new();
+    readonly List<int> trianglesCache = new();
+
     // Profiler markers
     static readonly Unity.Profiling.ProfilerMarker meshToVolumeMarker = new("Membrane.ChunkGrid.MeshToVolume");
     static readonly Unity.Profiling.ProfilerMarker volumeToMeshMarker = new("Membrane.ChunkGrid.VolumeToMesh");
@@ -238,6 +254,9 @@ public class ChunkGrid : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Sets various variables to ensure a good cohesion of the chunks.
+    /// </summary>
     void PrepareModules()
     {
         offsetFactor = 2f - (float)4 / marchResolution;
@@ -246,6 +265,10 @@ public class ChunkGrid : MonoBehaviour
         objectTransform = transform.localToWorldMatrix;
     }
 
+    /// <summary>
+    /// Allocate and create a chunk at a given cell.
+    /// </summary>
+    /// <param name="at"></param>
     public void CreateChunk(Vector3Int at)
     {
         grid.TryAdd(at, new ChunkData()
@@ -254,8 +277,24 @@ public class ChunkGrid : MonoBehaviour
             volumeOfMesh = new RenderTexture(baseVolume),
         });
     }
+
+    /// <summary>
+    /// Check if the grid has a given cell, and if that cell contains something.
+    /// </summary>
+    /// <param name="at"></param>
+    /// <returns></returns>
     public bool ChunkExists(Vector3Int at) => grid.ContainsKey(at) && grid[at] != null;
+
+    /// <summary>
+    /// Deletes cells which's chunk has been deleted.
+    /// </summary>
     public void Cleanup() => ForEach((pos, chunk) => { if (chunk == null) grid.Remove(pos); });
+
+    /// <summary>
+    /// Fetch a cell and its chunk at given position if it exists.
+    /// </summary>
+    /// <param name="at"></param>
+    /// <returns></returns>
     public (Vector3Int, ChunkData)? GetChunk(Vector3 at)
     {
         Vector3Int chunkPos = Vector3Int.RoundToInt(WorldToGridPosition(at));
@@ -263,6 +302,10 @@ public class ChunkGrid : MonoBehaviour
     }
     public ChunkData this[Vector3Int at] => grid.TryGetValue(at, out ChunkData chunk) ? chunk : null;
 
+    /// <summary>
+    /// Converts all the meshes in chunks into one giant mesh. WARNING: The chunks are NOT joined by vertices, and may need a call to DeduplicateVertices!
+    /// </summary>
+    /// <returns></returns>
     public Mesh ToMesh()
     {
         var combinedVertices = new List<Vector3>();
@@ -299,6 +342,12 @@ public class ChunkGrid : MonoBehaviour
         return mesh;
     }
 
+    /// <summary>
+    /// Get a chunk's neighbours up to the nth level (center excluded).
+    /// </summary>
+    /// <param name="at"></param>
+    /// <param name="chunkRadius"></param>
+    /// <returns></returns>
     public List<(Vector3Int npos, ChunkData chunk)> SurroundingChunks(Vector3Int at, int chunkRadius = 1)
     {
         List<(Vector3Int, ChunkData)> neighbors = new(26);
@@ -313,10 +362,17 @@ public class ChunkGrid : MonoBehaviour
                 }
         return neighbors;
     }
+
+    /// <summary>
+    /// Casts a ray to the meshes.
+    /// </summary>
+    /// <param name="ray"></param>
+    /// <returns></returns>
     public Vector3? RayIntersection(Ray ray)
     {
         var rayOrigin = WorldToLocalPosition(ray.origin);
         var rayDirection = WorldToLocalDirection(ray.direction);
+        // TODO: Optimize this?
         foreach (var pos in grid.Keys)
         {
             Vector3 offset = (Vector3)pos * offsetFactor;
@@ -440,6 +496,7 @@ public class ChunkGrid : MonoBehaviour
         return DifferenceOfVolume(at);
     }
 
+    // PER-CHUNK METHODS
 
     /// <summary>
     /// Sets <c>dirtyMeshV</c>
@@ -454,20 +511,6 @@ public class ChunkGrid : MonoBehaviour
         chunk.dirtyMeshV = true;
     }
 
-    static readonly Vector3Int[] neighborsMap = {
-        new (1, 0, 0), new (-1, 0, 0),
-        new (0, 1, 0), new (0, -1, 0),
-        new (0, 0, 1), new (0, 0, -1),
-        new (1, 1, 0), new (1, -1, 0), new (-1, 1, 0), new (-1, -1, 0),
-        new (1, 0, 1), new (1, 0, -1), new (-1, 0, 1), new (-1, 0, -1),
-        new (0, 1, 1), new (0, 1, -1), new (0, -1, 1), new (0, -1, -1),
-        new (1, 1, 1), new (1, 1, -1), new (1, -1, 1), new (1, -1, -1),
-        new (-1, 1, 1), new (-1, 1, -1), new (-1, -1, 1), new (-1, -1, -1)
-    };
-    Mesh meshToVolumeCache;
-    readonly List<Vector3> verticesCache = new();
-    readonly List<Vector3> normalsCache = new();
-    readonly List<int> trianglesCache = new();
     /// <summary>
     /// Sets <c>dirtyMeshV</c>
     /// </summary>
