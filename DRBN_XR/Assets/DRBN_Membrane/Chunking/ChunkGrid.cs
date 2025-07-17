@@ -93,6 +93,7 @@ public class ChunkGrid : MonoBehaviour
     {
         MarchedMesh,
         Springs,
+        Impalas,
         Volumes,
         OneBigMesh,
     }
@@ -245,6 +246,9 @@ public class ChunkGrid : MonoBehaviour
                         break;
                     case RenderMode.Springs:
                         springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
+                        break;
+                    case RenderMode.Impalas:
+                        springsRenderer.RenderMasses(chunk.springs, matrix, chunk.highlight);
                         break;
                     case RenderMode.Volumes:
                         volumeRenderer.DrawVolume(chunk.volume, bounds, matrix);

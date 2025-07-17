@@ -12,20 +12,30 @@ using UnityEditor;
 public class ChunkGridShorthands : MonoBehaviour
 {
     public ChunkGrid grid;
-    public TMP_Dropdown renderModeUi;
     public Slider cycleRateUi;
     public Toggle springsModeUi;
     public Slider mergeDistanceUi;
     public Slider joinDistanceUi;
     public Slider volumeThresholdUi;
 
-    public int RenderModeAsInt { get => (int)grid.renderMode; set => grid.renderMode = (ChunkGrid.RenderMode)value; }
     public bool ForceUpdate { get => grid.forceUpdate; set => grid.forceUpdate = value; }
     public float CycleRate { get => grid.cycleRate; set => grid.cycleRate = value; }
     public bool SpringsMode { get => grid.updateSprings; set => grid.updateSprings = value; }
     public float MergeDistance { get => grid.mergeDistance; set => grid.mergeDistance = value; }
     public float JoinDistance { get => grid.joinDistance; set => grid.joinDistance = value; }
     public float VolumeThreshold { get => grid.volumeThreshold; set => grid.volumeThreshold = value; }
+
+    //
+
+    public TMP_Dropdown renderModeUi;
+    public Slider paintRadiusUi;
+    public Slider paintWeightUi;
+    public Toggle smoothTrianglesUi;
+
+    public int RenderModeAsInt { get => (int)grid.renderMode; set => grid.renderMode = (ChunkGrid.RenderMode)value; }
+    public float PaintRadius { get => grid.paintRadius; set => grid.paintRadius = value; }
+    public float PaintWeight { get => grid.paintWeight; set => grid.paintWeight = value; }
+    public bool SmoothTriangles { get => grid.marchingCubes.smooth; set => grid.marchingCubes.smooth = value; }
 
     public void Update()
     {
@@ -35,6 +45,10 @@ public class ChunkGridShorthands : MonoBehaviour
         mergeDistanceUi.value = MergeDistance;
         joinDistanceUi.value = JoinDistance;
         volumeThresholdUi.value = VolumeThreshold;
+
+        paintRadiusUi.value = PaintRadius;
+        paintWeightUi.value = PaintWeight;
+        smoothTrianglesUi.isOn = SmoothTriangles;
     }
 
     public void Regenerate()
