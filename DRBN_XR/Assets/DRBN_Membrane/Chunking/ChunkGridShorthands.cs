@@ -12,6 +12,7 @@ using UnityEditor;
 public class ChunkGridShorthands : MonoBehaviour
 {
     public ChunkGrid grid;
+    public ChunkGrabber grabber;
 
     //
 
@@ -82,6 +83,8 @@ public class ChunkGridShorthands : MonoBehaviour
         stiffnessUi.value = Stiffness;
         viscosityUi.value = Viscosity;
         dragUi.value = Drag;
+
+        grabber.gameObject.SetActive(SpringsModeAsInt == 1);
     }
 
     public void Regenerate()

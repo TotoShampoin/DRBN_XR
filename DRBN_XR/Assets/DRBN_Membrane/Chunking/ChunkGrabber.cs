@@ -9,7 +9,7 @@ using UnityEditor;
 /// <summary>
 /// A little ball that can be grabbed in VR to pull the membrane
 /// </summary>
-class ChunkGrabber : MonoBehaviour
+public class ChunkGrabber : MonoBehaviour
 {
     public ChunkGrid grid;
     public Vector3Int selectedChunkIndex;
