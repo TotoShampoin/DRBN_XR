@@ -7,8 +7,8 @@ using UnityEngine;
 public class DistanceOfVolumes : MonoBehaviour
 {
     [SerializeField] ComputeShader shader;
-    [Range(1, 100), SerializeField] float attenuation = 1f;
-    [Range(0, 300), SerializeField] float distanceSensitivity = 3f;
+    [Range(1, 100)] public float attenuation = 1f;
+    [Range(0, 300)] public float distanceSensitivity = 3f;
 
     static readonly ProfilerMarker distanceMarker = new("Membrane.DistanceOfVolumes");
     static readonly ProfilerMarker computeMarker = new("Membrane.DistanceOfVolumes.Distance");

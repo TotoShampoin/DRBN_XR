@@ -35,6 +35,8 @@ public class ChunkGrid : MonoBehaviour
     public Material highlightMaterial;
     public RenderTexture baseVolume;
     public RenderMode renderMode = RenderMode.MarchedMesh;
+    public float springThickness = 0.1f;
+    public float impalaThickness = 0.333333333333333f;
 
     [Header("Interaction")]
     public Transform cursor;
@@ -225,6 +227,15 @@ public class ChunkGrid : MonoBehaviour
         RenderParams rp = new(material);
         RenderParams rph = new(highlightMaterial);
         var bounds = new Bounds(Vector3.zero, Vector3.one * (2f - (float)2 / marchResolution));
+        switch (renderMode)
+        {
+            case RenderMode.Springs:
+                springsRenderer.thickness = springThickness;
+                break;
+            case RenderMode.Impalas:
+                springsRenderer.thickness = impalaThickness;
+                break;
+        }
         if (renderMode == RenderMode.OneBigMesh)
         {
             var mesh = ToMesh();
