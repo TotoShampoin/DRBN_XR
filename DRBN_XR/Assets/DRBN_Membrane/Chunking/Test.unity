@@ -12835,7 +12835,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   marchResolution: 8
   initNbChunks: 5
-  cycleRate: 2
+  cycleRate: 3
   paintRadius: 0.5
   paintWeight: 2
   distanceThreshold: 0.9
@@ -12905,6 +12905,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grid: {fileID: 1810203727}
+  grabber: {fileID: 920726286}
   renderModeUi: {fileID: 1865573666}
   springsModeDdUi: {fileID: 1488485079}
   cycleRateUi: {fileID: 798917865}
