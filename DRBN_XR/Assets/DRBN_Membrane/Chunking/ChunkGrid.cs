@@ -514,6 +514,7 @@ public class ChunkGrid : MonoBehaviour
     // PER-CHUNK METHODS
 
     /// <summary>
+    /// Generates the volume of a chunk. 
     /// Sets <c>dirtyMeshV</c>
     /// </summary>
     public void GenerateVolume(Vector3Int at)
@@ -527,6 +528,7 @@ public class ChunkGrid : MonoBehaviour
     }
 
     /// <summary>
+    /// Converts a mesh to a volume. Accounts for the chunk's neighbors. 
     /// Sets <c>dirtyMeshV</c>
     /// </summary>
     public void MeshToVolume(Vector3Int at)
@@ -608,6 +610,7 @@ public class ChunkGrid : MonoBehaviour
         }
     }
     /// <summary>
+    /// Converts a volume to a mesh. 
     /// Sets <c>dirtySpringsM</c>
     /// </summary>
     public void VolumeToMesh(Vector3Int at, float threshold = 0)
@@ -625,6 +628,7 @@ public class ChunkGrid : MonoBehaviour
         }
     }
     /// <summary>
+    /// Changes the voxels of a volume. 
     /// Sets <c>dirtyMeshV</c>
     /// </summary>
     public void PaintVolume(Vector3Int at, Vector3 brushPosition, bool eraseMode)
@@ -649,6 +653,9 @@ public class ChunkGrid : MonoBehaviour
             chunk.dirtyMeshV = true;
         }
     }
+    /// <summary>
+    /// Compares a chunk's current volume with the same chunk's volume that previously generated its mesh. 
+    /// </summary>
     public float DifferenceOfVolume(Vector3Int at, RenderTexture output = null)
     {
         if (!ChunkExists(at))
@@ -657,6 +664,7 @@ public class ChunkGrid : MonoBehaviour
         return distanceOfVolumes.Distance(chunk.volume, chunk.volumeOfMesh, output);
     }
     /// <summary>
+    /// Converts a mesh to a mass-springs. 
     /// Sets <c>dirtyJointure</c>
     /// </summary>
     public void MeshToSprings(Vector3Int at, bool joinNeighbors = false)
@@ -685,6 +693,7 @@ public class ChunkGrid : MonoBehaviour
         }
     }
     /// <summary>
+    /// Converts a mass-springs to a mesh. 
     /// Sets <c>dirtyVolume</c>
     /// </summary>
     public void SpringsToMesh(Vector3Int at)
@@ -699,6 +708,7 @@ public class ChunkGrid : MonoBehaviour
         }
     }
     /// <summary>
+    /// Creates jointures from this chunk to its neighbors. 
     /// Sets <c>dirtyJointure</c>
     /// </summary>
     public void JoinToNeighbors(Vector3Int at)
@@ -718,6 +728,7 @@ public class ChunkGrid : MonoBehaviour
         chunk.dirtyJointure = true;
     }
     /// <summary>
+    /// Takes a chunk's jointures and merges its masses together. This does not turn 2 masses into one, this only make them have the same position. 
     /// Sets <c>dirtyMeshS</c>
     /// </summary>
     public void TieJointures(Vector3Int at)
@@ -754,6 +765,7 @@ public class ChunkGrid : MonoBehaviour
         }
     }
     /// <summary>
+    /// Iterate the mass-spring simulation. 
     /// Sets <c>dirtyMeshS</c> and <c>dirtyJointure</c>
     /// </summary>
     public void UpdateSprings(Vector3Int at, float deltaTime)
@@ -767,6 +779,7 @@ public class ChunkGrid : MonoBehaviour
         chunk.dirtyJointure = true;
     }
     /// <summary>
+    /// Applies an external force to the mass-spring simulation. 
     /// Sets <c>dirtySpringsS</c>
     /// </summary>
     public void ApplyForceToSprings(
