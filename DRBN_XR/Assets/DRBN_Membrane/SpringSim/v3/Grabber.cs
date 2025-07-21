@@ -4,6 +4,9 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace SpringSim.V3
 {
+    /// <summary>
+    /// A grabbable component that will interact with a spring simulator, to pull its masses along.
+    /// </summary>
     [RequireComponent(typeof(XRGrabInteractable), typeof(MeshRenderer))]
     public class Grabber : MonoBehaviour
     {

@@ -1,6 +1,9 @@
 using TMPro;
 using UnityEngine;
 
+/// <summary>
+/// A TMP UI component designed to specifically display numbers.
+/// </summary>
 [RequireComponent(typeof(TextMeshProUGUI))]
 public class FloatToText : MonoBehaviour
 {

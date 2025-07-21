@@ -10,7 +10,13 @@ namespace Voxelization
         public Mesh mesh;
         public Bounds voxelBound;
         public Bounds meshBound;
+        public float distanceThreshold = 0.0001f;
 
+        /// <summary>
+        /// Gets a triangle's vertices and normals from the mesh using the triangle index
+        /// </summary>
+        /// <param name="idx"></param>
+        /// <returns></returns>
         public ((Vector3, Vector3, Vector3) vertices, (Vector3, Vector3, Vector3) normals) GetTriangle(int idx)
         {
             var vertices = mesh.vertices;
@@ -26,8 +32,19 @@ namespace Voxelization
             ));
         }
 
+        /// <summary>
+        /// The square magnitude of this vector
+        /// </summary>
+        /// <param name="v"></param>
+        /// <returns></returns>
         public static float Dot2(Vector3 v) => Vector3.Dot(v, v);
 
+        /// <summary>
+        /// Unsigned Distance Function of a triangle. See https://iquilezles.org/articles/distfunctions/
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="triangle"></param>
+        /// <returns></returns>
         public static float TriangleDistance(Vector3 position, (Vector3, Vector3, Vector3) triangle)
         {
             Vector3 a = triangle.Item1;
@@ -63,6 +80,13 @@ namespace Voxelization
             return Mathf.Sqrt(d);
         }
 
+        /// <summary>
+        /// Get the triangle's normal interpolated at a given point on said triangle
+        /// </summary>
+        /// <param name="positions"></param>
+        /// <param name="normals"></param>
+        /// <param name="mVertex"></param>
+        /// <returns></returns>
         public static Vector3 TriangleNormal(
             (Vector3, Vector3, Vector3) positions,
             (Vector3, Vector3, Vector3) normals,
@@ -90,6 +114,12 @@ namespace Voxelization
             return normal;
         }
 
+        /// <summary>
+        /// Project a vector onto a triangle's plane
+        /// </summary>
+        /// <param name="vertices"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public static Vector3 ProjectionOnTriangle((Vector3, Vector3, Vector3) vertices, Vector3 position)
         {
             Vector3 v0 = vertices.Item1;
@@ -102,13 +132,18 @@ namespace Voxelization
             return proj;
         }
 
+        /// <summary>
+        /// Find the closest point to a vector on a triangle
+        /// </summary>
+        /// <param name="triangle"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public static Vector3 ClosestOnTriangle((Vector3, Vector3, Vector3) triangle, Vector3 position)
         {
             Vector3 a = triangle.Item1;
             Vector3 b = triangle.Item2;
             Vector3 c = triangle.Item3;
 
-            // Compute vectors
             Vector3 ab = b - a;
             Vector3 ac = c - a;
             Vector3 ap = position - a;
@@ -117,54 +152,52 @@ namespace Voxelization
             float d2 = Vector3.Dot(ac, ap);
 
             if (d1 <= 0f && d2 <= 0f)
-                return a; // barycentric coordinates (1,0,0)
+                return a;
 
-            // Check if P in vertex region outside B
             Vector3 bp = position - b;
             float d3 = Vector3.Dot(ab, bp);
             float d4 = Vector3.Dot(ac, bp);
             if (d3 >= 0f && d4 <= d3)
-                return b; // barycentric coordinates (0,1,0)
+                return b;
 
-            // Check if P in edge region of AB, if so return projection of P onto AB
             float vc = d1 * d4 - d3 * d2;
             if (vc <= 0f && d1 >= 0f && d3 <= 0f)
             {
                 float v = d1 / (d1 - d3);
-                return a + v * ab; // barycentric coordinates (1-v, v, 0)
+                return a + v * ab;
             }
 
-            // Check if P in vertex region outside C
             Vector3 cp = position - c;
             float d5 = Vector3.Dot(ab, cp);
             float d6 = Vector3.Dot(ac, cp);
             if (d6 >= 0f && d5 <= d6)
-                return c; // barycentric coordinates (0,0,1)
+                return c;
 
-            // Check if P in edge region of AC, if so return projection of P onto AC
             float vb = d5 * d2 - d1 * d6;
             if (vb <= 0f && d2 >= 0f && d6 <= 0f)
             {
                 float w = d2 / (d2 - d6);
-                return a + w * ac; // barycentric coordinates (1-w, 0, w)
+                return a + w * ac;
             }
 
-            // Check if P in edge region of BC, if so return projection of P onto BC
             float va = d3 * d6 - d5 * d4;
             if (va <= 0f && (d4 - d3) >= 0f && (d5 - d6) >= 0f)
             {
                 float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-                return b + w * (c - b); // barycentric coordinates (0, 1-w, w)
+                return b + w * (c - b);
             }
 
-            // P inside face region. Compute Q through its barycentric coordinates (u,v,w)
             float denom = 1f / (va + vb + vc);
             float vFinal = vb * denom;
             float wFinal = vc * denom;
             return a + ab * vFinal + ac * wFinal;
         }
 
-        // Returns (signed distance, normal) for the given position
+        /// <summary>
+        /// Returns (signed distance, normal) for the given position
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public (float, Vector3) VoxelizeAtPosition(Vector3 position)
         {
             var debug = VoxelizeAtPositionDebug(position);
@@ -181,7 +214,11 @@ namespace Voxelization
             public Vector3 projectedNormal;
         }
 
-        // Debug version: returns detailed info in a struct
+        /// <summary>
+        /// Debug version: returns detailed info in a struct
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
         public VoxelizeDebugResult VoxelizeAtPositionDebug(Vector3 position)
         {
             float minUDist = float.MaxValue;
@@ -191,6 +228,7 @@ namespace Voxelization
             (Vector3, Vector3, Vector3) closestNormals = (Vector3.zero, Vector3.zero, Vector3.zero);
             Vector3 projectedPoint = Vector3.zero;
             Vector3 projectedNormal = Vector3.zero;
+            float mostFacing = 0.0f;
 
             int triangleCount = mesh.triangles.Length / 3;
             for (int i = 0; i < triangleCount; i++)
@@ -198,15 +236,38 @@ namespace Voxelization
                 var (vertices, normals) = GetTriangle(i);
                 float uDist = TriangleDistance(position, vertices);
 
-                Vector3 barycenter = (vertices.Item1 + vertices.Item2 + vertices.Item3) / 3f;
-                float baryDist = (position - barycenter).sqrMagnitude;
+                // Vector3 barycenter = (vertices.Item1 + vertices.Item2 + vertices.Item3) / 3f;
+                // float baryDist = (position - barycenter).sqrMagnitude;
 
-                if (uDist < minUDist)
+                bool shouldUpdate = false;
+
+                if (uDist < minUDist - distanceThreshold)
+                {
+                    shouldUpdate = true;
+                }
+                else if (Mathf.Abs(uDist - minUDist) <= distanceThreshold)
+                {
+                    Vector3 mVertex = ClosestOnTriangle(vertices, position);
+                    Vector3 mNormal = TriangleNormal(vertices, normals, mVertex);
+                    Vector3 dirToPoint = (position - mVertex).normalized;
+
+                    float currentFacing = Vector3.Dot(mNormal, dirToPoint);
+                    if (
+                        (mostFacing <= 0 && currentFacing < 0 && currentFacing < mostFacing) ||
+                        (mostFacing > 0.0 && currentFacing >= 0.0 && currentFacing > mostFacing) ||
+                        (mostFacing < 0.0 && currentFacing >= 0.0)
+                    )
+                    {
+                        shouldUpdate = true;
+                    }
+                }
+                if (shouldUpdate)
                 {
                     minUDist = uDist;
                     Vector3 mVertex = ClosestOnTriangle(vertices, position);
                     Vector3 mNormal = TriangleNormal(vertices, normals, mVertex);
-                    float signVal = Mathf.Sign(Vector3.Dot(mNormal, position - mVertex));
+                    mostFacing = Vector3.Dot(mNormal, (position - mVertex).normalized);
+                    float signVal = Mathf.Sign(mostFacing);
                     if (signVal == 0f) signVal = 1f;
                     minSDist = uDist * -signVal;
                     usedNormal = mNormal;

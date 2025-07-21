@@ -1,0 +1,49 @@
+#pragma kernel WeightPainter
+#pragma kernel ClearWeightMap
+
+RWTexture3D<float> _Output;
+
+float3 _MinBounds;
+float3 _MaxBounds;
+
+float _MinClamp;
+float _MaxClamp;
+float _ResetValue;
+
+float3 _Position;
+float _Radius;
+float _Weight;
+int _Mode;
+
+float SmoothingKernel(float radius, float distance)
+{
+    if (distance > radius) return 0.0f;
+    float t = 1.0f - distance / radius;
+    return smoothstep(0.0f, 1.0f, t);
+}
+
+[numthreads(8,8,8)]
+void WeightPainter (uint3 id : SV_DispatchThreadID)
+{
+    uint width, height, depth;
+    _Output.GetDimensions(width, height, depth);
+    if(id.x >= width || id.y >= height || id.z >= depth) return;
+    float3 uvw = 
+        (float3(id.x, id.y, id.z) + 0.5f) 
+        / float3(width, height, depth);
+    float3 pos = lerp(_MinBounds, _MaxBounds, uvw);
+
+    float dist = distance(_Position, pos);
+    float influence = SmoothingKernel(_Radius, dist) * _Mode;
+    _Output[id] = influence * _Weight - 1;
+    _Output[id] = clamp(_Output[id], _MinClamp, _MaxClamp);
+}
+
+[numthreads(8,8,8)]
+void ClearWeightMap (uint3 id : SV_DispatchThreadID)
+{
+    uint width, height, depth;
+    _Output.GetDimensions(width, height, depth);
+    if(id.x >= width || id.y >= height || id.z >= depth) return;
+    _Output[id] = _ResetValue;
+}

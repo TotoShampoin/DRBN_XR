@@ -4,7 +4,7 @@ MonoImporter:
   externalObjects: {}
   serializedVersion: 2
   defaultReferences:
-  - marchingCubesShader: {fileID: 7200000, guid: daf38f6f439c47346b6fcb0da4bb114e,
+  - marchingCubesShader: {fileID: 7200000, guid: dfa44cfd2616af74592442ed74387495,
       type: 3}
   executionOrder: 0
   icon: {instanceID: 0}

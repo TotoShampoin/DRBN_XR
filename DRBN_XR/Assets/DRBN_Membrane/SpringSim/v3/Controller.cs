@@ -6,6 +6,9 @@ using System;
 
 namespace SpringSim.V3
 {
+    /// <summary>
+    /// Controller class for the membrane.
+    /// </summary>
     public class SpringController : MonoBehaviour
     {
         public SpringSimulator simulator;
@@ -16,7 +19,7 @@ namespace SpringSim.V3
         public float meshExtractionEpsilon = 0.005f;
         public float meshExtractionDistance = 0.2f;
         public float meshExtractionVelocityInfluence = 0.5f;
-        public V2.MeshFromSprings meshFromSprings;
+        public MeshFromSprings meshFromSprings;
         public float voxeliseRate = 15f;
         public bool constantRebuild = false;
 
@@ -123,7 +126,7 @@ namespace SpringSim.V3
                 meshFromSprings.Resolution = marchingCubes.resolution;
                 var oldMesh = simulator.ToMesh();
                 var newMesh = meshFromSprings.FetchMesh(oldMesh);
-                newMesh = V2.MeshFromSprings.CleanupMesh(newMesh, oldMesh, meshExtractionDistance);
+                newMesh = MeshFromSprings.CleanupMesh(newMesh, oldMesh, meshExtractionDistance);
                 if (Mathf.Approximately(meshExtractionVelocityInfluence, 0))
                     simulator.UseMesh(newMesh, meshExtractionEpsilon);
                 else

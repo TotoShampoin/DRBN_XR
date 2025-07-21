@@ -5027,7 +5027,7 @@ MonoBehaviour:
   thickness: 0.05
   comeback: 1500
   drag: 0
-  rigidityMantissa: 2
+  rigidityBase: 2
   maxRigidity: 5
   useAchors: 1
   fps: 120
@@ -18232,6 +18232,11 @@ PrefabInstance:
       propertyPath: bounds.m_Extent.z
       value: 0.6
       objectReference: {fileID: 0}
+    - target: {fileID: 2016607944097866032, guid: 687d26cb7ceeb754c857f5dd034d115f,
+        type: 3}
+      propertyPath: marchingCubesShader
+      value: 
+      objectReference: {fileID: 7200000, guid: daf38f6f439c47346b6fcb0da4bb114e, type: 3}
     - target: {fileID: 2716253613243313776, guid: 687d26cb7ceeb754c857f5dd034d115f,
         type: 3}
       propertyPath: m_LocalPosition.x

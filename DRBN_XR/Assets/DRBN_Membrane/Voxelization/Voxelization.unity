@@ -119,18 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!114 &5847433 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 775095595134607723, guid: 68a36958ecfec0f47b55e713e1a160e5,
-    type: 3}
-  m_PrefabInstance: {fileID: 871904367}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c33a0d3476579e4280aad18129c0b2e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &16565910
 GameObject:
   m_ObjectHideFlags: 0
@@ -651,7 +639,7 @@ MonoBehaviour:
   marchingCubes1: {fileID: 50077241}
   marchingCubes2: {fileID: 16565913}
   voxelizer: {fileID: 346229353}
-  weightGenerator: {fileID: 5847433}
+  weightGenerator: {fileID: 370698868}
   weightPainter: {fileID: 346229349}
   meshExtractionEpsilon: 0.005
   refreshMarchingCubes: 0
@@ -674,6 +662,21 @@ MonoBehaviour:
   voxelBounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 1, y: 1, z: 1}
+  meshBounds:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 1, y: 1, z: 1}
+--- !u!114 &370698868 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 957340273645472436, guid: aae94addadf73694bbcb95fb2f255f0e,
+    type: 3}
+  m_PrefabInstance: {fileID: 1249291444}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a14c8c3fb250e4741b8a7a4bcf3582fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &438324435
 GameObject:
   m_ObjectHideFlags: 0

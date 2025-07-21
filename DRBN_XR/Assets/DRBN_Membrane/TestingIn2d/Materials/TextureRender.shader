@@ -1,4 +1,4 @@
-Shader "Unlit/TextureRender"
+Shader "Custom/TextureRender"
 {
     Properties
     {

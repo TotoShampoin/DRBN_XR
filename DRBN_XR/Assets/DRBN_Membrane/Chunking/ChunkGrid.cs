@@ -1,0 +1,819 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.Events;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+using MarchingCubing.V2;
+using SpringSim.V3;
+using WeightGeneration;
+using WeightPainting;
+using Voxelization;
+
+/// <summary>
+/// Membrane for extracellular matrix, divided in chunks.
+/// </summary>
+public class ChunkGrid : MonoBehaviour
+{
+    [Header("Parameters")]
+    public int marchResolution = 8;
+    public int initNbChunks = 15;
+    [Range(0, 5f)] public float cycleRate = 2f;
+    public float paintRadius = 0.2f;
+    public float paintWeight = 0.5f;
+    public float distanceThreshold = 0.75f;
+    [Range(0, 1f)] public float mergeDistance = 0.0001f;
+    [Range(0, 0.1f)] public float joinDistance = 0.01f;
+    [Range(0, 1f)] public float volumeThreshold = 0.9f;
+    public bool updateSprings = false;
+    public bool forceUpdate = false;
+
+    [Header("Rendering")]
+    public Material material;
+    public Material highlightMaterial;
+    public RenderTexture baseVolume;
+    public RenderMode renderMode = RenderMode.MarchedMesh;
+    public float springThickness = 0.1f;
+    public float impalaThickness = 0.333333333333333f;
+
+    [Header("Interaction")]
+    public Transform cursor;
+    public InputActionReference primary;
+    public InputActionReference secondary;
+    public UnityEvent<Vector3> onCursorRayHit;
+
+    [Header("Components")]
+    public WeightGenerator weightGenerator;
+    public SpringSimulatorNoBehaviour springSimulator;
+    public MarchingCubesRef marchingCubes;
+    public Voxelizer voxelizer;
+    public WeightPainterNobehaviour weightPainter;
+    public DistanceOfVolumes distanceOfVolumes;
+    public SpringsRenderer springsRenderer;
+    public VolumeRenderer volumeRenderer;
+
+    float offsetFactor;
+    bool isPainting = false;
+    bool eraseMode = false;
+
+    float CycleInterval => 1f / cycleRate;
+    float cycle = 0f;
+
+    Matrix4x4 objectTransform = Matrix4x4.identity;
+
+    Vector3 GlobalCursorPos => cursor.transform.position;
+    Vector3 GlobalCursorDir => cursor.transform.forward;
+    Ray GlobalCursorRay => new(GlobalCursorPos, GlobalCursorDir);
+    Vector3 LocalCursorPos => WorldToLocalPosition(cursor.transform.position);
+
+    // Caches
+    static readonly Vector3Int[] neighborsMap = {
+        new (1, 0, 0), new (-1, 0, 0),
+        new (0, 1, 0), new (0, -1, 0),
+        new (0, 0, 1), new (0, 0, -1),
+        new (1, 1, 0), new (1, -1, 0), new (-1, 1, 0), new (-1, -1, 0),
+        new (1, 0, 1), new (1, 0, -1), new (-1, 0, 1), new (-1, 0, -1),
+        new (0, 1, 1), new (0, 1, -1), new (0, -1, 1), new (0, -1, -1),
+        new (1, 1, 1), new (1, 1, -1), new (1, -1, 1), new (1, -1, -1),
+        new (-1, 1, 1), new (-1, 1, -1), new (-1, -1, 1), new (-1, -1, -1)
+    };
+    Mesh meshToVolumeCache;
+    readonly List<Vector3> verticesCache = new();
+    readonly List<Vector3> normalsCache = new();
+    readonly List<int> trianglesCache = new();
+
+    // Profiler markers
+    static readonly Unity.Profiling.ProfilerMarker meshToVolumeMarker = new("Membrane.ChunkGrid.MeshToVolume");
+    static readonly Unity.Profiling.ProfilerMarker volumeToMeshMarker = new("Membrane.ChunkGrid.VolumeToMesh");
+    static readonly Unity.Profiling.ProfilerMarker meshToSpringsMarker = new("Membrane.ChunkGrid.MeshToSprings");
+    static readonly Unity.Profiling.ProfilerMarker springsToMeshMarker = new("Membrane.ChunkGrid.SpringsToMesh");
+    static readonly Unity.Profiling.ProfilerMarker tieJointuresMarker = new("Membrane.ChunkGrid.TieJointures");
+
+    public enum RenderMode
+    {
+        MarchedMesh,
+        Springs,
+        Impalas,
+        Volumes,
+        OneBigMesh,
+    }
+    public class ChunkData
+    {
+        public Mesh mesh;
+        public RenderTexture volume;        // True volume
+        public RenderTexture volumeOfMesh;  // Volume that rendered the mesh
+        public SpringSimulatorState springs;
+        public Dictionary<ChunkData, List<(Mass self, Mass other)>> jointures;
+        public bool dirtyMeshS;
+        public bool dirtyMeshV;
+        public bool dirtySpringsM;
+        public bool dirtySpringsS;
+        public bool dirtyVolume;
+        public bool dirtyJointure;
+        public bool highlight;
+    };
+    readonly Dictionary<Vector3Int, ChunkData> grid = new();
+
+    public Vector3 WorldToLocalPosition(Vector3 worldPos) =>
+        objectTransform.inverse.MultiplyPoint(worldPos);
+    public Vector3 LocalToWorldPosition(Vector3 localPos) =>
+        objectTransform.MultiplyPoint(localPos);
+
+    public Vector3 WorldToLocalDirection(Vector3 worldPos) =>
+        objectTransform.inverse.MultiplyVector(worldPos);
+    public Vector3 LocalToWorldDirection(Vector3 localPos) =>
+        objectTransform.MultiplyVector(localPos);
+
+    public Vector3 WorldToGridPosition(Vector3 worldPos) =>
+        WorldToLocalPosition(worldPos) / offsetFactor;
+    public Vector3 GridToWorldPosition(Vector3 gridPos) =>
+        LocalToWorldPosition(gridPos * offsetFactor);
+
+    void Start()
+    {
+        PrepareModules();
+        int N = initNbChunks / 2;
+        for (int x = -N; x <= N; x++)
+            for (int y = -1; y <= 1; y++)
+                for (int z = -N; z <= N; z++)
+                {
+                    var at = new Vector3Int(x, y, z);
+                    CreateChunk(at);
+                    GenerateVolume(at);
+                    // dirty: Mv
+                    VolumeToMesh(at, 0);
+                    // dirty: Sm
+                }
+        ForEach(pos => MeshToSprings(pos, true));
+        // dirty: J
+        ForEach(pos => TieJointuresDirty(pos));
+        // dirty: Ms
+        ForEach(pos => SpringsToMeshDirty(pos));
+        // dirty: V
+        ForEach((pos, chunk) => chunk.dirtyVolume = false);
+        // dirty: 0
+
+        primary.action.Enable();
+        secondary.action.Enable();
+
+        primary.action.performed += _ => isPainting = true;
+        secondary.action.performed += _ => eraseMode = true;
+        primary.action.canceled += _ => isPainting = false;
+        secondary.action.canceled += _ => eraseMode = false;
+    }
+
+    void Update()
+    {
+        Render();
+        ForEach((pos, chunk) => chunk.highlight = false);
+    }
+
+    void FixedUpdate()
+    {
+        PrepareModules();
+        Cleanup();
+
+        if (updateSprings)
+        {
+            ForEach(pos => MeshToSpringsDirty(pos, true));
+            // dirty: J
+            ForEach(pos => UpdateSpringsDirty(pos, Time.fixedDeltaTime));
+            // dirty: Ms, J
+            ForEach(pos => TieJointuresDirty(pos));
+            // dirty: Ms
+            ForEach(pos => SpringsToMeshDirty(pos));
+            // dirty: V
+            if (cycle >= CycleInterval)
+            {
+                ForEach((pos, chunk) => chunk.dirtyVolume |= MeshToVolumeDirty(pos));
+                // dirty: Mv, V
+                ForEach((pos, chunk) =>
+                {
+                    if (chunk.dirtyVolume && DifferenceOfVolumeDirty(pos) > volumeThreshold)
+                        VolumeToMeshDirty(pos, 0);
+                    chunk.dirtyVolume = false;
+                });
+                // dirty: Sm
+            }
+            if (forceUpdate)
+            {
+                ForEach((pos, chunk) => MeshToVolume(pos));
+                ForEach((pos, chunk) => VolumeToMesh(pos));
+                forceUpdate = false;
+            }
+        }
+        else
+        {
+            if (isPainting)
+            {
+                ForEach(pos => MeshToVolumeDirty(pos));
+                ForEach(pos => PaintVolume(pos, GlobalCursorPos, eraseMode));
+                ForEach(pos => VolumeToMeshDirty(pos, 0));
+            }
+        }
+
+        if (RayIntersection(GlobalCursorRay) is Vector3 hit)
+            onCursorRayHit.Invoke(hit);
+
+
+        cycle %= CycleInterval;
+        cycle += Time.fixedDeltaTime;
+    }
+
+    void Render()
+    {
+        RenderParams rp = new(material);
+        RenderParams rph = new(highlightMaterial);
+        var bounds = new Bounds(Vector3.zero, Vector3.one * (2f - (float)2 / marchResolution));
+        switch (renderMode)
+        {
+            case RenderMode.Springs:
+                springsRenderer.thickness = springThickness;
+                break;
+            case RenderMode.Impalas:
+                springsRenderer.thickness = impalaThickness;
+                break;
+        }
+        if (renderMode == RenderMode.OneBigMesh)
+        {
+            var mesh = ToMesh();
+            var matrix = objectTransform;
+            MeshMod.DeduplicateVertices(mesh, mergeDistance, mesh);
+            Graphics.RenderMesh(rp, mesh, 0, matrix);
+        }
+        else
+        {
+            foreach (var (pos, chunk) in grid)
+            {
+                var matrix = objectTransform *
+                        Matrix4x4.TRS((Vector3)pos * offsetFactor, Quaternion.identity, Vector3.one);
+
+                switch (renderMode)
+                {
+                    case RenderMode.MarchedMesh:
+                        Graphics.RenderMesh(chunk.highlight ? rph : rp, chunk.mesh, 0, matrix);
+                        break;
+                    case RenderMode.Springs:
+                        springsRenderer.Render(chunk.springs, matrix, chunk.highlight);
+                        break;
+                    case RenderMode.Impalas:
+                        springsRenderer.RenderMasses(chunk.springs, matrix, chunk.highlight);
+                        break;
+                    case RenderMode.Volumes:
+                        volumeRenderer.DrawVolume(chunk.volume, bounds, matrix);
+                        break;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sets various variables to ensure a good cohesion of the chunks.
+    /// </summary>
+    void PrepareModules()
+    {
+        offsetFactor = 2f - (float)4 / marchResolution;
+        marchingCubes.resolution = marchResolution;
+        marchingCubes.bounds.size = new Vector3(offsetFactor, offsetFactor, offsetFactor);
+        objectTransform = transform.localToWorldMatrix;
+    }
+
+    /// <summary>
+    /// Allocate and create a chunk at a given cell.
+    /// </summary>
+    /// <param name="at"></param>
+    public void CreateChunk(Vector3Int at)
+    {
+        grid.TryAdd(at, new ChunkData()
+        {
+            volume = new RenderTexture(baseVolume),
+            volumeOfMesh = new RenderTexture(baseVolume),
+        });
+    }
+
+    /// <summary>
+    /// Check if the grid has a given cell, and if that cell contains something.
+    /// </summary>
+    /// <param name="at"></param>
+    /// <returns></returns>
+    public bool ChunkExists(Vector3Int at) => grid.ContainsKey(at) && grid[at] != null;
+
+    /// <summary>
+    /// Deletes cells which's chunk has been deleted.
+    /// </summary>
+    public void Cleanup() => ForEach((pos, chunk) => { if (chunk == null) grid.Remove(pos); });
+
+    /// <summary>
+    /// Fetch a cell and its chunk at given position if it exists.
+    /// </summary>
+    /// <param name="at"></param>
+    /// <returns></returns>
+    public (Vector3Int, ChunkData)? GetChunk(Vector3 at)
+    {
+        Vector3Int chunkPos = Vector3Int.RoundToInt(WorldToGridPosition(at));
+        return ChunkExists(chunkPos) ? (chunkPos, this[chunkPos]) : null;
+    }
+    public ChunkData this[Vector3Int at] => grid.TryGetValue(at, out ChunkData chunk) ? chunk : null;
+
+    /// <summary>
+    /// Converts all the meshes in chunks into one giant mesh. WARNING: The chunks are NOT joined by vertices, and may need a call to DeduplicateVertices!
+    /// </summary>
+    /// <returns></returns>
+    public Mesh ToMesh()
+    {
+        var combinedVertices = new List<Vector3>();
+        var combinedNormals = new List<Vector3>();
+        var combinedTriangles = new List<int>();
+        int vertexOffset = 0;
+
+        foreach (var (pos, chunk) in grid)
+        {
+            if (chunk.mesh == null) continue;
+            var verts = chunk.mesh.vertices;
+            var norms = chunk.mesh.normals;
+            var tris = chunk.mesh.triangles;
+
+            var matrix = Matrix4x4.TRS((Vector3)pos * offsetFactor, Quaternion.identity, Vector3.one);
+            for (int i = 0; i < verts.Length; i++)
+            {
+                combinedVertices.Add(matrix.MultiplyPoint3x4(verts[i]));
+                combinedNormals.Add(matrix.MultiplyVector(norms[i]).normalized);
+            }
+            for (int i = 0; i < tris.Length; i++)
+            {
+                combinedTriangles.Add(tris[i] + vertexOffset);
+            }
+            vertexOffset += verts.Length;
+        }
+
+        var mesh = new Mesh()
+        {
+            vertices = combinedVertices.ToArray(),
+            normals = combinedNormals.ToArray(),
+            triangles = combinedTriangles.ToArray(),
+        };
+        return mesh;
+    }
+
+    /// <summary>
+    /// Get a chunk's neighbours up to the nth level (center excluded).
+    /// </summary>
+    /// <param name="at"></param>
+    /// <param name="chunkRadius"></param>
+    /// <returns></returns>
+    public List<(Vector3Int npos, ChunkData chunk)> SurroundingChunks(Vector3Int at, int chunkRadius = 1)
+    {
+        List<(Vector3Int, ChunkData)> neighbors = new(26);
+        for (int x = -chunkRadius; x <= chunkRadius; x++)
+            for (int y = -chunkRadius; y <= chunkRadius; y++)
+                for (int z = -chunkRadius; z <= chunkRadius; z++)
+                {
+                    if (x == 0 && y == 0 && z == 0) continue;
+                    Vector3Int neighborPos = at + new Vector3Int(x, y, z);
+                    if (ChunkExists(neighborPos))
+                        neighbors.Add((neighborPos, grid[neighborPos]));
+                }
+        return neighbors;
+    }
+
+    /// <summary>
+    /// Casts a ray to the meshes.
+    /// </summary>
+    /// <param name="ray"></param>
+    /// <returns></returns>
+    public Vector3? RayIntersection(Ray ray)
+    {
+        var rayOrigin = WorldToLocalPosition(ray.origin);
+        var rayDirection = WorldToLocalDirection(ray.direction);
+        // TODO: Optimize this?
+        foreach (var pos in grid.Keys)
+        {
+            Vector3 offset = (Vector3)pos * offsetFactor;
+            var cursorRay = new Ray(rayOrigin - offset, rayDirection);
+            if (MeshMod.RayMeshIntersection(grid[pos].mesh, cursorRay) is Vector3 hitMesh)
+            {
+                return LocalToWorldPosition(hitMesh + offset);
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Fetch the closest mass from position, along with the chunk that contains it and the chunk's position in grid.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    public (Vector3Int, ChunkData, Mass) GetClosestMass(Vector3 position)
+    {
+        if (GetChunk(position) is (Vector3Int chunkIndex, ChunkData currentChunk)
+            && currentChunk.springs != null && currentChunk.springs.masses.Count > 0)
+        {
+            Vector3 gridPosition = WorldToGridPosition(position);
+            return (chunkIndex, currentChunk, currentChunk.springs.ClosestMassGlobal(gridPosition));
+        }
+
+        Vector3Int closestChunkPos = Vector3Int.zero;
+        float closestDistance = float.MaxValue;
+
+        foreach (var (pos, chunk) in grid)
+        {
+            if (chunk.springs == null || chunk.springs.masses.Count == 0)
+                continue;
+
+            float distance = Vector3.Distance(position, GridToWorldPosition(pos));
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestChunkPos = pos;
+            }
+        }
+
+        if (ChunkExists(closestChunkPos) && grid[closestChunkPos].springs != null)
+        {
+            Vector3 gridPosition = WorldToGridPosition(position);
+            return (closestChunkPos, grid[closestChunkPos], grid[closestChunkPos].springs.ClosestMassGlobal(gridPosition));
+        }
+
+        return (Vector3Int.zero, null, null);
+    }
+
+    public void ForEach(Action<Vector3Int> predicate) => ForEach((pos, _) => predicate(pos));
+    public void ForEach(Action<Vector3Int, ChunkData> predicate)
+    {
+        foreach (var (pos, chunk) in grid)
+            predicate(pos, chunk);
+    }
+
+    // DIRTY METHODS
+
+    /// <summary>
+    /// Called if <c>dirtyMeshV</c>, sets <c>dirtySpringsM</c>
+    /// </summary>
+    public bool VolumeToMeshDirty(Vector3Int at, float threshold = 0)
+    {
+        if (!ChunkExists(at) || !grid[at].dirtyMeshV) return false;
+        VolumeToMesh(at, threshold);
+        return true;
+    }
+    /// <summary>
+    /// Called if <c>dirtySpringsM</c>, sets <c>dirtyJointure</c>
+    /// </summary>
+    public bool MeshToSpringsDirty(Vector3Int at, bool joinNeighbors = false)
+    {
+        if (!ChunkExists(at) || !grid[at].dirtySpringsM) return false;
+        MeshToSprings(at, joinNeighbors);
+        return true;
+    }
+    /// <summary>
+    /// Called if <c>dirtyMeshS</c>, sets <c>dirtyVolume</c>
+    /// </summary>
+    public bool SpringsToMeshDirty(Vector3Int at)
+    {
+        if (!ChunkExists(at) || !grid[at].dirtyMeshS) return false;
+        SpringsToMesh(at);
+        return true;
+    }
+    /// <summary>
+    /// Called if <c>dirtySpringsS</c>, sets <c>dirtyMeshS</c> and <c>dirtyJointure</c>
+    /// </summary>
+    public bool UpdateSpringsDirty(Vector3Int at, float deltaTime)
+    {
+        if (!ChunkExists(at) || !grid[at].dirtySpringsS) return false;
+        UpdateSprings(at, deltaTime);
+        return true;
+    }
+    /// <summary>
+    /// Called if <c>dirtyVolume</c>, sets <c>dirtyMeshV</c>
+    /// </summary>
+    public bool MeshToVolumeDirty(Vector3Int at)
+    {
+        if (!ChunkExists(at) || !grid[at].dirtyVolume) return false;
+        MeshToVolume(at);
+        return true;
+    }
+    /// <summary>
+    /// Called if <c>dirtyJointure</c>, sets <c>dirtyMeshS</c>
+    /// </summary>
+    public bool TieJointuresDirty(Vector3Int at)
+    {
+        if (!ChunkExists(at) || !grid[at].dirtyJointure) return false;
+        TieJointures(at);
+        return true;
+    }
+    /// <summary>
+    /// Called if <c>dirtyVolume</c>, sets nothing
+    /// </summary>
+    public float DifferenceOfVolumeDirty(Vector3Int at)
+    {
+        if (!ChunkExists(at) || !grid[at].dirtyVolume) return 0f;
+        return DifferenceOfVolume(at);
+    }
+
+    // PER-CHUNK METHODS
+
+    /// <summary>
+    /// Sets <c>dirtyMeshV</c>
+    /// </summary>
+    public void GenerateVolume(Vector3Int at)
+    {
+        if (!ChunkExists(at)) return;
+        var chunk = grid[at];
+        weightGenerator.offset = (Vector3)at * offsetFactor;
+        weightGenerator.Generate(chunk.volume);
+        chunk.dirtyVolume = false;
+        chunk.dirtyMeshV = true;
+    }
+
+    /// <summary>
+    /// Sets <c>dirtyMeshV</c>
+    /// </summary>
+    public void MeshToVolume(Vector3Int at)
+    {
+        if (meshToVolumeCache == null) meshToVolumeCache = new();
+        if (!ChunkExists(at)) return;
+        using (meshToVolumeMarker.Auto())
+        {
+            var chunk = grid[at];
+
+            // Reuse cached lists instead of creating new ones
+            verticesCache.Clear();
+            normalsCache.Clear();
+            trianglesCache.Clear();
+
+            // Pre-calculate capacity to avoid list resizing
+            int estimatedVertexCount = chunk.mesh.vertexCount;
+            int estimatedTriangleCount = chunk.mesh.triangles.Length;
+
+            foreach (var neighbor in neighborsMap)
+            {
+                Vector3Int neighborPos = at + neighbor;
+                if (ChunkExists(neighborPos) && grid[neighborPos]?.mesh != null)
+                {
+                    estimatedVertexCount += grid[neighborPos].mesh.vertexCount;
+                    estimatedTriangleCount += grid[neighborPos].mesh.triangles.Length;
+                }
+            }
+
+            if (verticesCache.Capacity < estimatedVertexCount)
+                verticesCache.Capacity = estimatedVertexCount;
+            if (normalsCache.Capacity < estimatedVertexCount)
+                normalsCache.Capacity = estimatedVertexCount;
+            if (trianglesCache.Capacity < estimatedTriangleCount)
+                trianglesCache.Capacity = estimatedTriangleCount;
+
+            // Add current chunk vertices/triangles
+            verticesCache.AddRange(chunk.mesh.vertices);
+            normalsCache.AddRange(chunk.mesh.normals);
+            trianglesCache.AddRange(chunk.mesh.triangles);
+
+            foreach (var neighbor in neighborsMap)
+            {
+                Vector3Int neighborPos = at + neighbor;
+                if (!ChunkExists(neighborPos)) continue;
+
+                var neighborChunk = grid[neighborPos];
+                if (neighborChunk?.mesh != null)
+                {
+                    var neighborVertices = neighborChunk.mesh.vertices;
+                    var neighborNormals = neighborChunk.mesh.normals;
+                    var neighborTriangles = neighborChunk.mesh.triangles;
+                    Vector3 delta = neighborPos - at;
+                    Vector3 offset = delta * offsetFactor;
+                    int baseIndex = verticesCache.Count;
+
+                    // Manual loops instead of LINQ to avoid allocations
+                    for (int i = 0; i < neighborVertices.Length; i++)
+                    {
+                        verticesCache.Add(neighborVertices[i] + offset);
+                        normalsCache.Add(neighborNormals[i]);
+                    }
+
+                    for (int i = 0; i < neighborTriangles.Length; i++)
+                    {
+                        trianglesCache.Add(neighborTriangles[i] + baseIndex);
+                    }
+                }
+            }
+
+            meshToVolumeCache.Clear();
+            meshToVolumeCache.SetVertices(verticesCache);
+            meshToVolumeCache.SetNormals(normalsCache);
+            meshToVolumeCache.SetTriangles(trianglesCache, 0);
+            MeshMod.DeduplicateVertices(meshToVolumeCache, mergeDistance, meshToVolumeCache);
+            voxelizer.Voxelize(meshToVolumeCache, chunk.volume);
+            chunk.dirtyVolume = false;
+            chunk.dirtyMeshV = true;
+        }
+    }
+    /// <summary>
+    /// Sets <c>dirtySpringsM</c>
+    /// </summary>
+    public void VolumeToMesh(Vector3Int at, float threshold = 0)
+    {
+        if (!ChunkExists(at)) return;
+        using (volumeToMeshMarker.Auto())
+        {
+            var chunk = grid[at];
+            chunk.mesh = chunk.mesh != null ? chunk.mesh : new();
+            marchingCubes.GenerateMesh(chunk.volume, threshold, chunk.mesh);
+            MeshMod.DeduplicateVertices(chunk.mesh, mergeDistance, chunk.mesh);
+            Graphics.Blit(chunk.volume, chunk.volumeOfMesh);
+            chunk.dirtyMeshV = false;
+            chunk.dirtySpringsM = true;
+        }
+    }
+    /// <summary>
+    /// Sets <c>dirtyMeshV</c>
+    /// </summary>
+    public void PaintVolume(Vector3Int at, Vector3 brushPosition, bool eraseMode)
+    {
+        if (!ChunkExists(at)) return;
+        var chunk = grid[at];
+        Vector3 chunkCenter = (Vector3)at * offsetFactor;
+        Bounds chunkBoundsMargin = new(chunkCenter, Vector3.one * offsetFactor);
+        Bounds paintBounds = new(chunkCenter, Vector3.one * 2);
+        chunkBoundsMargin.Expand(paintRadius * 4);
+
+        var localBrushPosition = WorldToLocalPosition(brushPosition);
+        if (chunkBoundsMargin.Contains(localBrushPosition))
+        {
+            weightPainter.Paint(
+                chunk.volume, LocalCursorPos,
+                paintBounds, paintRadius, paintWeight,
+                eraseMode
+                    ? WeightPainterNobehaviour.ActionMode.Subtract
+                    : WeightPainterNobehaviour.ActionMode.Add
+            );
+            chunk.dirtyMeshV = true;
+        }
+    }
+    public float DifferenceOfVolume(Vector3Int at, RenderTexture output = null)
+    {
+        if (!ChunkExists(at))
+            return 0f;
+        var chunk = grid[at];
+        return distanceOfVolumes.Distance(chunk.volume, chunk.volumeOfMesh, output);
+    }
+    /// <summary>
+    /// Sets <c>dirtyJointure</c>
+    /// </summary>
+    public void MeshToSprings(Vector3Int at, bool joinNeighbors = false)
+    {
+        if (!ChunkExists(at)) return;
+        using (meshToSpringsMarker.Auto())
+        {
+            var chunk = grid[at];
+            var previousSprings = chunk.springs;
+            chunk.springs ??= new()
+            {
+                origin = (Vector3)at * offsetFactor,
+                offsetFactor = offsetFactor,
+            };
+            chunk.jointures ??= new();
+            SpringMeshConversion.MeshToSprings(chunk.mesh, mergeDistance, chunk.springs);
+            foreach (var (neighbor, _) in chunk.jointures)
+            {
+                neighbor?.jointures?.Remove(chunk);
+            }
+            chunk.jointures.Clear();
+            if (joinNeighbors)
+                JoinToNeighbors(at);
+            chunk.dirtySpringsM = false;
+            chunk.dirtyJointure = true;
+        }
+    }
+    /// <summary>
+    /// Sets <c>dirtyVolume</c>
+    /// </summary>
+    public void SpringsToMesh(Vector3Int at)
+    {
+        if (!ChunkExists(at)) return;
+        using (springsToMeshMarker.Auto())
+        {
+            var chunk = grid[at];
+            SpringMeshConversion.SpringsToMesh(chunk.springs, chunk.mesh);
+            chunk.dirtyMeshS = false;
+            chunk.dirtyVolume = true;
+        }
+    }
+    /// <summary>
+    /// Sets <c>dirtyJointure</c>
+    /// </summary>
+    public void JoinToNeighbors(Vector3Int at)
+    {
+        if (!ChunkExists(at)) return;
+        var chunk = grid[at];
+        if (chunk.springs == null) return;
+        SurroundingChunks(at)
+            .ForEach(c =>
+            {
+                var (npos, neighbor) = c;
+                if (neighbor.springs == null) return;
+                var jointure = chunk.springs.Join(neighbor.springs, joinDistance);
+                chunk.jointures.TryAdd(neighbor, jointure);
+                neighbor.jointures[chunk] = jointure.Select(j => (j.other, j.self)).ToList();
+            });
+        chunk.dirtyJointure = true;
+    }
+    /// <summary>
+    /// Sets <c>dirtyMeshS</c>
+    /// </summary>
+    public void TieJointures(Vector3Int at)
+    {
+        if (!ChunkExists(at)) return;
+        using (tieJointuresMarker.Auto())
+        {
+            var chunk = grid[at];
+            if (chunk.springs == null || chunk.jointures == null || chunk.jointures.Count == 0) return;
+            chunk.dirtyMeshS = true;
+            foreach (var (neighbor, joinList) in chunk.jointures)
+            {
+                if (joinList.Count == 0) continue;
+                neighbor.dirtyMeshS = true;
+                foreach (var (self, other) in joinList)
+                {
+                    var selfPos = chunk.springs.LocalToGlobalPosition(self.position);
+                    var otherPos = neighbor.springs.LocalToGlobalPosition(other.position);
+                    var pos = (selfPos + otherPos) / 2f;
+                    var vel = (self.velocity + other.velocity) / 2f;
+                    var force = (self.force + other.force) / 2f;
+                    var normal = Vector3.Normalize(self.normal + other.normal);
+                    self.position = chunk.springs.GlobalToLocalPosition(pos);
+                    other.position = neighbor.springs.GlobalToLocalPosition(pos);
+                    self.velocity = vel;
+                    other.velocity = vel;
+                    self.force = force;
+                    other.force = force;
+                    self.normal = normal;
+                    other.normal = normal;
+                }
+            }
+            chunk.dirtyJointure = false;
+        }
+    }
+    /// <summary>
+    /// Sets <c>dirtyMeshS</c> and <c>dirtyJointure</c>
+    /// </summary>
+    public void UpdateSprings(Vector3Int at, float deltaTime)
+    {
+        if (!ChunkExists(at)) return;
+        var chunk = grid[at];
+        if (chunk.springs == null) return;
+        springSimulator.Iterate(chunk.springs, deltaTime);
+        chunk.dirtySpringsS = false;
+        chunk.dirtyMeshS = true;
+        chunk.dirtyJointure = true;
+    }
+    /// <summary>
+    /// Sets <c>dirtySpringsS</c>
+    /// </summary>
+    public void ApplyForceToSprings(
+        Vector3Int at,
+        Vector3 force, Vector3 origin, float radius,
+        bool affectNeighbors = false)
+    {
+        if (!ChunkExists(at)) return;
+        var chunk = grid[at];
+        var springs = chunk.springs;
+
+        var forceLocal = WorldToLocalDirection(force);
+        var originLocal = springs.GlobalToLocalPosition(WorldToGridPosition(origin));
+        var radiusLocal = Vector3.Magnitude(WorldToLocalDirection(Vector3.forward * radius));
+        springs.AddExternalForce(forceLocal, originLocal, radiusLocal);
+        chunk.dirtySpringsS = true;
+
+        if (affectNeighbors)
+        {
+            SurroundingChunks(at)
+                .ForEach(c => ApplyForceToSprings(
+                    c.npos, force, origin, radius, false));
+        }
+    }
+
+#if UNITY_EDITOR
+    void OnDrawGizmosSelected()
+    {
+        if (grid.Count > 0)
+        {
+            var min = new Vector3(
+                grid.Keys.Min(k => k.x),
+                grid.Keys.Min(k => k.y),
+                grid.Keys.Min(k => k.z)
+            );
+            var max = new Vector3(
+                grid.Keys.Max(k => k.x),
+                grid.Keys.Max(k => k.y),
+                grid.Keys.Max(k => k.z)
+            );
+            Gizmos.color = Color.yellow;
+            Vector3 center = 0.5f * offsetFactor * (min + max);
+            Vector3 size = (max - min + Vector3.one) * offsetFactor;
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.DrawWireCube(center, size);
+        }
+    }
+#endif
+
+}

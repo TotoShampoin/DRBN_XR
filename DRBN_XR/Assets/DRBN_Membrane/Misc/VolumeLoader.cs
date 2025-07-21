@@ -3,7 +3,7 @@ using UnityEngine;
 public class VolumeLoader
 {
     // copilot generated code
-    public static void SaveMesh(RenderTexture texture, string path)
+    public static void SaveVolume(RenderTexture texture, string path)
     {
         if (texture == null)
         {
@@ -29,7 +29,7 @@ public class VolumeLoader
     }
 
     // copilot generated code
-    public static RenderTexture LoadMesh(string path)
+    public static RenderTexture LoadVolume(string path)
     {
         if (string.IsNullOrEmpty(path))
         {

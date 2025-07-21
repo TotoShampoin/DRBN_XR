@@ -1,2 +1,13 @@
 fileFormatVersion: 2
 guid: de6a47bce0ede384ea642ebcf63796e4
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - marchingCubesShader: {fileID: 7200000, guid: dfa44cfd2616af74592442ed74387495,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

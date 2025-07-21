@@ -114,8 +114,8 @@ Shader "Instanced/VoxelMesh"
                 // Sample color ramp using t
                 fixed4 rampColor = tex2D(_ColorRamp, float2(t, 0.5));
                 fixed4 col = rampColor;
-                col.a *= _Opacity;
-                if(length(i.uv * 2 - 1) > 1) {
+                // col.a *= _Opacity;
+                if(length(i.uv * 2 - 1) > abs(value)) {
                     col.a = 0;
                     discard;
                 }

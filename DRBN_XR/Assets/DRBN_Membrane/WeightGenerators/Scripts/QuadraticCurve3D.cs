@@ -5,7 +5,7 @@ namespace WeightGeneration
     /// <summary>
     /// f(x,y,z) = a r^2 + b r + c - y  ,  with r = sqrt(x^2 + z^2)
     /// </summary>
-    class QuadraticCurve3D : WeightGenerator
+    public class QuadraticCurve3D : WeightGenerator
     {
         public override bool ConstantlyRegenerate => false;
         public float threshold = 0.0f;
@@ -31,8 +31,8 @@ namespace WeightGeneration
             quadraticCurve3DShader.SetFloat("_A", a);
             quadraticCurve3DShader.SetFloat("_B", b);
             quadraticCurve3DShader.SetFloat("_C", c);
-            quadraticCurve3DShader.SetVector("_MinBounds", minBounds);
-            quadraticCurve3DShader.SetVector("_MaxBounds", maxBounds);
+            quadraticCurve3DShader.SetVector("_MinBounds", minBounds + offset);
+            quadraticCurve3DShader.SetVector("_MaxBounds", maxBounds + offset);
 
             quadraticCurve3DShader.Dispatch(
                 kernel,

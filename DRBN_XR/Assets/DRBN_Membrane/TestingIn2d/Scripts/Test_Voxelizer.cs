@@ -14,6 +14,7 @@ public class Test_Voxelizer : MonoBehaviour
     public bool showNormalMap;
     public float arrowSize;
     public bool modified;
+    public bool mergeVertices = true;
 
     readonly List<(Vector2 a, Vector2 b)> lines = new();
     VoxelizerCPU voxelizerDebug = new();
@@ -108,7 +109,8 @@ public class Test_Voxelizer : MonoBehaviour
         mesh.SetTriangles(indices, 0);
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
-        mesh = MeshMod.DeduplicateVertices(mesh);
+        if(mergeVertices)
+            mesh = MeshMod.DeduplicateVertices(mesh);
         return mesh;
     }
 

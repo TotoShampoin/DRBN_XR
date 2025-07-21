@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
 
+/// <summary>
+/// A structure for storing items in a hashmap based on positional data, for quick look-ups.
+/// </summary>
 public class SpatialHash<T>
 {
     private readonly Dictionary<Vector3Int, List<T>> hashmap;
@@ -40,7 +43,7 @@ public class SpatialHash<T>
         return cell;
     }
 
-    public Vector3Int GetCell(Vector3 at) => Vector3Int.FloorToInt(at / cellSize);
+    public Vector3Int GetCell(Vector3 at) => Vector3Int.RoundToInt(at / cellSize);
 
     public void AddAt(Vector3 at, T value) => Add(GetCell(at), value);
 
@@ -98,6 +101,9 @@ public class SpatialHash<T>
     }
 }
 
+/// <summary>
+/// A thread-safe structure for storing items in a hashmap based on positional data, for quick look-ups.
+/// </summary>
 public class ConcurrentSpatialHash<T>
 {
     private readonly ConcurrentDictionary<Vector3Int, ConcurrentBag<T>> hashmap;

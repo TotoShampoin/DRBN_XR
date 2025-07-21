@@ -6,7 +6,7 @@ namespace WeightGeneration
     /// <summary>
     /// Takes a ParticleSimulator and returns its Density Function.
     /// </summary>
-    class ParticleDensity : WeightGenerator
+    public class ParticleDensity : WeightGenerator
     {
         public override bool ConstantlyRegenerate => true;
         public float threshold = 3.0f;
@@ -32,9 +32,9 @@ namespace WeightGeneration
             particleDensityShader
                 .SetFloat("_DensityRadius", particleSimulator.DensityRadius);
             particleDensityShader
-                .SetVector("_MinBounds", particleSimulator.MinBounds);
+                .SetVector("_MinBounds", particleSimulator.MinBounds + offset);
             particleDensityShader
-                .SetVector("_MaxBounds", particleSimulator.MaxBounds);
+                .SetVector("_MaxBounds", particleSimulator.MaxBounds + offset);
 
             particleDensityShader.Dispatch(
                 kernel,

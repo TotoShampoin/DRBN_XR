@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace MarchingCubing.V1
 {
+    /// <summary>
+    /// First implementation of the Marching Cubes, which also contains the Weight Painter logic.
+    /// </summary>
     public class MeshGenerator : MonoBehaviour
     {
         struct Triangle

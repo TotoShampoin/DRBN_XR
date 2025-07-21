@@ -10,6 +10,7 @@ namespace Voxelization
     {
         public ComputeShader voxelizer;
         [Range(0, 10)] public float multiplier = 1;
+        public float distanceThreshold = 0.0001f;
 
         public Bounds voxelBounds = new(Vector3.zero, Vector3.one);
 
@@ -70,6 +71,7 @@ namespace Voxelization
                 voxelizer.SetVector("_MeshMinBound", -Vector3.one);
                 voxelizer.SetVector("_MeshMaxBound", Vector3.one);
                 voxelizer.SetFloat("_Multiplier", multiplier);
+                voxelizer.SetFloat("_DistanceThreshold", distanceThreshold);
 
                 voxelizer.Dispatch(kernel,
                     Mathf.CeilToInt((float)output.width / threadGroups.x),

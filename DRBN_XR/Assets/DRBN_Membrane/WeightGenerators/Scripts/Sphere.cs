@@ -5,7 +5,7 @@ namespace WeightGeneration
     /// <summary>
     /// f(x,y,z) = nroot[n](|x|^n + |y|^n + |z|^n)
     /// </summary>
-    class Sphere : WeightGenerator
+    public class Sphere : WeightGenerator
     {
         public override bool ConstantlyRegenerate => false;
         public float threshold = 0.0f;
@@ -29,8 +29,8 @@ namespace WeightGeneration
 
             sphereShader.SetFloat("_Radius", radius);
             sphereShader.SetFloat("_N", n);
-            sphereShader.SetVector("_MinBounds", minBounds);
-            sphereShader.SetVector("_MaxBounds", maxBounds);
+            sphereShader.SetVector("_MinBounds", minBounds + offset);
+            sphereShader.SetVector("_MaxBounds", maxBounds + offset);
 
             sphereShader.Dispatch(
                 kernel,
